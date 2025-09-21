@@ -1,29 +1,37 @@
 package org.lowcoder.domain.organization.service;
 
+import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.lowcoder.domain.organization.model.MemberRole;
+import org.lowcoder.domain.organization.model.OrgMember;
+import org.lowcoder.domain.plugin.service.DatasourceMetaInfoService;
+import org.lowcoder.sdk.util.IDUtils;
+import org.pf4j.PluginManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.lang3.RandomUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.lowcoder.domain.organization.model.MemberRole;
-import org.lowcoder.domain.organization.model.OrgMember;
-import org.lowcoder.domain.organization.service.OrgMemberService;
-import org.lowcoder.sdk.util.IDUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-
 @SpringBootTest
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 public class OrgMemberServiceTest {
+
+    @MockitoBean
+    private PluginManager pluginManager;
+
+    @MockitoBean
+    private JavaMailSender javaMailSender;
 
     @Autowired
     private OrgMemberService orgMemberService;
@@ -40,8 +48,8 @@ public class OrgMemberServiceTest {
 
         StepVerifier.create(listMono)
                 .assertNext(list -> {
-                    Assert.assertEquals(totalCount, list.size());
-                    Assert.assertEquals(userIds, new HashSet<>(list));
+                    Assertions.assertEquals(totalCount, list.size());
+                    Assertions.assertEquals(userIds, new HashSet<>(list));
                 })
                 .verifyComplete();
     }

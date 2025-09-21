@@ -8,7 +8,6 @@ import org.lowcoder.domain.group.model.GroupMember;
 import org.lowcoder.domain.group.service.GroupMemberService;
 import org.lowcoder.domain.group.service.GroupService;
 import org.lowcoder.domain.organization.model.*;
-import org.lowcoder.domain.user.model.User;
 import org.lowcoder.infra.annotation.PossibleEmptyMono;
 import org.lowcoder.infra.birelation.BiRelation;
 import org.lowcoder.infra.birelation.BiRelationService;
@@ -28,7 +27,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.lowcoder.infra.birelation.BiRelationBizType.ORG_MEMBER;
 

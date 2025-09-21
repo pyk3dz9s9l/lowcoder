@@ -1,9 +1,8 @@
 package org.lowcoder.sdk.plugin.sqlcommand.command.postgres;
 
 import com.google.common.collect.ImmutableMap;
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.lowcoder.sdk.plugin.sqlcommand.GuiSqlCommand.GuiSqlCommandRenderResult;
 import org.lowcoder.sdk.plugin.sqlcommand.changeset.BulkObjectChangeSet;
 import org.lowcoder.sdk.plugin.sqlcommand.changeset.KeyValuePairChangeSet;
@@ -45,10 +44,10 @@ public class PostgresCommandTest {
 
         GuiSqlCommandRenderResult render = insertCommand.render(Map.of("email", email, "info", infoMap));
 
-        Assert.assertEquals("""
+        Assertions.assertEquals("""
                         insert into user ("id","name","email","info") values (12312,$$jack$$,$$jack@gmail.com$$,$${"age":35,"job":"sales"}$$);""",
                 render.sql());
-        Assertions.assertThat(render.bindParams()).isEqualTo(List.of());
+        Assertions.assertEquals(render.bindParams(), List.of());
 
     }
 
@@ -83,21 +82,21 @@ public class PostgresCommandTest {
 
         String updateSql = renderResult.sql();
         List<Object> updateBindParams = renderResult.bindParams();
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 """
                         update user set "id"=12312,"name"=$$jack$$,"email"=$$jack@gmail.com$$,"info"=$${"age":35,"job":"sales"}$$ where "name" = $$jack$$ and "status" > 1 and "id" IN (1,2,5) and "phone" IS null\s""",
                 updateSql);
-        Assertions.assertThat(updateBindParams).isEqualTo(List.of());
+        Assertions.assertEquals(updateBindParams, List.of());
 
-        Assert.assertTrue(renderResult instanceof UpdateOrDeleteSingleCommandRenderResult);
+        Assertions.assertInstanceOf(UpdateOrDeleteSingleCommandRenderResult.class, renderResult);
         var pgUpdateRenderResult = (UpdateOrDeleteSingleCommandRenderResult) renderResult;
         String selectQuery = pgUpdateRenderResult.getSelectQuery();
         List<Object> selectBindParams = pgUpdateRenderResult.getSelectBindParams();
 
-        Assert.assertEquals("""
+        Assertions.assertEquals("""
                         select count(1) as count from user where "name" = $$jack$$ and "status" > 1 and "id" IN (1,2,5) and "phone" IS null\s""",
                 selectQuery);
-        Assertions.assertThat(selectBindParams).isEqualTo(List.of());
+        Assertions.assertEquals(selectBindParams, List.of());
 
     }
 
@@ -121,20 +120,20 @@ public class PostgresCommandTest {
         var renderResult = command.render(Map.of("list", List.of(1, 2, 3)));
 
         String sql = renderResult.sql();
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 """
                         delete from user where "name" = $$jack$$ and "status" > 1 and "id" IN (1,2,3) and "phone" IS null\s""",
                 sql);
 
-        Assert.assertTrue(renderResult instanceof UpdateOrDeleteSingleCommandRenderResult);
+        Assertions.assertInstanceOf(UpdateOrDeleteSingleCommandRenderResult.class, renderResult);
         var pgUpdateRenderResult = (UpdateOrDeleteSingleCommandRenderResult) renderResult;
         String selectQuery = pgUpdateRenderResult.getSelectQuery();
         List<Object> selectBindParams = pgUpdateRenderResult.getSelectBindParams();
 
-        Assert.assertEquals("""
+        Assertions.assertEquals("""
                         select count(1) as count from user where "name" = $$jack$$ and "status" > 1 and "id" IN (1,2,3) and "phone" IS null\s""",
                 selectQuery);
-        Assertions.assertThat(selectBindParams).isEqualTo(List.of());
+        Assertions.assertEquals(selectBindParams, List.of());
 
     }
 
@@ -162,12 +161,12 @@ public class PostgresCommandTest {
         };
         var render = command.render(Map.of("email", email, "info", infoMap));
 
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 """
                         insert into user ("id","name","email","info") values (12312,$$jack$$,$$jack@gmail.com$$,$${"age":35,"job":"sales"}$$),(12312,$$jack$$,$$jack@gmail.com$$,$${"age":35,"job":"sales"}$$)""",
                 render.sql());
 
-        Assertions.assertThat(render.bindParams()).isEqualTo(List.of());
+        Assertions.assertEquals(render.bindParams(), List.of());
     }
 
 
@@ -193,7 +192,7 @@ public class PostgresCommandTest {
         };
         var render = command.render(Map.of());
 
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 """
                         UPDATE user set
                         "name" = CASE WHEN "id" = 1 THEN $$jack$$ WHEN "id" = 2 THEN $$rose$$ ELSE "name" END,
@@ -201,7 +200,7 @@ public class PostgresCommandTest {
                         "info" = CASE WHEN "id" = 2 THEN $${"age":35,"job":"sales"}$$ ELSE "info" END
                         where id in (1,2)""",
                 render.sql());
-        Assertions.assertThat(render.bindParams()).isEqualTo(List.of());
+        Assertions.assertEquals(render.bindParams(), List.of());
     }
 
 

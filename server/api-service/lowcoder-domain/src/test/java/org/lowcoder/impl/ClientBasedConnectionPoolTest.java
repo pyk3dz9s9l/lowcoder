@@ -10,9 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.jupiter.api.Disabled;
 import org.lowcoder.domain.datasource.model.ClientBasedDatasourceConnectionHolder;
 import org.lowcoder.domain.datasource.model.Datasource;

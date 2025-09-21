@@ -122,13 +122,13 @@ public class FolderApiServiceTest {
 
         Folder newFolder = new Folder();
         newFolder.setId(id);
-        newFolder.setName("test_update");
+        newFolder.setName("test_update_by_gid");
         StepVerifier.create(folderApiService.update(newFolder))
                 .assertNext(Assertions::assertNotNull)
                 .verifyComplete();
 
         StepVerifier.create(folderService.findById(id))
-                .assertNext(folder -> Assertions.assertEquals("test_update", folder.getName()))
+                .assertNext(folder -> Assertions.assertEquals("test_update_by_gid", folder.getName()))
                 .verifyComplete();
     }
 

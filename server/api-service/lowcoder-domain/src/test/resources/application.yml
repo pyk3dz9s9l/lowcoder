@@ -8,13 +8,20 @@ demo:
       username: root
 
 spring:
-  redis:
-    url: redis://localhost:6369
-  mongodb:
-    embedded:
-      version: 4.0.2
+  data:
+    redis:
+      url: redis://localhost:6379
   main:
     allow-circular-references: true
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 6.0.5
+
+default:
+  query-timeout: 10
 
 common:
   domain:

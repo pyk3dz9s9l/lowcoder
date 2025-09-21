@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.lowcoder.plugin.restapi.model.RestApiQueryExecutionContext;
 import org.lowcoder.sdk.config.CommonConfig;
 import org.lowcoder.sdk.models.Property;
@@ -24,7 +24,7 @@ import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.lowcoder.sdk.plugin.restapi.auth.RestApiAuthType.BASIC_AUTH;
 import static org.lowcoder.sdk.plugin.restapi.auth.RestApiAuthType.DIGEST_AUTH;
 
@@ -240,10 +240,10 @@ public class RestApiEngineTest {
         StepVerifier.create(connector.doCreateConnection(datasourceConfig)
                         .flatMap(apiConnection -> executor.doExecuteQuery(apiConnection, context)))
                 .assertNext(result -> {
-                    Assert.assertNotNull(result);
-                    Assert.assertTrue(result.isSuccess());
-                    Assert.assertTrue(result.getData() instanceof ObjectNode);
-                    Assert.assertEquals("{\"authenticated\":true}", result.getData().toString());
+                    Assertions.assertNotNull(result);
+                    Assertions.assertTrue(result.isSuccess());
+                    Assertions.assertTrue(result.getData() instanceof ObjectNode);
+                    Assertions.assertEquals("{\"authenticated\":true}", result.getData().toString());
                 })
                 .verifyComplete();
     }
@@ -266,10 +266,10 @@ public class RestApiEngineTest {
         StepVerifier.create(connector.doCreateConnection(datasourceConfig)
                         .flatMap(apiConnection -> executor.doExecuteQuery(apiConnection, context)))
                 .assertNext(result -> {
-                    Assert.assertNotNull(result);
-                    Assert.assertTrue(result.isSuccess());
-                    Assert.assertTrue(result.getData() instanceof ObjectNode);
-                    Assert.assertEquals("{\"authenticated\":true}", result.getData().toString());
+                    Assertions.assertNotNull(result);
+                    Assertions.assertTrue(result.isSuccess());
+                    Assertions.assertTrue(result.getData() instanceof ObjectNode);
+                    Assertions.assertEquals("{\"authenticated\":true}", result.getData().toString());
                 })
                 .verifyComplete();
     }
