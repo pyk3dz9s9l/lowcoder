@@ -3301,11 +3301,15 @@ export const en = {
     "behavior": "Behavior",
     "width": "Width",
     "widthTooltip": "Width of the notification in pixels, percentages, or other CSS units. if you want to adjust it according to the screen size, you can use viewport units. Example: 100vw",
+    "progressHeight": "Progress Bar Height",
+    "progressHeightTooltip": "Height of the progress bar. Example: 4px, 8px",
     "closeIconColor": "Close Icon Color",
     "infoIconColor": "Info Icon Color",
     "successIconColor": "Success Icon Color",
     "warningIconColor": "Warning Icon Color",
     "errorIconColor": "Error Icon Color",
+    "progressColor": "Progress Bar Color",
+    "progressBackground": "Progress Bar Background",
     
     // Type options
     "typeInfo": "Info",

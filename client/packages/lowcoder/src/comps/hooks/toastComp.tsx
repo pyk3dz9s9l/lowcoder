@@ -28,6 +28,9 @@ const ToastGlobalStyle = createGlobalStyle<{
   $successIconColor?: string;
   $warningIconColor?: string;
   $errorIconColor?: string;
+  $progressColor?: string;
+  $progressBackground?: string;
+  $progressHeight?: string;
   $border?: string;
   $borderWidth?: string;
   $borderStyle?: string;
@@ -73,6 +76,20 @@ const ToastGlobalStyle = createGlobalStyle<{
 
     .ant-notification-notice-icon-error.anticon {
       color: ${props => props.$errorIconColor || '#ff4d4f'};
+    }
+
+    .ant-notification-notice-progress {
+      ${props => props.$progressHeight ? `height: ${props.$progressHeight};` : ''}
+      ${props => props.$progressBackground ? `background: ${props.$progressBackground};` : ''}
+      &::-webkit-progress-bar {
+        background: ${props => props.$progressBackground || '#e8e8e8'};
+      }
+      &::-webkit-progress-value {
+        background: ${props => props.$progressColor || '#1890ff'};
+      }
+      &::-moz-progress-bar {
+        background: ${props => props.$progressColor || '#1890ff'};
+      }
     }
   }
 `;
@@ -124,6 +141,7 @@ const childrenMap = {
   
   // Layout
   width: withDefault(StringControl, ""),
+  progressHeight: withDefault(StringControl, ""),
   
   // Event handlers
   onEvent: eventHandlerControl(ToastEventOptions),
@@ -138,6 +156,8 @@ const childrenMap = {
     successIconColor: "",
     warningIconColor: "",
     errorIconColor: "",
+    progressColor: "",
+    progressBackground: "",
     border: "",
     radius: "",
     borderWidth: "",
@@ -296,6 +316,11 @@ const ToastPropertyView = React.memo((props: { comp: any }) => {
           tooltip: trans("toastComp.widthTooltip"),
           placeholder: "384px or 100vw",
         })}
+        {comp.children.progressHeight.propertyView({
+          label: trans("toastComp.progressHeight"),
+          tooltip: trans("toastComp.progressHeightTooltip"),
+          placeholder: "4px",
+        })}
       </Section>
       
       <Section name={sectionNames.interaction}>
@@ -318,6 +343,7 @@ const ToastRuntimeView = React.memo((props: { comp: any }) => {
   const { comp } = props;
   const style = comp.children.style.getView() as NotificationStyleType;
   const width = comp.children.width.getView() as string;
+  const progressHeight = comp.children.progressHeight.getView() as string;
   const instanceId = useId().replace(/:/g, '-');
   
   // Store instance ID and resolved styles
@@ -342,6 +368,9 @@ const ToastRuntimeView = React.memo((props: { comp: any }) => {
       $successIconColor={style.successIconColor}
       $warningIconColor={style.warningIconColor}
       $errorIconColor={style.errorIconColor}
+      $progressColor={style.progressColor}
+      $progressBackground={style.progressBackground}
+      $progressHeight={progressHeight || undefined}
       $border={style.border}
       $borderWidth={style.borderWidth}
       $borderStyle={style.borderStyle}

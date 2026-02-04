@@ -1635,6 +1635,16 @@ export const NotificationStyle = [
     label: trans("toastComp.errorIconColor"),
     color: "#ff4d4f",
   },
+  {
+    name: "progressColor",
+    label: trans("toastComp.progressColor"),
+    color: "#1890ff",
+  },
+  {
+    name: "progressBackground",
+    label: trans("toastComp.progressBackground"),
+    color: "#e8e8e8",
+  },
   getStaticBorder("transparent"),
   RADIUS,
   BORDER_WIDTH,
