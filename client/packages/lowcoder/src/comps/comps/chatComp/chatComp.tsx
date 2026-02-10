@@ -4,6 +4,7 @@ import { UICompBuilder } from "comps/generators";
 import { NameConfig, withExposingConfigs } from "comps/generators/withExposing";
 import { StringControl } from "comps/controls/codeControl";
 import { arrayObjectExposingStateControl, stringExposingStateControl } from "comps/controls/codeStateControl";
+import { JSONObject } from "util/jsonTypes";
 import { withDefault } from "comps/generators";
 import { BoolControl } from "comps/controls/boolControl";
 import { dropdownControl } from "comps/controls/dropdownControl";
@@ -155,7 +156,9 @@ export const chatChildrenMap = {
   
   // Exposed Variables (not shown in Property View)
   currentMessage: stringExposingStateControl("currentMessage", ""),
-  conversationHistory: stringExposingStateControl("conversationHistory", "[]"),
+  // Use arrayObjectExposingStateControl for proper Lowcoder pattern
+  // This exposes: conversationHistory.value, setConversationHistory(), clearConversationHistory(), resetConversationHistory()
+  conversationHistory: arrayObjectExposingStateControl("conversationHistory", [] as JSONObject[]),
 };
 
 // ============================================================================
@@ -221,30 +224,32 @@ const ChatTmpComp = new UICompBuilder(
     ]);
 
     // Handle message updates for exposed variable
+    // Using Lowcoder pattern: props.currentMessage.onChange() instead of dispatch(changeChildAction(...))
     const handleMessageUpdate = (message: string) => {
-      dispatch(changeChildAction("currentMessage", message, false));
+      props.currentMessage.onChange(message);
       // Trigger messageSent event
       props.onEvent("messageSent");
     };
 
     // Handle conversation history updates for exposed variable
-   // Handle conversation history updates for exposed variable
-const handleConversationUpdate = (conversationHistory: any[]) => {
-  // Use utility function to create complete history with system prompt
-  const historyWithSystemPrompt = addSystemPromptToHistory(
-    conversationHistory, 
-    props.systemPrompt
-  );
-  
-  // Expose the complete history (with system prompt) for use in queries
-  dispatch(changeChildAction("conversationHistory", JSON.stringify(historyWithSystemPrompt), false));
-  
-  // Trigger messageReceived event when bot responds
-  const lastMessage = conversationHistory[conversationHistory.length - 1];
-  if (lastMessage && lastMessage.role === 'assistant') {
-    props.onEvent("messageReceived");
-  }
-};
+    // Using Lowcoder pattern: props.conversationHistory.onChange() instead of dispatch(changeChildAction(...))
+    const handleConversationUpdate = (messages: ChatMessage[]) => {
+      // Use utility function to create complete history with system prompt
+      const historyWithSystemPrompt = addSystemPromptToHistory(
+        messages, 
+        props.systemPrompt
+      );
+      
+      // Update using proper Lowcoder pattern - calling onChange on the control
+      // This properly updates the exposed variable and triggers reactivity
+      props.conversationHistory.onChange(historyWithSystemPrompt as JSONObject[]);
+      
+      // Trigger messageReceived event when bot responds
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.role === 'assistant') {
+        props.onEvent("messageReceived");
+      }
+    };
 
     // Cleanup on unmount
     useEffect(() => {
@@ -277,6 +282,7 @@ const handleConversationUpdate = (conversationHistory: any[]) => {
 
 export const ChatComp = withExposingConfigs(ChatTmpComp, [
   new NameConfig("currentMessage", "Current user message"),
-  new NameConfig("conversationHistory", "Full conversation history as JSON array (includes system prompt for API calls)"),
+  // conversationHistory is now a proper array (not JSON string) - supports setConversationHistory(), clearConversationHistory(), resetConversationHistory()
+  new NameConfig("conversationHistory", "Full conversation history array with system prompt (use directly in API calls, no JSON.parse needed)"),
   new NameConfig("databaseName", "Database name for SQL queries (ChatDB_<componentName>)"),
 ]);
