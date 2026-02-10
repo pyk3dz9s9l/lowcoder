@@ -1477,6 +1477,10 @@ export const en = {
     "threadDeleted": "Thread Deleted",
     "threadDeletedDesc": "Triggered when a thread is deleted - Delete thread from backend",
     
+    // Layout
+    "leftPanelWidth": "Sidebar Width",
+    "leftPanelWidthTooltip": "Width of the thread list sidebar (e.g., 250px, 30%)",
+    
     // Exposed Variables (for documentation)
     "currentMessage": "Current user message",
     "conversationHistory": "Full conversation history as JSON array",

@@ -2,7 +2,6 @@
 
 import React, { useMemo } from "react";
 import { Section, sectionNames, DocLink } from "lowcoder-design";
-import { placeholderPropertyView } from "../../utils/propertyUtils";
 import { trans } from "i18n";
 
 // ============================================================================
@@ -55,7 +54,7 @@ export const ChatPropertyView = React.memo((props: any) => {
           tooltip: trans("chat.systemPromptTooltip"),
         })}
 
-          {children.streaming.propertyView({ 
+        {children.streaming.propertyView({ 
           label: trans("chat.streaming"),
           tooltip: trans("chat.streamingTooltip"),
         })}
@@ -63,11 +62,20 @@ export const ChatPropertyView = React.memo((props: any) => {
 
       {/* UI Configuration */}
       <Section name={trans("chat.uiConfiguration")}>
-          {children.placeholder.propertyView({ 
-            label: trans("chat.placeholderLabel"),
-            placeholder: trans("chat.defaultPlaceholder"),
-            tooltip: trans("chat.placeholderTooltip"),
-          })}
+        {children.placeholder.propertyView({ 
+          label: trans("chat.placeholderLabel"),
+          placeholder: trans("chat.defaultPlaceholder"),
+          tooltip: trans("chat.placeholderTooltip"),
+        })}
+      </Section>
+
+      {/* Layout Section - Height Mode & Sidebar Width */}
+      <Section name={sectionNames.layout}>
+        {children.autoHeight.getPropertyView()}
+        {children.leftPanelWidth.propertyView({
+          label: trans("chat.leftPanelWidth"),
+          tooltip: trans("chat.leftPanelWidthTooltip"),
+        })}
       </Section>
 
       {/* Database Section */}

@@ -10,6 +10,7 @@ import { BoolControl } from "comps/controls/boolControl";
 import { dropdownControl } from "comps/controls/dropdownControl";
 import QuerySelectControl from "comps/controls/querySelectControl";
 import { eventHandlerControl, EventConfigType } from "comps/controls/eventHandlerControl";
+import { AutoHeightControl } from "comps/controls/autoHeightControl";
 import { ChatCore } from "./components/ChatCore";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
@@ -148,6 +149,10 @@ export const chatChildrenMap = {
   // UI Configuration  
   placeholder: withDefault(StringControl, trans("chat.defaultPlaceholder")),
   
+  // Layout Configuration
+  autoHeight: AutoHeightControl,
+  leftPanelWidth: withDefault(StringControl, "250px"),
+  
   // Database Information (read-only)
   databaseName: withDefault(StringControl, ""),
   
@@ -266,6 +271,8 @@ const ChatTmpComp = new UICompBuilder(
         storage={storage}
         messageHandler={messageHandler}
         placeholder={props.placeholder}
+        autoHeight={props.autoHeight}
+        sidebarWidth={props.leftPanelWidth}
         onMessageUpdate={handleMessageUpdate}
         onConversationUpdate={handleConversationUpdate}
         onEvent={props.onEvent}
@@ -276,11 +283,18 @@ const ChatTmpComp = new UICompBuilder(
 .setPropertyViewFn((children) => <ChatPropertyView children={children} />)
 .build();
 
+// Override autoHeight to support AUTO/FIXED height mode
+const ChatCompWithAutoHeight = class extends ChatTmpComp {
+  override autoHeight(): boolean {
+    return this.children.autoHeight.getView();
+  }
+};
+
 // ============================================================================
 // EXPORT WITH EXPOSED VARIABLES
 // ============================================================================
 
-export const ChatComp = withExposingConfigs(ChatTmpComp, [
+export const ChatComp = withExposingConfigs(ChatCompWithAutoHeight, [
   new NameConfig("currentMessage", "Current user message"),
   // conversationHistory is now a proper array (not JSON string) - supports setConversationHistory(), clearConversationHistory(), resetConversationHistory()
   new NameConfig("conversationHistory", "Full conversation history array with system prompt (use directly in API calls, no JSON.parse needed)"),

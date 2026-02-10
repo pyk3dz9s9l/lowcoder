@@ -14,6 +14,8 @@ export function ChatCore({
   storage, 
   messageHandler, 
   placeholder,
+  autoHeight,
+  sidebarWidth,
   onMessageUpdate, 
   onConversationUpdate,
   onEvent
@@ -23,9 +25,11 @@ export function ChatCore({
       <ChatProvider storage={storage}>
         <ChatCoreMain 
           messageHandler={messageHandler}
-        placeholder={placeholder}
-        onMessageUpdate={onMessageUpdate}
-        onConversationUpdate={onConversationUpdate}
+          placeholder={placeholder}
+          autoHeight={autoHeight}
+          sidebarWidth={sidebarWidth}
+          onMessageUpdate={onMessageUpdate}
+          onConversationUpdate={onConversationUpdate}
           onEvent={onEvent}
         />
       </ChatProvider>

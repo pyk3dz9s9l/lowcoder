@@ -75,6 +75,8 @@ export interface ChatMessage {
     storage: ChatStorage;
     messageHandler: MessageHandler;
     placeholder?: string;
+    autoHeight?: boolean;
+    sidebarWidth?: string;
     onMessageUpdate?: (message: string) => void;
     onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
     // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK

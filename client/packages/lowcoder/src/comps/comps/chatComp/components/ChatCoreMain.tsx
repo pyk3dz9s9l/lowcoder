@@ -27,16 +27,20 @@ import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 // STYLED COMPONENTS (same as your current ChatMain)
 // ============================================================================
 
-const ChatContainer = styled.div`
+const ChatContainer = styled.div<{
+  $autoHeight?: boolean;
+  $sidebarWidth?: string;
+}>`
   display: flex;
-  height: 500px;
+  height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
+  min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
 
   p {
     margin: 0;
   }
 
   .aui-thread-list-root {
-    width: 250px;
+    width: ${(props) => props.$sidebarWidth || "250px"};
     background-color: #fff;
     padding: 10px;
   }
@@ -44,6 +48,7 @@ const ChatContainer = styled.div`
   .aui-thread-root {
     flex: 1;
     background-color: #f9fafb;
+    height: auto;
   }
 
   .aui-thread-list-item {
@@ -64,6 +69,8 @@ const ChatContainer = styled.div`
 interface ChatCoreMainProps {
   messageHandler: MessageHandler;
   placeholder?: string;
+  autoHeight?: boolean;
+  sidebarWidth?: string;
   onMessageUpdate?: (message: string) => void;
   onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
   // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK (OPTIONAL)
@@ -75,6 +82,8 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 export function ChatCoreMain({ 
   messageHandler, 
   placeholder,
+  autoHeight,
+  sidebarWidth,
   onMessageUpdate, 
   onConversationUpdate,
   onEvent
@@ -305,7 +314,7 @@ export function ChatCoreMain({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatContainer>
+      <ChatContainer $autoHeight={autoHeight} $sidebarWidth={sidebarWidth}>
         <ThreadList />
         <Thread placeholder={placeholder} />
       </ChatContainer>
