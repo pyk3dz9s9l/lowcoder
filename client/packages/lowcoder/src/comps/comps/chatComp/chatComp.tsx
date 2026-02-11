@@ -19,6 +19,16 @@ import { useMemo, useRef, useEffect } from "react";
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
 import { trans } from "i18n";
+import { styleControl } from "comps/controls/styleControl";
+import {
+  ChatStyle,
+  ChatSidebarStyle,
+  ChatMessagesStyle,
+  ChatInputStyle,
+  ChatSendButtonStyle,
+  ChatNewThreadButtonStyle,
+} from "comps/controls/styleControlConstants";
+import { AnimationStyle } from "comps/controls/styleControlConstants";
 
 import "@assistant-ui/styles/index.css";
 import "@assistant-ui/styles/markdown.css";
@@ -159,6 +169,15 @@ export const chatChildrenMap = {
   // Event Handlers
   onEvent: ChatEventHandlerControl,
   
+  // Style Controls
+  style: styleControl(ChatStyle),
+  sidebarStyle: styleControl(ChatSidebarStyle),
+  messagesStyle: styleControl(ChatMessagesStyle),
+  inputStyle: styleControl(ChatInputStyle),
+  sendButtonStyle: styleControl(ChatSendButtonStyle),
+  newThreadButtonStyle: styleControl(ChatNewThreadButtonStyle),
+  animationStyle: styleControl(AnimationStyle),
+  
   // Exposed Variables (not shown in Property View)
   currentMessage: stringExposingStateControl("currentMessage", ""),
   // Use arrayObjectExposingStateControl for proper Lowcoder pattern
@@ -276,6 +295,13 @@ const ChatTmpComp = new UICompBuilder(
         onMessageUpdate={handleMessageUpdate}
         onConversationUpdate={handleConversationUpdate}
         onEvent={props.onEvent}
+        style={props.style}
+        sidebarStyle={props.sidebarStyle}
+        messagesStyle={props.messagesStyle}
+        inputStyle={props.inputStyle}
+        sendButtonStyle={props.sendButtonStyle}
+        newThreadButtonStyle={props.newThreadButtonStyle}
+        animationStyle={props.animationStyle}
       />
     );
   }

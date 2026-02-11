@@ -18,7 +18,14 @@ export function ChatCore({
   sidebarWidth,
   onMessageUpdate, 
   onConversationUpdate,
-  onEvent
+  onEvent,
+  style,
+  sidebarStyle,
+  messagesStyle,
+  inputStyle,
+  sendButtonStyle,
+  newThreadButtonStyle,
+  animationStyle
 }: ChatCoreProps) {
   return (
     <TooltipProvider>
@@ -31,6 +38,13 @@ export function ChatCore({
           onMessageUpdate={onMessageUpdate}
           onConversationUpdate={onConversationUpdate}
           onEvent={onEvent}
+          style={style}
+          sidebarStyle={sidebarStyle}
+          messagesStyle={messagesStyle}
+          inputStyle={inputStyle}
+          sendButtonStyle={sendButtonStyle}
+          newThreadButtonStyle={newThreadButtonStyle}
+          animationStyle={animationStyle}
         />
       </ChatProvider>
     </TooltipProvider>

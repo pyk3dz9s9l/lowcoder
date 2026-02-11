@@ -71,17 +71,25 @@ export interface ChatMessage {
   // COMPONENT PROPS (what each component actually needs)
   // ============================================================================
   
-  export interface ChatCoreProps {
-    storage: ChatStorage;
-    messageHandler: MessageHandler;
-    placeholder?: string;
-    autoHeight?: boolean;
-    sidebarWidth?: string;
-    onMessageUpdate?: (message: string) => void;
-    onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
-    // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK
-    onEvent?: (eventName: string) => void;
-  }
+export interface ChatCoreProps {
+  storage: ChatStorage;
+  messageHandler: MessageHandler;
+  placeholder?: string;
+  autoHeight?: boolean;
+  sidebarWidth?: string;
+  onMessageUpdate?: (message: string) => void;
+  onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
+  // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK
+  onEvent?: (eventName: string) => void;
+  // Style controls
+  style?: any;
+  sidebarStyle?: any;
+  messagesStyle?: any;
+  inputStyle?: any;
+  sendButtonStyle?: any;
+  newThreadButtonStyle?: any;
+  animationStyle?: any;
+}
   
   export interface ChatPanelProps {
     tableName: string;

@@ -30,27 +30,89 @@ import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 const ChatContainer = styled.div<{
   $autoHeight?: boolean;
   $sidebarWidth?: string;
+  $style?: any;
+  $sidebarStyle?: any;
+  $messagesStyle?: any;
+  $inputStyle?: any;
+  $sendButtonStyle?: any;
+  $newThreadButtonStyle?: any;
+  $animationStyle?: any;
 }>`
   display: flex;
   height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
 
+  /* Main container styles */
+  background: ${(props) => props.$style?.background || "transparent"};
+  margin: ${(props) => props.$style?.margin || "0"};
+  padding: ${(props) => props.$style?.padding || "0"};
+  border: ${(props) => props.$style?.borderWidth || "0"} ${(props) => props.$style?.borderStyle || "solid"} ${(props) => props.$style?.border || "transparent"};
+  border-radius: ${(props) => props.$style?.radius || "0"};
+
+  /* Animation styles */
+  animation: ${(props) => props.$animationStyle?.animation || "none"};
+  animation-duration: ${(props) => props.$animationStyle?.animationDuration || "0s"};
+  animation-delay: ${(props) => props.$animationStyle?.animationDelay || "0s"};
+  animation-iteration-count: ${(props) => props.$animationStyle?.animationIterationCount || "1"};
+
   p {
     margin: 0;
   }
 
+  /* Sidebar Styles */
   .aui-thread-list-root {
     width: ${(props) => props.$sidebarWidth || "250px"};
-    background-color: #fff;
+    background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
     padding: 10px;
   }
 
+  .aui-thread-list-item-title {
+    color: ${(props) => props.$sidebarStyle?.threadText || "inherit"};
+  }
+
+  /* Messages Window Styles */
   .aui-thread-root {
     flex: 1;
-    background-color: #f9fafb;
+    background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
     height: auto;
   }
 
+  /* User Message Styles */
+  .aui-user-message-content {
+    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
+    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
+  }
+
+  /* Assistant Message Styles */
+  .aui-assistant-message-content {
+    background-color: ${(props) => props.$messagesStyle?.assistantMessageBackground || "#ffffff"};
+    color: ${(props) => props.$messagesStyle?.assistantMessageText || "inherit"};
+  }
+
+  /* Input Field Styles */
+  .aui-composer-input {
+    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
+    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
+    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
+  }
+
+  /* Send Button Styles */
+  .aui-composer-send {
+    background-color: ${(props) => props.$sendButtonStyle?.sendButtonBackground || "#3b82f6"} !important;
+    
+    svg {
+      color: ${(props) => props.$sendButtonStyle?.sendButtonIcon || "#ffffff"};
+    }
+  }
+
+  /* New Thread Button Styles */
+  .aui-thread-list-root button[type="button"]:first-child {
+    background-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+    color: ${(props) => props.$newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
+    border-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+  }
+
+  /* Thread item styling */
   .aui-thread-list-item {
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -75,6 +137,14 @@ interface ChatCoreMainProps {
   onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
   // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK (OPTIONAL)
   onEvent?: (eventName: string) => void;
+  // Style controls
+  style?: any;
+  sidebarStyle?: any;
+  messagesStyle?: any;
+  inputStyle?: any;
+  sendButtonStyle?: any;
+  newThreadButtonStyle?: any;
+  animationStyle?: any;
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -86,7 +156,14 @@ export function ChatCoreMain({
   sidebarWidth,
   onMessageUpdate, 
   onConversationUpdate,
-  onEvent
+  onEvent,
+  style,
+  sidebarStyle,
+  messagesStyle,
+  inputStyle,
+  sendButtonStyle,
+  newThreadButtonStyle,
+  animationStyle
 }: ChatCoreMainProps) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
@@ -314,7 +391,17 @@ export function ChatCoreMain({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatContainer $autoHeight={autoHeight} $sidebarWidth={sidebarWidth}>
+      <ChatContainer 
+        $autoHeight={autoHeight} 
+        $sidebarWidth={sidebarWidth}
+        $style={style}
+        $sidebarStyle={sidebarStyle}
+        $messagesStyle={messagesStyle}
+        $inputStyle={inputStyle}
+        $sendButtonStyle={sendButtonStyle}
+        $newThreadButtonStyle={newThreadButtonStyle}
+        $animationStyle={animationStyle}
+      >
         <ThreadList />
         <Thread placeholder={placeholder} />
       </ChatContainer>

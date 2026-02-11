@@ -600,6 +600,22 @@ export const en = {
     "detailSize": "Detail Size",
     "hideColumn": "Hide Column",
 
+    // Chat Component Styles
+    "sidebarBackground": "Sidebar Background",
+    "threadText": "Thread Text Color",
+    "messagesBackground": "Messages Background",
+    "userMessageBackground": "User Message Background",
+    "userMessageText": "User Message Text",
+    "assistantMessageBackground": "Assistant Message Background",
+    "assistantMessageText": "Assistant Message Text",
+    "inputBackground": "Input Background",
+    "inputText": "Input Text Color",
+    "inputBorder": "Input Border",
+    "sendButtonBackground": "Send Button Background",
+    "sendButtonIcon": "Send Button Icon Color",
+    "newThreadBackground": "New Thread Button Background",
+    "newThreadText": "New Thread Button Text",
+
     "radiusTip": "Specifies the radius of the element's corners. Example: 5px, 50%, or 1em.",
     "gapTip": "Specifies the gap between rows and columns in a grid or flex container. Example: 10px, 1rem, or 5%.",
     "cardRadiusTip": "Defines the corner radius for card components. Example: 10px, 15px.",
@@ -1484,7 +1500,14 @@ export const en = {
     // Exposed Variables (for documentation)
     "currentMessage": "Current user message",
     "conversationHistory": "Full conversation history as JSON array",
-    "databaseNameExposed": "Database name for SQL queries (ChatDB_<componentName>)"
+    "databaseNameExposed": "Database name for SQL queries (ChatDB_<componentName>)",
+    
+    // Style Section Names
+    "sidebarStyle": "Sidebar Style",
+    "messagesStyle": "Messages Style",
+    "inputStyle": "Input Field Style",
+    "sendButtonStyle": "Send Button Style",
+    "newThreadButtonStyle": "New Thread Button Style"
   },
 
   "chatBox": {

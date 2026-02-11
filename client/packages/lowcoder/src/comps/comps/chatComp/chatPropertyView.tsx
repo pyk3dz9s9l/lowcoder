@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { Section, sectionNames, DocLink } from "lowcoder-design";
 import { trans } from "i18n";
+import { hiddenPropertyView } from "comps/utils/propertyUtils";
 
 // ============================================================================
 // CLEAN PROPERTY VIEW - FOCUSED ON ESSENTIAL CONFIGURATION
@@ -90,6 +91,35 @@ export const ChatPropertyView = React.memo((props: any) => {
       {/* STANDARD EVENT HANDLERS SECTION */}
       <Section name={sectionNames.interaction}>
         {children.onEvent.getPropertyView()}
+      </Section>
+
+      {/* STYLE SECTIONS */}
+      <Section name={sectionNames.style}>
+        {children.style.getPropertyView()}
+      </Section>
+
+      <Section name={trans("chat.sidebarStyle")}>
+        {children.sidebarStyle.getPropertyView()}
+      </Section>
+
+      <Section name={trans("chat.messagesStyle")}>
+        {children.messagesStyle.getPropertyView()}
+      </Section>
+
+      <Section name={trans("chat.inputStyle")}>
+        {children.inputStyle.getPropertyView()}
+      </Section>
+
+      <Section name={trans("chat.sendButtonStyle")}>
+        {children.sendButtonStyle.getPropertyView()}
+      </Section>
+
+      <Section name={trans("chat.newThreadButtonStyle")}>
+        {children.newThreadButtonStyle.getPropertyView()}
+      </Section>
+
+      <Section name={sectionNames.animationStyle} hasTooltip={true}>
+        {children.animationStyle.getPropertyView()}
       </Section>
 
     </>
