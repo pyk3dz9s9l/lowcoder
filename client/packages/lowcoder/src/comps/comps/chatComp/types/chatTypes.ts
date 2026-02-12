@@ -67,10 +67,11 @@ export interface ChatMessage {
     systemPrompt?: string;
   }
   
-  // ============================================================================
-  // COMPONENT PROPS (what each component actually needs)
-  // ============================================================================
-  
+// ============================================================================
+// COMPONENT PROPS (what each component actually needs)
+// ============================================================================
+
+// Main Chat Component Props (with full styling support)
 export interface ChatCoreProps {
   storage: ChatStorage;
   messageHandler: MessageHandler;
@@ -81,7 +82,7 @@ export interface ChatCoreProps {
   onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
   // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK
   onEvent?: (eventName: string) => void;
-  // Style controls
+  // Style controls (only for main component)
   style?: any;
   sidebarStyle?: any;
   messagesStyle?: any;
@@ -90,11 +91,12 @@ export interface ChatCoreProps {
   newThreadButtonStyle?: any;
   animationStyle?: any;
 }
-  
-  export interface ChatPanelProps {
-    tableName: string;
-    modelHost: string;
-    systemPrompt?: string;
-    streaming?: boolean;
-    onMessageUpdate?: (message: string) => void;
-  }
+
+// Bottom Panel Props (simplified, no styling controls)
+export interface ChatPanelProps {
+  tableName: string;
+  modelHost: string;
+  systemPrompt?: string;
+  streaming?: boolean;
+  onMessageUpdate?: (message: string) => void;
+}

@@ -1,4 +1,4 @@
-// client/packages/lowcoder/src/comps/comps/chatComp/components/ChatCoreMain.tsx
+// client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanelCore.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -24,95 +24,33 @@ import { trans } from "i18n";
 import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 
 // ============================================================================
-// STYLED COMPONENTS (same as your current ChatMain)
+// SIMPLE STYLED COMPONENTS - FIXED STYLING FOR BOTTOM PANEL
 // ============================================================================
 
 const ChatContainer = styled.div<{
   $autoHeight?: boolean;
   $sidebarWidth?: string;
-  $style?: any;
-  $sidebarStyle?: any;
-  $messagesStyle?: any;
-  $inputStyle?: any;
-  $sendButtonStyle?: any;
-  $newThreadButtonStyle?: any;
-  $animationStyle?: any;
 }>`
   display: flex;
   height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
 
-  /* Main container styles */
-  background: ${(props) => props.$style?.background || "transparent"};
-  margin: ${(props) => props.$style?.margin || "0"};
-  padding: ${(props) => props.$style?.padding || "0"};
-  border: ${(props) => props.$style?.borderWidth || "0"} ${(props) => props.$style?.borderStyle || "solid"} ${(props) => props.$style?.border || "transparent"};
-  border-radius: ${(props) => props.$style?.radius || "0"};
-
-  /* Animation styles */
-  animation: ${(props) => props.$animationStyle?.animation || "none"};
-  animation-duration: ${(props) => props.$animationStyle?.animationDuration || "0s"};
-  animation-delay: ${(props) => props.$animationStyle?.animationDelay || "0s"};
-  animation-iteration-count: ${(props) => props.$animationStyle?.animationIterationCount || "1"};
-
   p {
     margin: 0;
   }
 
-  /* Sidebar Styles */
   .aui-thread-list-root {
     width: ${(props) => props.$sidebarWidth || "250px"};
-    background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
+    background-color: #fff;
     padding: 10px;
   }
 
-  .aui-thread-list-item-title {
-    color: ${(props) => props.$sidebarStyle?.threadText || "inherit"};
-  }
-
-  /* Messages Window Styles */
   .aui-thread-root {
     flex: 1;
-    background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
+    background-color: #f9fafb;
     height: auto;
   }
 
-  /* User Message Styles */
-  .aui-user-message-content {
-    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
-    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
-  }
-
-  /* Assistant Message Styles */
-  .aui-assistant-message-content {
-    background-color: ${(props) => props.$messagesStyle?.assistantMessageBackground || "#ffffff"};
-    color: ${(props) => props.$messagesStyle?.assistantMessageText || "inherit"};
-  }
-
-  /* Input Field Styles */
-  .aui-composer-input {
-    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
-    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
-    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
-  }
-
-  /* Send Button Styles */
-  .aui-composer-send {
-    background-color: ${(props) => props.$sendButtonStyle?.sendButtonBackground || "#3b82f6"} !important;
-    
-    svg {
-      color: ${(props) => props.$sendButtonStyle?.sendButtonIcon || "#ffffff"};
-    }
-  }
-
-  /* New Thread Button Styles */
-  .aui-thread-list-root button[type="button"]:first-child {
-    background-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
-    color: ${(props) => props.$newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
-    border-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
-  }
-
-  /* Thread item styling */
   .aui-thread-list-item {
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -125,59 +63,38 @@ const ChatContainer = styled.div<{
 `;
 
 // ============================================================================
-// CHAT CORE MAIN - FOR MAIN COMPONENT WITH FULL STYLING SUPPORT
-// (Bottom panel uses ChatPanelCore instead - see ChatPanelCore.tsx)
+// CHAT PANEL CORE - SIMPLIFIED FOR BOTTOM PANEL (NO STYLING PROPS)
 // ============================================================================
 
-interface ChatCoreMainProps {
+interface ChatPanelCoreProps {
   messageHandler: MessageHandler;
   placeholder?: string;
   autoHeight?: boolean;
   sidebarWidth?: string;
   onMessageUpdate?: (message: string) => void;
   onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
-  // STANDARD LOWCODER EVENT PATTERN - SINGLE CALLBACK (OPTIONAL)
   onEvent?: (eventName: string) => void;
-  // Style controls
-  style?: any;
-  sidebarStyle?: any;
-  messagesStyle?: any;
-  inputStyle?: any;
-  sendButtonStyle?: any;
-  newThreadButtonStyle?: any;
-  animationStyle?: any;
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-export function ChatCoreMain({ 
+export function ChatPanelCore({ 
   messageHandler, 
   placeholder,
   autoHeight,
   sidebarWidth,
   onMessageUpdate, 
   onConversationUpdate,
-  onEvent,
-  style,
-  sidebarStyle,
-  messagesStyle,
-  inputStyle,
-  sendButtonStyle,
-  newThreadButtonStyle,
-  animationStyle
-}: ChatCoreMainProps) {
+  onEvent
+}: ChatPanelCoreProps) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
-
-  console.log("RENDERING CHAT CORE MAIN");
 
   // Get messages for current thread
   const currentMessages = actions.getCurrentMessages();
 
-  // Notify parent component of conversation changes - OPTIMIZED TIMING
+  // Notify parent component of conversation changes
   useEffect(() => {
-    // Only update conversationHistory when we have complete conversations
-    // Skip empty states and intermediate processing states
     if (currentMessages.length > 0 && !isRunning) {
       onConversationUpdate?.(currentMessages);
     }
@@ -188,11 +105,10 @@ export function ChatCoreMain({
     onEvent?.("componentLoad");
   }, [onEvent]);
 
-  // Convert custom format to ThreadMessageLike (same as your current implementation)
+  // Convert custom format to ThreadMessageLike
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
     const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
     
-    // Add attachment content if attachments exist
     if (message.attachments && message.attachments.length > 0) {
       for (const attachment of message.attachments) {
         if (attachment.content) {
@@ -210,7 +126,7 @@ export function ChatCoreMain({
     };
   };
 
-  // Handle new message - MUCH CLEANER with messageHandler
+  // Handle new message
   const onNew = async (message: AppendMessage) => {
     const textPart = (message.content as ThreadUserContentPart[]).find(
       (part): part is TextContentPart => part.type === "text"
@@ -241,7 +157,7 @@ export function ChatCoreMain({
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(userMessage); // Send full message object with attachments
+      const response = await messageHandler.sendMessage(userMessage);
   
       onMessageUpdate?.(userMessage.text);
       
@@ -266,18 +182,15 @@ export function ChatCoreMain({
       setIsRunning(false);
     }
   };
-  
 
-  // Handle edit message - CLEANER with messageHandler
+  // Handle edit message
   const onEdit = async (message: AppendMessage) => {
-    // Extract the first text content part (if any)
     const textPart = (message.content as ThreadUserContentPart[]).find(
       (part): part is TextContentPart => part.type === "text"
     );
   
     const text = textPart?.text?.trim() ?? "";
   
-    // Filter only complete attachments
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
@@ -289,13 +202,9 @@ export function ChatCoreMain({
       throw new Error("Cannot send an empty message");
     }
   
-    // Find the index of the message being edited
     const index = currentMessages.findIndex((m) => m.id === message.parentId) + 1;
-  
-    // Build a new messages array: messages up to and including the one being edited
     const newMessages = [...currentMessages.slice(0, index)];
   
-    // Build the edited user message
     const editedMessage: ChatMessage = {
       id: generateId(),
       role: "user",
@@ -305,13 +214,11 @@ export function ChatCoreMain({
     };
   
     newMessages.push(editedMessage);
-  
-    // Update state with edited context
     await actions.updateMessages(state.currentThreadId, newMessages);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(editedMessage); // Send full message object with attachments
+      const response = await messageHandler.sendMessage(editedMessage);
   
       onMessageUpdate?.(editedMessage.text);
   
@@ -339,7 +246,7 @@ export function ChatCoreMain({
     }
   };
 
-  // Thread list adapter for managing multiple threads (same as your current implementation)
+  // Thread list adapter
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
     threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
@@ -392,21 +299,10 @@ export function ChatCoreMain({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatContainer 
-        $autoHeight={autoHeight} 
-        $sidebarWidth={sidebarWidth}
-        $style={style}
-        $sidebarStyle={sidebarStyle}
-        $messagesStyle={messagesStyle}
-        $inputStyle={inputStyle}
-        $sendButtonStyle={sendButtonStyle}
-        $newThreadButtonStyle={newThreadButtonStyle}
-        $animationStyle={animationStyle}
-      >
+      <ChatContainer $autoHeight={autoHeight} $sidebarWidth={sidebarWidth}>
         <ThreadList />
         <Thread placeholder={placeholder} />
       </ChatContainer>
     </AssistantRuntimeProvider>
   );
 }
-
