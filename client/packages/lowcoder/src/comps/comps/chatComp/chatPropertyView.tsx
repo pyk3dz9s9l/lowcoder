@@ -118,6 +118,10 @@ export const ChatPropertyView = React.memo((props: any) => {
         {children.newThreadButtonStyle.getPropertyView()}
       </Section>
 
+      <Section name={trans("chat.threadItemStyle")}>
+        {children.threadItemStyle.getPropertyView()}
+      </Section>
+
       <Section name={sectionNames.animationStyle} hasTooltip={true}>
         {children.animationStyle.getPropertyView()}
       </Section>

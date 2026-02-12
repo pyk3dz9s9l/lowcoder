@@ -615,6 +615,12 @@ export const en = {
     "sendButtonIcon": "Send Button Icon Color",
     "newThreadBackground": "New Thread Button Background",
     "newThreadText": "New Thread Button Text",
+    "threadItemBackground": "Thread Item Background",
+    "threadItemText": "Thread Item Text",
+    "threadItemBorder": "Thread Item Border",
+    "activeThreadBackground": "Active Thread Background",
+    "activeThreadText": "Active Thread Text",
+    "activeThreadBorder": "Active Thread Border",
 
     "radiusTip": "Specifies the radius of the element's corners. Example: 5px, 50%, or 1em.",
     "gapTip": "Specifies the gap between rows and columns in a grid or flex container. Example: 10px, 1rem, or 5%.",
@@ -1507,7 +1513,8 @@ export const en = {
     "messagesStyle": "Messages Style",
     "inputStyle": "Input Field Style",
     "sendButtonStyle": "Send Button Style",
-    "newThreadButtonStyle": "New Thread Button Style"
+    "newThreadButtonStyle": "New Thread Button Style",
+    "threadItemStyle": "Thread Item Style"
   },
 
   "chatBox": {

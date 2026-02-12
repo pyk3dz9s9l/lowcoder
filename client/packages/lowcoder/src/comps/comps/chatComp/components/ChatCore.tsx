@@ -25,6 +25,7 @@ export function ChatCore({
   inputStyle,
   sendButtonStyle,
   newThreadButtonStyle,
+  threadItemStyle,
   animationStyle
 }: ChatCoreProps) {
   return (
@@ -44,6 +45,7 @@ export function ChatCore({
           inputStyle={inputStyle}
           sendButtonStyle={sendButtonStyle}
           newThreadButtonStyle={newThreadButtonStyle}
+          threadItemStyle={threadItemStyle}
           animationStyle={animationStyle}
         />
       </ChatProvider>

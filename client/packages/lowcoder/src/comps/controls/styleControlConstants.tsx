@@ -2489,6 +2489,39 @@ export const ChatNewThreadButtonStyle = [
   },
 ] as const;
 
+export const ChatThreadItemStyle = [
+  {
+    name: "threadItemBackground",
+    label: trans("style.threadItemBackground"),
+    color: "transparent",
+  },
+  {
+    name: "threadItemText",
+    label: trans("style.threadItemText"),
+    color: "inherit",
+  },
+  {
+    name: "threadItemBorder",
+    label: trans("style.threadItemBorder"),
+    color: "transparent",
+  },
+  {
+    name: "activeThreadBackground",
+    label: trans("style.activeThreadBackground"),
+    color: "#dbeafe",
+  },
+  {
+    name: "activeThreadText",
+    label: trans("style.activeThreadText"),
+    color: "inherit",
+  },
+  {
+    name: "activeThreadBorder",
+    label: trans("style.activeThreadBorder"),
+    color: "#bfdbfe",
+  },
+] as const;
+
 export type QRCodeStyleType = StyleConfigType<typeof QRCodeStyle>;
 export type TimeLineStyleType = StyleConfigType<typeof TimeLineStyle>;
 export type AvatarStyleType = StyleConfigType<typeof AvatarStyle>;
@@ -2613,6 +2646,7 @@ export type ChatMessagesStyleType = StyleConfigType<typeof ChatMessagesStyle>;
 export type ChatInputStyleType = StyleConfigType<typeof ChatInputStyle>;
 export type ChatSendButtonStyleType = StyleConfigType<typeof ChatSendButtonStyle>;
 export type ChatNewThreadButtonStyleType = StyleConfigType<typeof ChatNewThreadButtonStyle>;
+export type ChatThreadItemStyleType = StyleConfigType<typeof ChatThreadItemStyle>;
 
 export function widthCalculator(margin: string) {
   const marginArr = margin?.trim().replace(/\s+/g, " ").split(" ") || "";

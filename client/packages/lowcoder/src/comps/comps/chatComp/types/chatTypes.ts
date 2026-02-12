@@ -89,6 +89,7 @@ export interface ChatCoreProps {
   inputStyle?: any;
   sendButtonStyle?: any;
   newThreadButtonStyle?: any;
+  threadItemStyle?: any;
   animationStyle?: any;
 }
 

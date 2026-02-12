@@ -27,6 +27,7 @@ import {
   ChatInputStyle,
   ChatSendButtonStyle,
   ChatNewThreadButtonStyle,
+  ChatThreadItemStyle,
 } from "comps/controls/styleControlConstants";
 import { AnimationStyle } from "comps/controls/styleControlConstants";
 
@@ -176,6 +177,7 @@ export const chatChildrenMap = {
   inputStyle: styleControl(ChatInputStyle),
   sendButtonStyle: styleControl(ChatSendButtonStyle),
   newThreadButtonStyle: styleControl(ChatNewThreadButtonStyle),
+  threadItemStyle: styleControl(ChatThreadItemStyle),
   animationStyle: styleControl(AnimationStyle),
   
   // Exposed Variables (not shown in Property View)
@@ -301,6 +303,7 @@ const ChatTmpComp = new UICompBuilder(
         inputStyle={props.inputStyle}
         sendButtonStyle={props.sendButtonStyle}
         newThreadButtonStyle={props.newThreadButtonStyle}
+        threadItemStyle={props.threadItemStyle}
         animationStyle={props.animationStyle}
       />
     );

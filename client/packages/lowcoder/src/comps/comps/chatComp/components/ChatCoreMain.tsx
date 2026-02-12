@@ -36,6 +36,7 @@ const ChatContainer = styled.div<{
   $inputStyle?: any;
   $sendButtonStyle?: any;
   $newThreadButtonStyle?: any;
+  $threadItemStyle?: any;
   $animationStyle?: any;
 }>`
   display: flex;
@@ -106,7 +107,7 @@ const ChatContainer = styled.div<{
   }
 
   /* New Thread Button Styles */
-  .aui-thread-list-root button[type="button"]:first-child {
+  .aui-thread-list-root > button {
     background-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
     color: ${(props) => props.$newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
     border-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
@@ -116,10 +117,14 @@ const ChatContainer = styled.div<{
   .aui-thread-list-item {
     cursor: pointer;
     transition: background-color 0.2s ease;
+    background-color: ${(props) => props.$threadItemStyle?.threadItemBackground || "transparent"};
+    color: ${(props) => props.$threadItemStyle?.threadItemText || "inherit"};
+    border: 1px solid ${(props) => props.$threadItemStyle?.threadItemBorder || "transparent"};
 
     &[data-active="true"] {
-      background-color: #dbeafe;
-      border: 1px solid #bfdbfe;
+      background-color: ${(props) => props.$threadItemStyle?.activeThreadBackground || "#dbeafe"};
+      color: ${(props) => props.$threadItemStyle?.activeThreadText || "inherit"};
+      border: 1px solid ${(props) => props.$threadItemStyle?.activeThreadBorder || "#bfdbfe"};
     }
   }
 `;
@@ -145,6 +150,7 @@ interface ChatCoreMainProps {
   inputStyle?: any;
   sendButtonStyle?: any;
   newThreadButtonStyle?: any;
+  threadItemStyle?: any;
   animationStyle?: any;
 }
 
@@ -164,6 +170,7 @@ export function ChatCoreMain({
   inputStyle,
   sendButtonStyle,
   newThreadButtonStyle,
+  threadItemStyle,
   animationStyle
 }: ChatCoreMainProps) {
   const { state, actions } = useChatContext();
@@ -401,6 +408,7 @@ export function ChatCoreMain({
         $inputStyle={inputStyle}
         $sendButtonStyle={sendButtonStyle}
         $newThreadButtonStyle={newThreadButtonStyle}
+        $threadItemStyle={threadItemStyle}
         $animationStyle={animationStyle}
       >
         <ThreadList />
