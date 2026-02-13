@@ -1,4 +1,4 @@
-// client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanelCore.tsx
+// client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanelContainer.tsx
 
 import React, { useState, useEffect } from "react";
 import {
@@ -14,6 +14,7 @@ import {
 import { Thread } from "./assistant-ui/thread";
 import { ThreadList } from "./assistant-ui/thread-list";
 import { 
+  ChatProvider,
   useChatContext, 
   RegularThreadData, 
   ArchivedThreadData 
@@ -22,25 +23,29 @@ import { MessageHandler, ChatMessage } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+
+import "@assistant-ui/styles/index.css";
+import "@assistant-ui/styles/markdown.css";
 
 // ============================================================================
-// SIMPLE STYLED COMPONENTS - FIXED STYLING FOR BOTTOM PANEL
+// STYLED CONTAINER - SIMPLE FIXED STYLING FOR BOTTOM PANEL
 // ============================================================================
 
-const ChatContainer = styled.div<{
-  $autoHeight?: boolean;
-  $sidebarWidth?: string;
+const StyledChatContainer = styled.div<{
+  autoHeight?: boolean;
+  sidebarWidth?: string;
 }>`
   display: flex;
-  height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
-  min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
+  height: ${(props) => (props.autoHeight ? "auto" : "100%")};
+  min-height: ${(props) => (props.autoHeight ? "300px" : "unset")};
 
   p {
     margin: 0;
   }
 
   .aui-thread-list-root {
-    width: ${(props) => props.$sidebarWidth || "250px"};
+    width: ${(props) => props.sidebarWidth || "250px"};
     background-color: #fff;
     padding: 10px;
   }
@@ -63,49 +68,24 @@ const ChatContainer = styled.div<{
 `;
 
 // ============================================================================
-// CHAT PANEL CORE - SIMPLIFIED FOR BOTTOM PANEL (NO STYLING PROPS)
+// CHAT PANEL CONTAINER - DIRECT RENDERING
 // ============================================================================
-
-interface ChatPanelCoreProps {
-  messageHandler: MessageHandler;
-  placeholder?: string;
-  autoHeight?: boolean;
-  sidebarWidth?: string;
-  onMessageUpdate?: (message: string) => void;
-  onConversationUpdate?: (conversationHistory: ChatMessage[]) => void;
-  onEvent?: (eventName: string) => void;
-}
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-export function ChatPanelCore({ 
-  messageHandler, 
-  placeholder,
-  autoHeight,
-  sidebarWidth,
-  onMessageUpdate, 
-  onConversationUpdate,
-  onEvent
-}: ChatPanelCoreProps) {
+export interface ChatPanelContainerProps {
+  storage: any;
+  messageHandler: MessageHandler;
+  placeholder?: string;
+  onMessageUpdate?: (message: string) => void;
+}
+
+function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<ChatPanelContainerProps, 'storage'>) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
 
-  // Get messages for current thread
   const currentMessages = actions.getCurrentMessages();
 
-  // Notify parent component of conversation changes
-  useEffect(() => {
-    if (currentMessages.length > 0 && !isRunning) {
-      onConversationUpdate?.(currentMessages);
-    }
-  }, [currentMessages, isRunning]);
-
-  // Trigger component load event on mount
-  useEffect(() => {
-    onEvent?.("componentLoad");
-  }, [onEvent]);
-
-  // Convert custom format to ThreadMessageLike
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
     const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
     
@@ -126,22 +106,17 @@ export function ChatPanelCore({
     };
   };
 
-  // Handle new message
   const onNew = async (message: AppendMessage) => {
     const textPart = (message.content as ThreadUserContentPart[]).find(
       (part): part is TextContentPart => part.type === "text"
     );
   
     const text = textPart?.text?.trim() ?? "";
-  
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
   
-    const hasText = text.length > 0;
-    const hasAttachments = completeAttachments.length > 0;
-  
-    if (!hasText && !hasAttachments) {
+    if (!text && !completeAttachments.length) {
       throw new Error("Cannot send an empty message");
     }
   
@@ -158,95 +133,78 @@ export function ChatPanelCore({
   
     try {
       const response = await messageHandler.sendMessage(userMessage);
-  
       onMessageUpdate?.(userMessage.text);
       
-      const assistantMessage: ChatMessage = {
+      await actions.addMessage(state.currentThreadId, {
         id: generateId(),
         role: "assistant",
         text: response.content,
         timestamp: Date.now(),
-      };
-  
-      await actions.addMessage(state.currentThreadId, assistantMessage);
+      });
     } catch (error) {
-      const errorMessage: ChatMessage = {
+      await actions.addMessage(state.currentThreadId, {
         id: generateId(),
         role: "assistant",
         text: trans("chat.errorUnknown"),
         timestamp: Date.now(),
-      };
-  
-      await actions.addMessage(state.currentThreadId, errorMessage);
+      });
     } finally {
       setIsRunning(false);
     }
   };
 
-  // Handle edit message
   const onEdit = async (message: AppendMessage) => {
     const textPart = (message.content as ThreadUserContentPart[]).find(
       (part): part is TextContentPart => part.type === "text"
     );
   
     const text = textPart?.text?.trim() ?? "";
-  
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
   
-    const hasText = text.length > 0;
-    const hasAttachments = completeAttachments.length > 0;
-  
-    if (!hasText && !hasAttachments) {
+    if (!text && !completeAttachments.length) {
       throw new Error("Cannot send an empty message");
     }
   
     const index = currentMessages.findIndex((m) => m.id === message.parentId) + 1;
     const newMessages = [...currentMessages.slice(0, index)];
   
-    const editedMessage: ChatMessage = {
+    newMessages.push({
       id: generateId(),
       role: "user",
       text,
       timestamp: Date.now(),
       attachments: completeAttachments,
-    };
+    });
   
-    newMessages.push(editedMessage);
     await actions.updateMessages(state.currentThreadId, newMessages);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(editedMessage);
+      const response = await messageHandler.sendMessage(newMessages[newMessages.length - 1]);
+      onMessageUpdate?.(text);
   
-      onMessageUpdate?.(editedMessage.text);
-  
-      const assistantMessage: ChatMessage = {
+      newMessages.push({
         id: generateId(),
         role: "assistant",
         text: response.content,
         timestamp: Date.now(),
-      };
-  
-      newMessages.push(assistantMessage);
+      });
       await actions.updateMessages(state.currentThreadId, newMessages);
     } catch (error) {
-      const errorMessage: ChatMessage = {
+      newMessages.push({
         id: generateId(),
         role: "assistant",
         text: trans("chat.errorUnknown"),
         timestamp: Date.now(),
-      };
-  
-      newMessages.push(errorMessage);
+      });
       await actions.updateMessages(state.currentThreadId, newMessages);
     } finally {
       setIsRunning(false);
     }
   };
 
-  // Thread list adapter
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
     threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
@@ -255,7 +213,6 @@ export function ChatPanelCore({
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
       actions.setCurrentThread(threadId);
-      onEvent?.("threadCreated");
     },
 
     onSwitchToThread: (threadId) => {
@@ -264,25 +221,20 @@ export function ChatPanelCore({
 
     onRename: async (threadId, newTitle) => {
       await actions.updateThread(threadId, { title: newTitle });
-      onEvent?.("threadUpdated");
     },
 
     onArchive: async (threadId) => {
       await actions.updateThread(threadId, { status: "archived" });
-      onEvent?.("threadUpdated");
     },
 
     onDelete: async (threadId) => {
       await actions.deleteThread(threadId);
-      onEvent?.("threadDeleted");
     },
   };
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => {
-      actions.updateMessages(state.currentThreadId, messages);
-    },
+    setMessages: (messages) => actions.updateMessages(state.currentThreadId, messages),
     convertMessage,
     isRunning,
     onNew,
@@ -299,10 +251,28 @@ export function ChatPanelCore({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ChatContainer $autoHeight={autoHeight} $sidebarWidth={sidebarWidth}>
+      <StyledChatContainer>
         <ThreadList />
         <Thread placeholder={placeholder} />
-      </ChatContainer>
+      </StyledChatContainer>
     </AssistantRuntimeProvider>
+  );
+}
+
+// ============================================================================
+// EXPORT - WITH PROVIDERS
+// ============================================================================
+
+export function ChatPanelContainer({ storage, messageHandler, placeholder, onMessageUpdate }: ChatPanelContainerProps) {
+  return (
+    <TooltipProvider>
+      <ChatProvider storage={storage}>
+        <ChatPanelView 
+          messageHandler={messageHandler}
+          placeholder={placeholder}
+          onMessageUpdate={onMessageUpdate}
+        />
+      </ChatProvider>
+    </TooltipProvider>
   );
 }

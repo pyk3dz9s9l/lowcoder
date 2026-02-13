@@ -11,7 +11,7 @@ import { dropdownControl } from "comps/controls/dropdownControl";
 import QuerySelectControl from "comps/controls/querySelectControl";
 import { eventHandlerControl, EventConfigType } from "comps/controls/eventHandlerControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
-import { ChatCore } from "./components/ChatCore";
+import { ChatContainer } from "./components/ChatContainer";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
 import { QueryHandler, createMessageHandler } from "./handlers/messageHandlers";
@@ -170,15 +170,17 @@ export const chatChildrenMap = {
   // Event Handlers
   onEvent: ChatEventHandlerControl,
   
-  // Style Controls
-  style: styleControl(ChatStyle),
-  sidebarStyle: styleControl(ChatSidebarStyle),
-  messagesStyle: styleControl(ChatMessagesStyle),
-  inputStyle: styleControl(ChatInputStyle),
+  // Style Controls - Consolidated to reduce prop count
+  style: styleControl(ChatStyle),                      // Main container
+  sidebarStyle: styleControl(ChatSidebarStyle),        // Sidebar (includes threads & new button)
+  messagesStyle: styleControl(ChatMessagesStyle),      // Messages area
+  inputStyle: styleControl(ChatInputStyle),            // Input + send button area
+  animationStyle: styleControl(AnimationStyle),        // Animations
+  
+  // Legacy style props (kept for backward compatibility, consolidated internally)
   sendButtonStyle: styleControl(ChatSendButtonStyle),
   newThreadButtonStyle: styleControl(ChatNewThreadButtonStyle),
   threadItemStyle: styleControl(ChatThreadItemStyle),
-  animationStyle: styleControl(AnimationStyle),
   
   // Exposed Variables (not shown in Property View)
   currentMessage: stringExposingStateControl("currentMessage", ""),
@@ -287,8 +289,20 @@ const ChatTmpComp = new UICompBuilder(
       };
     }, []);
 
+    // Group all styles into single object for cleaner prop passing
+    const styles = {
+      style: props.style,
+      sidebarStyle: props.sidebarStyle,
+      messagesStyle: props.messagesStyle,
+      inputStyle: props.inputStyle,
+      sendButtonStyle: props.sendButtonStyle,
+      newThreadButtonStyle: props.newThreadButtonStyle,
+      threadItemStyle: props.threadItemStyle,
+      animationStyle: props.animationStyle,
+    };
+
     return (
-      <ChatCore
+      <ChatContainer
         storage={storage}
         messageHandler={messageHandler}
         placeholder={props.placeholder}
@@ -297,14 +311,7 @@ const ChatTmpComp = new UICompBuilder(
         onMessageUpdate={handleMessageUpdate}
         onConversationUpdate={handleConversationUpdate}
         onEvent={props.onEvent}
-        style={props.style}
-        sidebarStyle={props.sidebarStyle}
-        messagesStyle={props.messagesStyle}
-        inputStyle={props.inputStyle}
-        sendButtonStyle={props.sendButtonStyle}
-        newThreadButtonStyle={props.newThreadButtonStyle}
-        threadItemStyle={props.threadItemStyle}
-        animationStyle={props.animationStyle}
+        {...styles}
       />
     );
   }
