@@ -360,7 +360,9 @@ export function ChatProvider({ children, storage }: {
 
   // Auto-initialize on mount
   useEffect(() => {
+    console.log("useEffect Inside ChatProvider", state.isInitialized, state.isLoading);
     if (!state.isInitialized && !state.isLoading) {
+      console.log("Initializing chat data...");
       initialize();
     }
   }, [state.isInitialized, state.isLoading]);

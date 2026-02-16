@@ -1,6 +1,6 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/components/ChatContainer.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
@@ -83,7 +83,7 @@ const StyledChatContainer = styled.div<ChatCoreProps>`
   }
 
   /* Input Field Styles */
-  .aui-composer-input {
+  form.aui-composer-root {
     background-color: ${(props) => props.inputStyle?.inputBackground || "#ffffff"};
     color: ${(props) => props.inputStyle?.inputText || "inherit"};
     border-color: ${(props) => props.inputStyle?.inputBorder || "#d1d5db"};
@@ -131,17 +131,25 @@ function ChatContainerView(props: ChatCoreProps) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
 
+  // Store callback props in refs so useEffects don't re-fire
+  // when Lowcoder's builder creates new function references on each render
+  const onConversationUpdateRef = useRef(props.onConversationUpdate);
+  onConversationUpdateRef.current = props.onConversationUpdate;
+
+  const onEventRef = useRef(props.onEvent);
+  onEventRef.current = props.onEvent;
+
   const currentMessages = actions.getCurrentMessages();
 
   useEffect(() => {
     if (currentMessages.length > 0 && !isRunning) {
-      props.onConversationUpdate?.(currentMessages);
+      onConversationUpdateRef.current?.(currentMessages);
     }
-  }, [currentMessages, isRunning, props.onConversationUpdate]);
+  }, [currentMessages, isRunning]);
 
   useEffect(() => {
-    props.onEvent?.("componentLoad");
-  }, [props.onEvent]);
+    onEventRef.current?.("componentLoad");
+  }, []);
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
     const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
