@@ -73,7 +73,6 @@ export interface ChatMessage {
 
 // Main Chat Component Props (with full styling support)
 export interface ChatCoreProps {
-  storage: ChatStorage;
   messageHandler: MessageHandler;
   placeholder?: string;
   autoHeight?: boolean;

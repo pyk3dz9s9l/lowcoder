@@ -14,7 +14,6 @@ import {
 import { Thread } from "./assistant-ui/thread";
 import { ThreadList } from "./assistant-ui/thread-list";
 import { 
-  ChatProvider,
   useChatContext, 
   RegularThreadData, 
   ArchivedThreadData 
@@ -23,7 +22,6 @@ import { MessageHandler, ChatMessage, ChatCoreProps } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 // ============================================================================
 // STYLED CONTAINER - FOLLOWING LOWCODER PATTERNS
@@ -122,7 +120,7 @@ const StyledChatContainer = styled.div<ChatCoreProps>`
 `;
 
 // ============================================================================
-// CHAT CONTAINER - DIRECT RENDERING LIKE ButtonView
+// CHAT CONTAINER - USES CONTEXT FROM CHATPROVIDER
 // ============================================================================
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -334,15 +332,7 @@ function ChatContainerView(props: ChatCoreProps) {
 }
 
 // ============================================================================
-// EXPORT - WITH PROVIDERS (LIKE BUTTON/INPUT PATTERN)
+// EXPORT - SIMPLIFIED (PROVIDERS MOVED UP ONE LEVEL)
 // ============================================================================
 
-export function ChatContainer(props: ChatCoreProps) {
-  return (
-    <TooltipProvider>
-      <ChatProvider storage={props.storage}>
-        <ChatContainerView {...props} />
-      </ChatProvider>
-    </TooltipProvider>
-  );
-}
+export const ChatContainer = ChatContainerView;

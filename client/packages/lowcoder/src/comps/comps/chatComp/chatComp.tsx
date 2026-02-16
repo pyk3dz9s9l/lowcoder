@@ -12,6 +12,7 @@ import QuerySelectControl from "comps/controls/querySelectControl";
 import { eventHandlerControl, EventConfigType } from "comps/controls/eventHandlerControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
 import { ChatContainer } from "./components/ChatContainer";
+import { ChatProvider } from "./components/context/ChatContext";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
 import { QueryHandler, createMessageHandler } from "./handlers/messageHandlers";
@@ -19,6 +20,7 @@ import { useMemo, useRef, useEffect } from "react";
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
 import { trans } from "i18n";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { styleControl } from "comps/controls/styleControl";
 import {
   ChatStyle,
@@ -302,17 +304,20 @@ const ChatTmpComp = new UICompBuilder(
     };
 
     return (
-      <ChatContainer
-        storage={storage}
-        messageHandler={messageHandler}
-        placeholder={props.placeholder}
-        autoHeight={props.autoHeight}
-        sidebarWidth={props.leftPanelWidth}
-        onMessageUpdate={handleMessageUpdate}
-        onConversationUpdate={handleConversationUpdate}
-        onEvent={props.onEvent}
-        {...styles}
-      />
+      <TooltipProvider>
+        <ChatProvider storage={storage}>
+          <ChatContainer
+            messageHandler={messageHandler}
+            placeholder={props.placeholder}
+            autoHeight={props.autoHeight}
+            sidebarWidth={props.leftPanelWidth}
+            onMessageUpdate={handleMessageUpdate}
+            onConversationUpdate={handleConversationUpdate}
+            onEvent={props.onEvent}
+            {...styles}
+          />
+        </ChatProvider>
+      </TooltipProvider>
     );
   }
 )
