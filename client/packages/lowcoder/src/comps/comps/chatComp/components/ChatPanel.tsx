@@ -1,6 +1,6 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanel.tsx
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { ChatPanelContainer } from "./ChatPanelContainer";
 import { createChatStorage } from "../utils/storageFactory";
 import { N8NHandler } from "../handlers/messageHandlers";
@@ -21,19 +21,26 @@ export function ChatPanel({
   streaming = true,
   onMessageUpdate
 }: ChatPanelProps) {
-  const storage = useMemo(() => 
-    createChatStorage(tableName), 
+  const storage = useMemo(() =>
+    createChatStorage(tableName),
     [tableName]
   );
-  
-  const messageHandler = useMemo(() => 
+
+  const messageHandler = useMemo(() =>
     new N8NHandler({
       modelHost,
       systemPrompt,
       streaming
-    }), 
+    }),
     [modelHost, systemPrompt, streaming]
   );
+
+  // Cleanup on unmount - delete chat data from storage
+  useEffect(() => {
+    return () => {
+      storage.cleanup();
+    };
+  }, [storage]);
 
   return (
     <ChatPanelContainer

@@ -1,0 +1,108 @@
+// client/packages/lowcoder/src/comps/comps/chatComp/components/ChatContainer.styles.ts
+
+import styled from "styled-components";
+
+
+export interface StyledChatContainerProps {
+  $autoHeight?: boolean;
+  $sidebarWidth?: string;
+  $sidebarStyle?: any;
+  $messagesStyle?: any;
+  $inputStyle?: any;
+  $sendButtonStyle?: any;
+  $newThreadButtonStyle?: any;
+  $threadItemStyle?: any;
+  $animationStyle?: any;
+  style?: any; 
+}
+
+export const StyledChatContainer = styled.div<StyledChatContainerProps>`
+  display: flex;
+  height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
+  min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
+
+  /* Main container styles */
+  background: ${(props) => props.style?.background || "transparent"};
+  margin: ${(props) => props.style?.margin || "0"};
+  padding: ${(props) => props.style?.padding || "0"};
+  border: ${(props) => props.style?.borderWidth || "0"} ${(props) => props.style?.borderStyle || "solid"} ${(props) => props.style?.border || "transparent"};
+  border-radius: ${(props) => props.style?.radius || "0"};
+
+  /* Animation styles */
+  animation: ${(props) => props.$animationStyle?.animation || "none"};
+  animation-duration: ${(props) => props.$animationStyle?.animationDuration || "0s"};
+  animation-delay: ${(props) => props.$animationStyle?.animationDelay || "0s"};
+  animation-iteration-count: ${(props) => props.$animationStyle?.animationIterationCount || "1"};
+
+  p {
+    margin: 0;
+  }
+
+  /* Sidebar Styles */
+  .aui-thread-list-root {
+    width: ${(props) => props.$sidebarWidth || "250px"};
+    background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
+    padding: 10px;
+  }
+
+  .aui-thread-list-item-title {
+    color: ${(props) => props.$sidebarStyle?.threadText || "inherit"};
+  }
+
+  /* Messages Window Styles */
+  .aui-thread-root {
+    flex: 1;
+    background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
+    height: auto;
+  }
+
+  /* User Message Styles */
+  .aui-user-message-content {
+    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
+    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
+  }
+
+  /* Assistant Message Styles */
+  .aui-assistant-message-content {
+    background-color: ${(props) => props.$messagesStyle?.assistantMessageBackground || "#ffffff"};
+    color: ${(props) => props.$messagesStyle?.assistantMessageText || "inherit"};
+  }
+
+  /* Input Field Styles */
+  form.aui-composer-root {
+    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
+    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
+    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
+  }
+
+  /* Send Button Styles */
+  .aui-composer-send {
+    background-color: ${(props) => props.$sendButtonStyle?.sendButtonBackground || "#3b82f6"} !important;
+    
+    svg {
+      color: ${(props) => props.$sendButtonStyle?.sendButtonIcon || "#ffffff"};
+    }
+  }
+
+  /* New Thread Button Styles */
+  .aui-thread-list-root > button {
+    background-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+    color: ${(props) => props.$newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
+    border-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+  }
+
+  /* Thread item styling */
+  .aui-thread-list-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: ${(props) => props.$threadItemStyle?.threadItemBackground || "transparent"};
+    color: ${(props) => props.$threadItemStyle?.threadItemText || "inherit"};
+    border: 1px solid ${(props) => props.$threadItemStyle?.threadItemBorder || "transparent"};
+
+    &[data-active="true"] {
+      background-color: ${(props) => props.$threadItemStyle?.activeThreadBackground || "#dbeafe"};
+      color: ${(props) => props.$threadItemStyle?.activeThreadText || "inherit"};
+      border: 1px solid ${(props) => props.$threadItemStyle?.activeThreadBorder || "#bfdbfe"};
+    }
+  }
+`;
