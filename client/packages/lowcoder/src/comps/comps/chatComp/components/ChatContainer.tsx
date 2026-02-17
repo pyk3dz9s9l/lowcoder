@@ -26,12 +26,27 @@ import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 // ============================================================================
 // STYLED CONTAINER - FOLLOWING LOWCODER PATTERNS
 // Styles passed as objects, applied directly like Button100 and InputStyle
+// Using $ prefix for transient props (props that shouldn't be passed to DOM)
 // ============================================================================
 
-const StyledChatContainer = styled.div<ChatCoreProps>`
+// Transient props interface - these props are for styling only and won't be passed to DOM
+interface StyledChatContainerProps {
+  $autoHeight?: boolean;
+  $sidebarWidth?: string;
+  $sidebarStyle?: any;
+  $messagesStyle?: any;
+  $inputStyle?: any;
+  $sendButtonStyle?: any;
+  $newThreadButtonStyle?: any;
+  $threadItemStyle?: any;
+  $animationStyle?: any;
+  style?: any; // This is a valid DOM attribute, no $ needed
+}
+
+const StyledChatContainer = styled.div<StyledChatContainerProps>`
   display: flex;
-  height: ${(props) => (props.autoHeight ? "auto" : "100%")};
-  min-height: ${(props) => (props.autoHeight ? "300px" : "unset")};
+  height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
+  min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
 
   /* Main container styles */
   background: ${(props) => props.style?.background || "transparent"};
@@ -41,10 +56,10 @@ const StyledChatContainer = styled.div<ChatCoreProps>`
   border-radius: ${(props) => props.style?.radius || "0"};
 
   /* Animation styles */
-  animation: ${(props) => props.animationStyle?.animation || "none"};
-  animation-duration: ${(props) => props.animationStyle?.animationDuration || "0s"};
-  animation-delay: ${(props) => props.animationStyle?.animationDelay || "0s"};
-  animation-iteration-count: ${(props) => props.animationStyle?.animationIterationCount || "1"};
+  animation: ${(props) => props.$animationStyle?.animation || "none"};
+  animation-duration: ${(props) => props.$animationStyle?.animationDuration || "0s"};
+  animation-delay: ${(props) => props.$animationStyle?.animationDelay || "0s"};
+  animation-iteration-count: ${(props) => props.$animationStyle?.animationIterationCount || "1"};
 
   p {
     margin: 0;
@@ -52,69 +67,69 @@ const StyledChatContainer = styled.div<ChatCoreProps>`
 
   /* Sidebar Styles */
   .aui-thread-list-root {
-    width: ${(props) => props.sidebarWidth || "250px"};
-    background-color: ${(props) => props.sidebarStyle?.sidebarBackground || "#fff"};
+    width: ${(props) => props.$sidebarWidth || "250px"};
+    background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
     padding: 10px;
   }
 
   .aui-thread-list-item-title {
-    color: ${(props) => props.sidebarStyle?.threadText || "inherit"};
+    color: ${(props) => props.$sidebarStyle?.threadText || "inherit"};
   }
 
   /* Messages Window Styles */
   .aui-thread-root {
     flex: 1;
-    background-color: ${(props) => props.messagesStyle?.messagesBackground || "#f9fafb"};
+    background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
     height: auto;
   }
 
   /* User Message Styles */
   .aui-user-message-content {
-    background-color: ${(props) => props.messagesStyle?.userMessageBackground || "#3b82f6"};
-    color: ${(props) => props.messagesStyle?.userMessageText || "#ffffff"};
+    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
+    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
   }
 
   /* Assistant Message Styles */
   .aui-assistant-message-content {
-    background-color: ${(props) => props.messagesStyle?.assistantMessageBackground || "#ffffff"};
-    color: ${(props) => props.messagesStyle?.assistantMessageText || "inherit"};
+    background-color: ${(props) => props.$messagesStyle?.assistantMessageBackground || "#ffffff"};
+    color: ${(props) => props.$messagesStyle?.assistantMessageText || "inherit"};
   }
 
   /* Input Field Styles */
   form.aui-composer-root {
-    background-color: ${(props) => props.inputStyle?.inputBackground || "#ffffff"};
-    color: ${(props) => props.inputStyle?.inputText || "inherit"};
-    border-color: ${(props) => props.inputStyle?.inputBorder || "#d1d5db"};
+    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
+    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
+    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
   }
 
   /* Send Button Styles */
   .aui-composer-send {
-    background-color: ${(props) => props.sendButtonStyle?.sendButtonBackground || "#3b82f6"} !important;
+    background-color: ${(props) => props.$sendButtonStyle?.sendButtonBackground || "#3b82f6"} !important;
     
     svg {
-      color: ${(props) => props.sendButtonStyle?.sendButtonIcon || "#ffffff"};
+      color: ${(props) => props.$sendButtonStyle?.sendButtonIcon || "#ffffff"};
     }
   }
 
   /* New Thread Button Styles */
   .aui-thread-list-root > button {
-    background-color: ${(props) => props.newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
-    color: ${(props) => props.newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
-    border-color: ${(props) => props.newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+    background-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
+    color: ${(props) => props.$newThreadButtonStyle?.newThreadText || "#ffffff"} !important;
+    border-color: ${(props) => props.$newThreadButtonStyle?.newThreadBackground || "#3b82f6"} !important;
   }
 
   /* Thread item styling */
   .aui-thread-list-item {
     cursor: pointer;
     transition: background-color 0.2s ease;
-    background-color: ${(props) => props.threadItemStyle?.threadItemBackground || "transparent"};
-    color: ${(props) => props.threadItemStyle?.threadItemText || "inherit"};
-    border: 1px solid ${(props) => props.threadItemStyle?.threadItemBorder || "transparent"};
+    background-color: ${(props) => props.$threadItemStyle?.threadItemBackground || "transparent"};
+    color: ${(props) => props.$threadItemStyle?.threadItemText || "inherit"};
+    border: 1px solid ${(props) => props.$threadItemStyle?.threadItemBorder || "transparent"};
 
     &[data-active="true"] {
-      background-color: ${(props) => props.threadItemStyle?.activeThreadBackground || "#dbeafe"};
-      color: ${(props) => props.threadItemStyle?.activeThreadText || "inherit"};
-      border: 1px solid ${(props) => props.threadItemStyle?.activeThreadBorder || "#bfdbfe"};
+      background-color: ${(props) => props.$threadItemStyle?.activeThreadBackground || "#dbeafe"};
+      color: ${(props) => props.$threadItemStyle?.activeThreadText || "inherit"};
+      border: 1px solid ${(props) => props.$threadItemStyle?.activeThreadBorder || "#bfdbfe"};
     }
   }
 `;
@@ -323,7 +338,18 @@ function ChatContainerView(props: ChatCoreProps) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <StyledChatContainer {...props}>
+      <StyledChatContainer
+        style={props.style}
+        $autoHeight={props.autoHeight}
+        $sidebarWidth={props.sidebarWidth}
+        $sidebarStyle={props.sidebarStyle}
+        $messagesStyle={props.messagesStyle}
+        $inputStyle={props.inputStyle}
+        $sendButtonStyle={props.sendButtonStyle}
+        $newThreadButtonStyle={props.newThreadButtonStyle}
+        $threadItemStyle={props.threadItemStyle}
+        $animationStyle={props.animationStyle}
+      >
         <ThreadList />
         <Thread placeholder={props.placeholder} />
       </StyledChatContainer>
