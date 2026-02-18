@@ -5,6 +5,7 @@ import type {
     Attachment,
     ThreadUserContentPart
   } from "@assistant-ui/react";
+import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
   
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -13,6 +14,9 @@ import type {
   
     async add({ file }): Promise<PendingAttachment> {
       if (file.size > MAX_FILE_SIZE) {
+        messageInstance.error(
+          `File "${file.name}" exceeds the 10 MB size limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`
+        );
         throw new Error(
           `File "${file.name}" exceeds the 10 MB size limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`
         );
@@ -48,9 +52,9 @@ import type {
               mimeType: attachment.file.type,
             }];
       } catch (err) {
-        throw new Error(
-          `Failed to process attachment "${attachment.name}": ${err instanceof Error ? err.message : "unknown error"}`
-        );
+        const errorMessage = `Failed to process attachment "${attachment.name}": ${err instanceof Error ? err.message : "unknown error"}`;
+        messageInstance.error(errorMessage);
+        throw new Error(errorMessage);
       }
 
       return {
