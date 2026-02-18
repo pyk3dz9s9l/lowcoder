@@ -6,24 +6,16 @@ import type {
     ThreadUserContentPart
   } from "@assistant-ui/react";
   
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
   export const universalAttachmentAdapter: AttachmentAdapter = {
     accept: "*/*",
   
     async add({ file }): Promise<PendingAttachment> {
-      const MAX_SIZE = 10 * 1024 * 1024;
-  
-      if (file.size > MAX_SIZE) {
-        return {
-          id: crypto.randomUUID(),
-          type: getAttachmentType(file.type),
-          name: file.name,
-          file,
-          contentType: file.type,
-          status: {
-            type: "incomplete",
-            reason: "error"
-          }
-        };
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(
+          `File "${file.name}" exceeds the 10 MB size limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`
+        );
       }
   
       return {
@@ -33,33 +25,40 @@ import type {
         file,
         contentType: file.type,
         status: {
-          type: "running",
-          reason: "uploading",
-          progress: 0
-        }
+          type: "requires-action",
+          reason: "composer-send",
+        },
       };
     },
   
     async send(attachment: PendingAttachment): Promise<CompleteAttachment> {
-      const isImage = attachment.contentType.startsWith("image/");
-  
-      const content: ThreadUserContentPart[] = isImage
-        ? [{
-            type: "image",
-            image: await fileToBase64(attachment.file)
-          }]
-        : [{
-            type: "file",
-            data: URL.createObjectURL(attachment.file),
-            mimeType: attachment.file.type
-          }];
-  
+      const isImage = attachment.contentType?.startsWith("image/");
+
+      let content: ThreadUserContentPart[];
+
+      try {
+        content = isImage
+          ? [{
+              type: "image",
+              image: await fileToBase64(attachment.file),
+            }]
+          : [{
+              type: "file",
+              data: URL.createObjectURL(attachment.file),
+              mimeType: attachment.file.type,
+            }];
+      } catch (err) {
+        throw new Error(
+          `Failed to process attachment "${attachment.name}": ${err instanceof Error ? err.message : "unknown error"}`
+        );
+      }
+
       return {
         ...attachment,
         content,
         status: {
-          type: "complete"
-        }
+          type: "complete",
+        },
       };
     },
   
