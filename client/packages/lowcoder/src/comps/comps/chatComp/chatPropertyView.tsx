@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { Section, sectionNames, DocLink } from "lowcoder-design";
 import { trans } from "i18n";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
+import { controlItem } from "lowcoder-design";
 
 // ============================================================================
 // CLEAN PROPERTY VIEW - FOCUSED ON ESSENTIAL CONFIGURATION
@@ -27,37 +28,15 @@ export const ChatPropertyView = React.memo((props: any) => {
 
       {/* Message Handler Configuration */}
       <Section name={trans("chat.messageHandler")}>
-        {children.handlerType.propertyView({ 
-          label: trans("chat.handlerType"),
-          tooltip: trans("chat.handlerTypeTooltip"),
+        {children.chatQuery.propertyView({ 
+          label: trans("chat.chatQuery"),
+          placeholder: trans("chat.chatQueryPlaceholder"),
         })}
-
-        {/* Conditional Query Selection */}
-        {children.handlerType.getView() === "query" && (
-          children.chatQuery.propertyView({ 
-            label: trans("chat.chatQuery"),
-            placeholder: trans("chat.chatQueryPlaceholder"),
-          })
-        )}
-
-        {/* Conditional N8N Configuration */}
-        {children.handlerType.getView() === "n8n" && (
-          children.modelHost.propertyView({ 
-            label: trans("chat.modelHost"),
-            placeholder: trans("chat.modelHostPlaceholder"),
-            tooltip: trans("chat.modelHostTooltip"),
-          })
-        )}
 
         {children.systemPrompt.propertyView({ 
           label: trans("chat.systemPrompt"),
           placeholder: trans("chat.systemPromptPlaceholder"),
           tooltip: trans("chat.systemPromptTooltip"),
-        })}
-
-        {children.streaming.propertyView({ 
-          label: trans("chat.streaming"),
-          tooltip: trans("chat.streamingTooltip"),
         })}
       </Section>
 
@@ -81,11 +60,37 @@ export const ChatPropertyView = React.memo((props: any) => {
 
       {/* Database Section */}
       <Section name={trans("chat.database")}>
-        {children.databaseName.propertyView({ 
-          label: trans("chat.databaseName"),
-          tooltip: trans("chat.databaseNameTooltip"),
-          readonly: true
-        })}
+        {controlItem(
+          { filterText: trans("chat.databaseName") },
+          <div style={{ padding: "8px 16px" }}>
+            <div style={{ 
+              fontSize: "13px", 
+              color: "#8B8FA3", 
+              marginBottom: "4px",
+              fontWeight: 500
+            }}>
+              {trans("chat.databaseName")}
+            </div>
+            <div style={{ 
+              fontSize: "13px", 
+              color: "#222222",
+              padding: "6px 12px",
+              backgroundColor: "#F5F5F6",
+              borderRadius: "4px",
+              border: "1px solid #D7D9E0",
+              fontFamily: "monospace"
+            }}>
+              {children.databaseName.getView() || "Not initialized"}
+            </div>
+            <div style={{ 
+              fontSize: "12px", 
+              color: "#8B8FA3", 
+              marginTop: "4px"
+            }}>
+              {trans("chat.databaseNameTooltip")}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* STANDARD EVENT HANDLERS SECTION */}

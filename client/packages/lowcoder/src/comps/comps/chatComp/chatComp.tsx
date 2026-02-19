@@ -6,8 +6,6 @@ import { StringControl } from "comps/controls/codeControl";
 import { arrayObjectExposingStateControl, stringExposingStateControl } from "comps/controls/codeStateControl";
 import { JSONObject } from "util/jsonTypes";
 import { withDefault } from "comps/generators";
-import { BoolControl } from "comps/controls/boolControl";
-import { dropdownControl } from "comps/controls/dropdownControl";
 import QuerySelectControl from "comps/controls/querySelectControl";
 import { eventHandlerControl, EventConfigType } from "comps/controls/eventHandlerControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
@@ -15,7 +13,7 @@ import { ChatContainer } from "./components/ChatContainer";
 import { ChatProvider } from "./components/context/ChatContext";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
-import { QueryHandler, createMessageHandler } from "./handlers/messageHandlers";
+import { QueryHandler } from "./handlers/messageHandlers";
 import { useMemo, useRef, useEffect } from "react";  
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
@@ -143,21 +141,13 @@ function generateUniqueTableName(): string {
   return `chat${Math.floor(1000 + Math.random() * 9000)}`;
  }
 
-const ModelTypeOptions = [
-  { label: trans("chat.handlerTypeQuery"), value: "query" },
-  { label: trans("chat.handlerTypeN8N"), value: "n8n" },
-] as const;
-
 export const chatChildrenMap = {
-  // Storage
-  // Storage (add the hidden property here)
+  // Storage (internal, hidden)
   _internalDbName: withDefault(StringControl, ""),
+  
   // Message Handler Configuration
-  handlerType: dropdownControl(ModelTypeOptions, "query"),
-  chatQuery: QuerySelectControl,                    // Only used for "query" type
-  modelHost: withDefault(StringControl, ""),        // Only used for "n8n" type
+  chatQuery: QuerySelectControl,
   systemPrompt: withDefault(StringControl, trans("chat.defaultSystemPrompt")),
-  streaming: BoolControl.DEFAULT_TRUE,
   
   // UI Configuration  
   placeholder: withDefault(StringControl, trans("chat.defaultPlaceholder")),
@@ -220,36 +210,14 @@ const ChatTmpComp = new UICompBuilder(
       []
     );
     
-    // Create message handler based on type
+    // Create message handler (Query only)
     const messageHandler = useMemo(() => {
-      const handlerType = props.handlerType;
-      
-      if (handlerType === "query") {
-        return new QueryHandler({
-          chatQuery: props.chatQuery.value,
-          dispatch,
-          streaming: props.streaming,
-        });
-      } else if (handlerType === "n8n") {
-        return createMessageHandler("n8n", {
-          modelHost: props.modelHost,
-          systemPrompt: props.systemPrompt,
-          streaming: props.streaming
-        });
-      } else {
-        // Fallback to mock handler
-        return createMessageHandler("mock", {
-          chatQuery: props.chatQuery.value,
-          dispatch,
-          streaming: props.streaming
-        });
-      }
+      return new QueryHandler({
+        chatQuery: props.chatQuery.value,
+        dispatch,
+      });
     }, [
-      props.handlerType,
       props.chatQuery, 
-      props.modelHost,
-      props.systemPrompt,
-      props.streaming,
       dispatch,
     ]);
 

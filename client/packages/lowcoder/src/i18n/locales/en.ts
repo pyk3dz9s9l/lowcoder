@@ -1443,18 +1443,11 @@ export const en = {
   
   "chat": {
     // Property View Labels & Tooltips
-    "handlerType": "Handler Type",
-    "handlerTypeTooltip": "How messages are processed",
     "chatQuery": "Chat Query", 
     "chatQueryPlaceholder": "Select a query to handle messages",
-    "modelHost": "N8N Webhook URL",
-    "modelHostPlaceholder": "http://localhost:5678/webhook/...",
-    "modelHostTooltip": "N8N webhook endpoint for processing messages",
     "systemPrompt": "System Prompt",
     "systemPromptPlaceholder": "You are a helpful assistant...",
     "systemPromptTooltip": "Initial instructions for the AI",
-    "streaming": "Enable Streaming", 
-    "streamingTooltip": "Stream responses in real-time (when supported)",
     "databaseName": "Database Name",
     "databaseNameTooltip": "Auto-generated database name for this chat component (read-only)",
     
@@ -1475,11 +1468,6 @@ export const en = {
     
     // Error Messages
     "errorUnknown": "Sorry, I encountered an error. Please try again.",
-    
-    // Handler Types
-    "handlerTypeQuery": "Query",
-    "handlerTypeN8N": "N8N Workflow",
-    
     // Section Names
     "messageHandler": "Message Handler",
     "uiConfiguration": "UI Configuration", 

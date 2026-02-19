@@ -8,12 +8,9 @@ export type ChatCompProps = {
   // Storage
   tableName: string;
   
-  // Message Handler
-  handlerType: "query" | "n8n";
-  chatQuery: string;        // Only used when handlerType === "query"
-  modelHost: string;        // Only used when handlerType === "n8n"
+  // Message Handler (Query only)
+  chatQuery: string;
   systemPrompt: string;
-  streaming: boolean;
   
   // UI
   placeholder: string;

@@ -63,8 +63,6 @@ export interface ChatMessage {
   export interface QueryHandlerConfig {
     chatQuery: string;
     dispatch: any;
-    streaming?: boolean;
-    systemPrompt?: string;
   }
   
 // ============================================================================
