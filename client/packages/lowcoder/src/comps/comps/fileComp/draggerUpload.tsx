@@ -11,7 +11,7 @@ import {
   multiChangeAction,
 } from "lowcoder-core";
 import { hasIcon } from "comps/utils";
-import { resolveValue, resolveParsedValue, commonProps, validateFile } from "./fileComp";
+import { resolveValue, resolveParsedValue, commonProps, validateFile, CaptureResolution } from "./fileComp";
 import { FileStyleType, AnimationStyleType, heightCalculator, widthCalculator } from "comps/controls/styleControlConstants";
 import { ImageCaptureModal } from "./ImageCaptureModal";
 import { v4 as uuidv4 } from "uuid";
@@ -148,6 +148,7 @@ interface DraggerUploadProps {
   prefixIcon: any;
   suffixIcon: any;
   forceCapture: boolean;
+  captureResolution: CaptureResolution;
   minSize: number;
   maxSize: number;
   maxFiles: number;
@@ -291,6 +292,7 @@ export const DraggerUpload = (props: DraggerUploadProps) => {
 
       <ImageCaptureModal
         showModal={showModal}
+        captureResolution={props.captureResolution as CaptureResolution}
         onModalClose={() => setShowModal(false)}
         onImageCapture={async (image) => {
           setShowModal(false);

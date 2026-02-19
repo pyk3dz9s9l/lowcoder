@@ -100,6 +100,22 @@ const validationChildren = {
   fileNamePattern: StringControl,
 };
 
+export type CaptureResolution = "auto" | "1080p" | "720p" | "480p";
+
+export const CaptureResolutionOptions = [
+  { label: trans("file.captureResolutionAuto"), value: "auto" },
+  { label: trans("file.captureResolution1080p"), value: "1080p" },
+  { label: trans("file.captureResolution720p"), value: "720p" },
+  { label: trans("file.captureResolution480p"), value: "480p" },
+] as const;
+
+export const RESOLUTION_CONSTRAINTS: Record<CaptureResolution, { width?: number; height?: number }> = {
+  auto: {},
+  "1080p": { width: 1920, height: 1080 },
+  "720p": { width: 1280, height: 720 },
+  "480p": { width: 640, height: 480 },
+};
+
 const commonChildren = {
   value: stateComp<Array<string | null>>([]),
   files: stateComp<JSONObject[]>([]),
@@ -114,6 +130,7 @@ const commonChildren = {
   prefixIcon: withDefault(IconControl, "/icon:solid/arrow-up-from-bracket"),
   suffixIcon: IconControl,
   forceCapture: BoolControl,
+  captureResolution: dropdownControl(CaptureResolutionOptions, "auto"),
   ...validationChildren,
 };
 
@@ -441,6 +458,7 @@ const Upload = (
 
       <ImageCaptureModal
         showModal={showModal}
+        captureResolution={props.captureResolution as CaptureResolution}
         onModalClose={() => setShowModal(false)}
         onImageCapture={async (image) => {
           setShowModal(false);
@@ -547,6 +565,10 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
             {children.forceCapture.propertyView({
               label: trans("file.forceCapture"),
               tooltip: trans("file.forceCaptureTooltip")
+            })}
+            {children.forceCapture.getView() && children.captureResolution.propertyView({
+              label: trans("file.captureResolution"),
+              tooltip: trans("file.captureResolutionTooltip"),
             })}
             {children.showUploadList.propertyView({ label: trans("file.showUploadList") })}
             {children.parseFiles.propertyView({

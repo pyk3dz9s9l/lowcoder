@@ -1954,6 +1954,12 @@ export const en = {
     "fileNamePatternPlaceholder": "^[a-zA-Z0-9_-]+\\.[a-z]+$",
     "fileNamePatternErrorMsg": "Upload Failed. The File Name Does Not Match the Required Pattern.",
     "invalidFileNamePatternMsg": "Invalid File Name Pattern: {error}",
+    "captureResolution": "Capture Resolution",
+    "captureResolutionTooltip": "Set the camera resolution for image capture. Higher resolutions produce better quality but may not be supported by all cameras.",
+    "captureResolutionAuto": "Auto (Camera Default)",
+    "captureResolution1080p": "1080p",
+    "captureResolution720p": "720p",
+    "captureResolution480p": "480p",
   },
   "date": {
     "format": "Format",
