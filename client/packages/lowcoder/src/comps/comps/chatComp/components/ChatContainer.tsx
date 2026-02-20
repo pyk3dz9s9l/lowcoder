@@ -24,7 +24,7 @@ import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 import { StyledChatContainer } from "./ChatContainerStyles";
 
 // ============================================================================
-// CHAT CONTAINER - USES CONTEXT FROM CHATPROVIDER
+//   CHAT CONTAINER 
 // ============================================================================
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -33,8 +33,7 @@ function ChatContainerView(props: ChatCoreProps) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
 
-  // Store callback props in refs so useEffects don't re-fire
-  // when Lowcoder's builder creates new function references on each render
+  // callback props in refs so useEffects don't re-fire
   const onConversationUpdateRef = useRef(props.onConversationUpdate);
   onConversationUpdateRef.current = props.onConversationUpdate;
 
@@ -247,7 +246,7 @@ function ChatContainerView(props: ChatCoreProps) {
 }
 
 // ============================================================================
-// EXPORT - SIMPLIFIED (PROVIDERS MOVED UP ONE LEVEL)
+//   EXPORT 
 // ============================================================================
 
 export const ChatContainer = ChatContainerView;

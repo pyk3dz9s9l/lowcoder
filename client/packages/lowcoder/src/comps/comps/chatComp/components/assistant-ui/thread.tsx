@@ -5,7 +5,7 @@ import {
     MessagePrimitive,
     ThreadPrimitive,
   } from "@assistant-ui/react";
-  import type { FC } from "react";
+  import { useMemo, type FC } from "react";
   import { trans } from "i18n";
   import {
     ArrowDownIcon,
@@ -14,7 +14,6 @@ import {
     ChevronRightIcon,
     CopyIcon,
     PencilIcon,
-    RefreshCwIcon,
     SendHorizontalIcon,
   } from "lucide-react";
   import { cn } from "../../utils/cn";
@@ -54,9 +53,20 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
   
   interface ThreadProps {
     placeholder?: string;
+    showAttachments?: boolean;
   }
   
-  export const Thread: FC<ThreadProps> = ({ placeholder = trans("chat.composerPlaceholder") }) => {
+  export const Thread: FC<ThreadProps> = ({ 
+    placeholder = trans("chat.composerPlaceholder"),
+    showAttachments = true 
+  }) => {
+    // Stable component reference so React doesn't unmount/remount on every render
+    const UserMessageComponent = useMemo<FC>(() => {
+      const Wrapper: FC = () => <UserMessage showAttachments={showAttachments} />;
+      Wrapper.displayName = "UserMessage";
+      return Wrapper;
+    }, [showAttachments]);
+
     return (
       <StyledThreadRoot
         className="aui-root aui-thread-root"
@@ -69,7 +79,7 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
   
           <ThreadPrimitive.Messages
             components={{
-              UserMessage: UserMessage,
+              UserMessage: UserMessageComponent,
               EditComposer: EditComposer,
               AssistantMessage: AssistantMessage,
             }}
@@ -85,7 +95,7 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
   
           <div className="aui-thread-viewport-footer">
             <ThreadScrollToBottom />
-            <Composer placeholder={placeholder} />
+            <Composer placeholder={placeholder} showAttachments={showAttachments} />
           </div>
         </ThreadPrimitive.Viewport>
       </StyledThreadRoot>
@@ -148,11 +158,18 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
     );
   };
   
-  const Composer: FC<{ placeholder?: string }> = ({ placeholder = trans("chat.composerPlaceholder") }) => {
+  const Composer: FC<{ placeholder?: string; showAttachments?: boolean }> = ({ 
+    placeholder = trans("chat.composerPlaceholder"),
+    showAttachments = true 
+  }) => {
     return (
       <ComposerPrimitive.Root className="aui-composer-root">
-        <ComposerAttachments />
-        <ComposerAddAttachment />
+        {showAttachments && (
+          <>
+            <ComposerAttachments />
+            <ComposerAddAttachment />
+          </>
+        )}
         <ComposerPrimitive.Input
           rows={1}
           autoFocus
@@ -193,11 +210,11 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
     );
   };
   
-  const UserMessage: FC = () => {
+  const UserMessage: FC<{ showAttachments?: boolean }> = ({ showAttachments = true }) => {
     return (
       <MessagePrimitive.Root className="aui-user-message-root">
         <UserActionBar />
-        <UserMessageAttachments />
+        {showAttachments && <UserMessageAttachments />}
   
         <div className="aui-user-message-content">
           <MessagePrimitive.Content />
@@ -273,11 +290,6 @@ import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } fr
             </MessagePrimitive.If>
           </TooltipIconButton>
         </ActionBarPrimitive.Copy>
-        <ActionBarPrimitive.Reload asChild>
-          <TooltipIconButton tooltip="Refresh">
-            <RefreshCwIcon />
-          </TooltipIconButton>
-        </ActionBarPrimitive.Reload>
       </ActionBarPrimitive.Root>
     );
   };

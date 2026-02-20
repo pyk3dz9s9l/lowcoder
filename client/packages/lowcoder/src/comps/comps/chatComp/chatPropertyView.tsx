@@ -7,7 +7,7 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { controlItem } from "lowcoder-design";
 
 // ============================================================================
-// CLEAN PROPERTY VIEW - FOCUSED ON ESSENTIAL CONFIGURATION
+//   PROPERTY VIEW 
 // ============================================================================
 
 export const ChatPropertyView = React.memo((props: any) => {

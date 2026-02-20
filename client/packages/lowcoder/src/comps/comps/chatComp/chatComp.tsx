@@ -182,7 +182,7 @@ export const chatChildrenMap = {
 };
 
 // ============================================================================
-// CLEAN CHATCOMP - USES NEW ARCHITECTURE
+//   CHATCOMP 
 // ============================================================================
 
 const ChatTmpComp = new UICompBuilder(
@@ -222,7 +222,7 @@ const ChatTmpComp = new UICompBuilder(
     ]);
 
     // Handle message updates for exposed variable
-    // Using Lowcoder pattern: props.currentMessage.onChange() instead of dispatch(changeChildAction(...))
+    // Using Lowcoder pattern: props.currentMessage.onChange()
     const handleMessageUpdate = (message: string) => {
       props.currentMessage.onChange(message);
       // Trigger messageSent event
@@ -259,7 +259,7 @@ const ChatTmpComp = new UICompBuilder(
       };
     }, []);
 
-    // Group all styles into single object for cleaner prop passing
+    // custom styles
     const styles = {
       style: props.style,
       sidebarStyle: props.sidebarStyle,
@@ -300,7 +300,7 @@ const ChatCompWithAutoHeight = class extends ChatTmpComp {
 };
 
 // ============================================================================
-// EXPORT WITH EXPOSED VARIABLES
+//  EXPOSED VARIABLES
 // ============================================================================
 
 export const ChatComp = withExposingConfigs(ChatCompWithAutoHeight, [

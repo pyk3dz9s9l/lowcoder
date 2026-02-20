@@ -1,7 +1,7 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/chatCompTypes.ts
 
 // ============================================================================
-// CLEAN CHATCOMP TYPES - SIMPLIFIED AND FOCUSED
+//   CHATCOMP TYPES 
 // ============================================================================
 
 export type ChatCompProps = {

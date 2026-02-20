@@ -7,7 +7,6 @@ import {
   AppendMessage,
   AssistantRuntimeProvider,
   ExternalStoreThreadListAdapter,
-  CompleteAttachment,
   TextContentPart,
   ThreadUserContentPart
 } from "@assistant-ui/react";
@@ -22,7 +21,6 @@ import {
 import { MessageHandler, ChatMessage } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
-import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import "@assistant-ui/styles/index.css";
@@ -89,20 +87,11 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
     const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
     
-    if (message.attachments && message.attachments.length > 0) {
-      for (const attachment of message.attachments) {
-        if (attachment.content) {
-          content.push(...attachment.content);
-        }
-      }
-    }
-    
     return {
       role: message.role,
       content,
       id: message.id,
       createdAt: new Date(message.timestamp),
-      ...(message.attachments && message.attachments.length > 0 && { attachments: message.attachments }),
     };
   };
 
@@ -112,11 +101,8 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     );
   
     const text = textPart?.text?.trim() ?? "";
-    const completeAttachments = (message.attachments ?? []).filter(
-      (att): att is CompleteAttachment => att.status.type === "complete"
-    );
   
-    if (!text && !completeAttachments.length) {
+    if (!text) {
       throw new Error("Cannot send an empty message");
     }
   
@@ -125,7 +111,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       role: "user",
       text,
       timestamp: Date.now(),
-      attachments: completeAttachments,
     };
   
     await actions.addMessage(state.currentThreadId, userMessage);
@@ -159,11 +144,8 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     );
   
     const text = textPart?.text?.trim() ?? "";
-    const completeAttachments = (message.attachments ?? []).filter(
-      (att): att is CompleteAttachment => att.status.type === "complete"
-    );
   
-    if (!text && !completeAttachments.length) {
+    if (!text) {
       throw new Error("Cannot send an empty message");
     }
   
@@ -175,7 +157,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       role: "user",
       text,
       timestamp: Date.now(),
-      attachments: completeAttachments,
     });
   
     await actions.updateMessages(state.currentThreadId, newMessages);
@@ -241,7 +222,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     onEdit,
     adapters: {
       threadList: threadListAdapter,
-      attachments: universalAttachmentAdapter,
+      // No attachments support for bottom panel chat
     },
   });
 
@@ -253,7 +234,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     <AssistantRuntimeProvider runtime={runtime}>
       <StyledChatContainer>
         <ThreadList />
-        <Thread placeholder={placeholder} />
+        <Thread placeholder={placeholder} showAttachments={false} />
       </StyledChatContainer>
     </AssistantRuntimeProvider>
   );
