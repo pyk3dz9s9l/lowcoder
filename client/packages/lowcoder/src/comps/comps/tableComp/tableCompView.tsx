@@ -294,8 +294,13 @@ export const TableCompView = React.memo((props: {
         )
       }
       onDownload={() => {
-        handleChangeEvent("download");
-        onDownload(`${compName}-data`)
+        if (compChildren.onEvent.isBind("download")) {
+          // Custom download handler exists
+          handleChangeEvent("download");
+        } else {
+          // Download default CSV 
+          onDownload(`${compName}-data`);
+        }
       }}
       hasChange={hasChange}
       onSaveChanges={() => handleChangeEvent("saveChanges")}

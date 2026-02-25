@@ -209,9 +209,8 @@ const ColumnLayout = (props: ColumnLayoutProps) => {
             {columns.map(column => {
               const id = String(column.id);
               const childDispatch = wrapDispatch(wrapDispatch(dispatch, "containers"), id);
-              if(!containers[id]) return null
+              if(!containers[id] || column.hidden) return null
               const containerProps = containers[id].children;
-              const noOfColumns = columns.length;
               return (
                 <React.Fragment key={id}>
                 <BackgroundColorContext.Provider value={props.columnStyle.background}>

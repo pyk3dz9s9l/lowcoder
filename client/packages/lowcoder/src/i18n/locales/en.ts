@@ -592,6 +592,7 @@ export const en = {
     "siderBackgroundImagePosition": "Sider Background Image Position",
     "siderBackgroundImageOrigin": "Sider Background Image Origin",
     "activeBackground": "Active Background Color",
+    "selectBackground": "Selected Background Color",
     "labelBackground": "Label Background Color",
     "gradientBackground": "Gradient Background Color",
     "direction": "Direction",
@@ -1258,6 +1259,10 @@ export const en = {
     "drawerCompDesc": "A sliding panel component that can be used for additional navigation or content display, typically emerging from the edge of the screen.",
     "drawerCompKeywords": "drawer, sliding, panel, navigation",
 
+    "toastCompName": "Toast",
+    "toastCompDesc": "A notification component for displaying brief messages, alerts, or feedback to users. Supports click and close event handlers.",
+    "toastCompKeywords": "toast, notification, alert, message, snackbar",
+
     "chartCompName": "Chart (deprecated)",
     "chartCompDesc": "A versatile component for visualizing data through various types of charts and graphs.",
     "chartCompKeywords": "chart, graph, data, visualization",
@@ -1743,14 +1748,15 @@ export const en = {
     "targetTitle": "Target Data",
     "content": "Content {i}",
     "items": "Items",
-    "targetKeys": "Selected Keys",
+    "targetKeys": "Target Keys",
     "oneWay": "One Way",
     "pagination": "Pagination",
     "pageSize": "Page Size",
     "allowSearch": "Allow Search",
     "selectedKeys": "Selected Keys",
     "searchInfo": "Search Info",
-    "targerObject": "Targer Object"
+    "targetObject": "Target Object",
+    "caseSensitive": "Case Sensitive"
   },
 
   "avatarGroup": {
@@ -1934,6 +1940,7 @@ export const en = {
     "filesValueDesc": "The Contents of the Currently Uploaded File Are Base64 Encoded",
     "filesDesc": "List of the Current Uploaded Files. For Details, Refer to",
     "clearValueDesc": "Clear All Files",
+    "clearValueAtDesc": "Clear File at Index",
     "parseFiles": "Parse Files",
     "parsedValueTooltip1": "If parseFiles Is True, Upload Files Will Parse to Object, Array, or String. Parsed Data Can Be Accessed via the parsedValue Array.",
     "parsedValueTooltip2": "Supports Excel, JSON, CSV, and Text Files. Other Formats Will Return Null.",
@@ -1948,11 +1955,23 @@ export const en = {
     "dragAreaText": "Click or drag file to this area to upload",
     "dragAreaHint": "Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.",
     "dragHintText": "Hint Text",
+    "fileNamePattern": "File Name Pattern",
+    "fileNamePatternTooltip": "A regular expression pattern to validate file names (e.g., '^[a-zA-Z0-9_-]+\\.[a-z]+$' for alphanumeric names). Leave empty to allow all file names.",
+    "fileNamePatternPlaceholder": "^[a-zA-Z0-9_-]+\\.[a-z]+$",
+    "fileNamePatternErrorMsg": "Upload Failed. The File Name Does Not Match the Required Pattern.",
+    "invalidFileNamePatternMsg": "Invalid File Name Pattern: {error}",
+    "captureResolution": "Capture Resolution",
+    "captureResolutionTooltip": "Set the camera resolution for image capture. Higher resolutions produce better quality but may not be supported by all cameras.",
+    "captureResolutionAuto": "Auto (Camera Default)",
+    "captureResolution1080p": "1080p",
+    "captureResolution720p": "720p",
+    "captureResolution480p": "480p",
   },
   "date": {
     "format": "Format",
     "inputFormat": "Input Format",
     "formatTip": "Support: 'YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD', 'Timestamp'",
+    "inputFormatTip": "Supports multiple formats separated by commas (e.g., 'MM/DD/YYYY, MMDDYYYY, YYYY-MM-DD'). First format is used for display. See",
     "reference": "Please Refer to",
     "showTime": "Show Time",
     "start": "Start Date",
@@ -3271,12 +3290,68 @@ export const en = {
     "error": "Send an Error Notification"
   },
   "toastComp": {
-    "destroy": "close a Notification",
-    "info": "Send a Notification",
-    "loading": "Send a Loading Notification",
-    "success": "Send a Success Notification",
-    "warn": "Send a Warning Notification",
-    "error": "Send an Error Notification"
+    // Method descriptions
+    "destroy": "Close a notification by key",
+    "info": "Show an info notification",
+    "success": "Show a success notification",
+    "warn": "Show a warning notification",
+    "error": "Show an error notification",
+    "showMethod": "Show notification with configured settings",
+    "closeMethod": "Close the notification",
+    "openMethod": "Show an info notification (alias for info)",
+    
+    // Property labels
+    "title": "Title",
+    "titlePlaceholder": "Notification title",
+    "description": "Description",
+    "descriptionPlaceholder": "Notification description",
+    "type": "Type",
+    "duration": "Duration (seconds)",
+    "durationTooltip": "Time in seconds before auto-close. Set to 0 to disable auto-close.",
+    "placement": "Placement",
+    "dismissible": "Show Close Button",
+    "showProgress": "Show Progress Bar",
+    "showProgressTooltip": "Display a progress bar indicating time until auto-close",
+    "pauseOnHover": "Pause on Hover",
+    "behavior": "Behavior",
+    "width": "Width",
+    "widthTooltip": "Width of the notification in pixels, percentages, or other CSS units. if you want to adjust it according to the screen size, you can use viewport units. Example: 100vw",
+    "progressHeight": "Progress Bar Height",
+    "progressHeightTooltip": "Height of the progress bar. Example: 4px, 8px",
+    "closeIconColor": "Close Icon Color",
+    "infoIconColor": "Info Icon Color",
+    "successIconColor": "Success Icon Color",
+    "warningIconColor": "Warning Icon Color",
+    "errorIconColor": "Error Icon Color",
+    "progressColor": "Progress Bar Color",
+    "progressBackground": "Progress Bar Background",
+    
+    // Type options
+    "typeInfo": "Info",
+    "typeSuccess": "Success",
+    "typeWarning": "Warning",
+    "typeError": "Error",
+    
+    // Placement options
+    "placementTopLeft": "Top Left",
+    "placementTopRight": "Top Right",
+    "placementBottomLeft": "Bottom Left",
+    "placementBottomRight": "Bottom Right",
+    
+    // Event labels
+    "click": "Click",
+    "clickDesc": "Triggered when the notification is clicked",
+    "close": "Close",
+    "closeDesc": "Triggered when the notification is closed or dismissed",
+    
+    // Exposed state descriptions
+    "visibleDesc": "Whether the notification is currently visible",
+    "titleDesc": "The configured title of the notification",
+    "descriptionDesc": "The configured description of the notification",
+    "typeDesc": "The configured type (info, success, warning, error)",
+    "durationDesc": "The configured duration in seconds",
+    "placementDesc": "The configured placement position",
+    "widthDesc": "The configured width of the notification"
   },
   "themeComp": {
     "switchTo": "Switch Theme"

@@ -236,7 +236,7 @@ const TabPaneContent: React.FC<TabPaneContentProps> = ({
           positionParams={positionParamsView}
           dispatch={dispatch}
           autoHeight={autoHeight}
-          containerPadding={[0, 20]}
+          containerPadding={[0, 0]}
         />
       </ScrollBar>
     </BackgroundColorContext.Provider>
