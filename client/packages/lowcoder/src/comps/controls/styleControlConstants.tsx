@@ -1612,6 +1612,61 @@ export const ModalStyle = [
   BACKGROUND_IMAGE_ORIGIN,
 ] as const;
 
+
+export const NotificationStyle = [
+  getBackground("primarySurface"),
+  {
+    name: "color",
+    label: trans("color"),
+    depName: "background",
+    depType: DEP_TYPE.CONTRAST_TEXT,
+    transformer: contrastText,
+  },
+  {
+    name: "closeIconColor",
+    label: trans("toastComp.closeIconColor"),
+    depName: "background",
+    depType: DEP_TYPE.CONTRAST_TEXT,
+    transformer: contrastText,
+  },
+  {
+    name: "infoIconColor",
+    label: trans("toastComp.infoIconColor"),
+    color: "#1890ff",
+  },
+  {
+    name: "successIconColor",
+    label: trans("toastComp.successIconColor"),
+    color: "#52c41a",
+  },
+  {
+    name: "warningIconColor",
+    label: trans("toastComp.warningIconColor"),
+    color: "#faad14",
+  },
+  {
+    name: "errorIconColor",
+    label: trans("toastComp.errorIconColor"),
+    color: "#ff4d4f",
+  },
+  {
+    name: "progressColor",
+    label: trans("toastComp.progressColor"),
+    color: "#1890ff",
+  },
+  {
+    name: "progressBackground",
+    label: trans("toastComp.progressBackground"),
+    color: "#e8e8e8",
+  },
+  getStaticBorder("transparent"),
+  RADIUS,
+  BORDER_WIDTH,
+  BORDER_STYLE,
+  MARGIN,
+  PADDING,
+] as const;
+
 export const CascaderStyle = [
   ...getStaticBgBorderRadiusByBg(SURFACE_COLOR, "pc"),
   TEXT,
@@ -2502,6 +2557,7 @@ export type ChildrenMultiSelectStyleType = StyleConfigType<
 export type TabContainerStyleType = StyleConfigType<typeof TabContainerStyle>;
 export type TabBodyStyleType = StyleConfigType<typeof TabBodyStyle>;
 export type ModalStyleType = StyleConfigType<typeof ModalStyle>;
+export type NotificationStyleType = StyleConfigType<typeof NotificationStyle>;
 export type CascaderStyleType = StyleConfigType<typeof CascaderStyle>;
 export type CheckboxStyleType = StyleConfigType<typeof CheckboxStyle>;
 export type RadioStyleType = StyleConfigType<typeof RadioStyle>;
