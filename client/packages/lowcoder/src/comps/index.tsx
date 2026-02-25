@@ -196,6 +196,7 @@ import { ContainerComp as FloatTextContainerComp } from "./comps/containerComp/t
 import { ChatComp } from "./comps/chatComp";
 import { ChatBoxComp } from "./comps/chatBoxComponent";
 import { ChatControllerComp } from "./comps/chatBoxComponent/chatControllerComp";
+import { ChatBoxV2Comp } from "./comps/chatBoxComponentv2";
 
 type Registry = {
   [key in UICompType]?: UICompManifest;
@@ -971,6 +972,20 @@ export var uiCompMap: Registry = {
     keywords: "chatbox,chat,conversation,rooms,messaging",
     comp: ChatControllerComp,
     isContainer: true,
+  },
+
+  chatBoxV2: {
+    name: "Chat Box V2",
+    enName: "Chat Box V2",
+    description: "Chat Box with rooms, messaging, and local persistence",
+    categories: ["collaboration"],
+    icon: CommentCompIcon,
+    keywords: "chatbox,chat,conversation,rooms,messaging,v2",
+    comp: ChatBoxV2Comp,
+    layoutInfo: {
+      w: 12,
+      h: 24,
+    },
   },
 
   // Forms
