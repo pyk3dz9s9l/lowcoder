@@ -1971,6 +1971,7 @@ export const en = {
     "format": "Format",
     "inputFormat": "Input Format",
     "formatTip": "Support: 'YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD', 'Timestamp'",
+    "inputFormatTip": "Supports multiple formats separated by commas (e.g., 'MM/DD/YYYY, MMDDYYYY, YYYY-MM-DD'). First format is used for display. See",
     "reference": "Please Refer to",
     "showTime": "Show Time",
     "start": "Start Date",
