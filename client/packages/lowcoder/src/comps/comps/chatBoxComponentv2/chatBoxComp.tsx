@@ -28,7 +28,7 @@ import { EditorContext } from "comps/editorState";
 import { trans } from "i18n";
 
 import { useChatStore } from "./useChatStore";
-import type { ChatMessage, ChatRoom, RoomMember } from "./chatDataStore";
+import type { ChatMessage, ChatRoom, RoomMember, SyncMode } from "./chatDataStore";
 
 // ─── Event definitions ──────────────────────────────────────────────────────
 
@@ -47,6 +47,16 @@ const childrenMap = {
   userName: stringExposingStateControl("userName", "User"),
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   defaultRoom: withDefault(StringControl, "general"),
+
+  mode: dropdownControl(
+    [
+      { label: "Local (Browser Storage)", value: "local" },
+      { label: "Collaborative (WebSocket)", value: "collaborative" },
+      { label: "Hybrid (Local + WebSocket)", value: "hybrid" },
+    ],
+    "local",
+  ),
+  wsUrl: withDefault(StringControl, "ws://localhost:3005"),
 
   allowRoomCreation: withDefault(BoolControl, true),
   allowRoomSearch: withDefault(BoolControl, true),
@@ -220,6 +230,8 @@ const ChatBoxView = React.memo((props: any) => {
     userName,
     applicationId,
     defaultRoom,
+    mode,
+    wsUrl,
     allowRoomCreation,
     allowRoomSearch,
     showRoomPanel,
@@ -234,6 +246,8 @@ const ChatBoxView = React.memo((props: any) => {
     defaultRoom: defaultRoom || "general",
     userId: userId.value || "user_1",
     userName: userName.value || "User",
+    mode: (mode as SyncMode) || "local",
+    wsUrl: wsUrl || "ws://localhost:3005",
   });
 
   const [draft, setDraft] = useState("");
@@ -454,7 +468,7 @@ const ChatBoxView = React.memo((props: any) => {
             </div>
           </div>
           <div style={{ fontSize: 12, color: chat.ready ? "#52c41a" : "#999" }}>
-            {chat.ready ? "Connected" : chat.error || "Connecting..."}
+            {chat.ready ? chat.connectionLabel : chat.error || "Connecting..."}
           </div>
         </ChatHeaderBar>
 
@@ -574,6 +588,15 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.userName.propertyView({ label: "User Name", tooltip: "Current user's display name" })}
         {children.applicationId.propertyView({ label: "Application ID", tooltip: "Scopes rooms to this application" })}
         {children.defaultRoom.propertyView({ label: "Default Room", tooltip: "Room to join on load" })}
+        {children.mode.propertyView({
+          label: "Sync Mode",
+          tooltip: "Local: browser-only storage. Collaborative: real-time via WebSocket. Hybrid: both with offline fallback.",
+        })}
+        {children.mode.getView() !== "local" &&
+          children.wsUrl.propertyView({
+            label: "WebSocket URL",
+            tooltip: "Yjs WebSocket server URL (e.g. ws://localhost:3005)",
+          })}
       </Section>
 
       <Section name="Room Settings">

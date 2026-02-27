@@ -1,16 +1,26 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChatDataStore, ChatMessage, ChatRoom, RoomMember, getChatStore } from "./chatDataStore";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type IChatStore,
+  type ChatMessage,
+  type ChatRoom,
+  type RoomMember,
+  type SyncMode,
+  getChatStore,
+} from "./chatDataStore";
 
 export interface UseChatStoreConfig {
   applicationId: string;
   defaultRoom: string;
   userId: string;
   userName: string;
+  mode: SyncMode;
+  wsUrl: string;
 }
 
 export interface UseChatStoreReturn {
   ready: boolean;
   error: string | null;
+  connectionLabel: string;
 
   currentRoom: ChatRoom | null;
   messages: ChatMessage[];
@@ -26,18 +36,18 @@ export interface UseChatStoreReturn {
 }
 
 export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
-  const { applicationId, defaultRoom, userId, userName } = config;
+  const { applicationId, defaultRoom, userId, userName, mode, wsUrl } = config;
 
-  const storeRef = useRef<ChatDataStore | null>(null);
+  const storeRef = useRef<IChatStore | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionLabel, setConnectionLabel] = useState("Connecting...");
 
   const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userRooms, setUserRooms] = useState<ChatRoom[]>([]);
   const [currentRoomMembers, setCurrentRoomMembers] = useState<RoomMember[]>([]);
 
-  // Track the "active room id" in a ref so callbacks always see the latest value.
   const activeRoomIdRef = useRef<string | null>(null);
 
   // ── Refresh helpers ────────────────────────────────────────────────────
@@ -48,9 +58,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     try {
       const rooms = await store.getUserRooms(userId);
       setUserRooms(rooms);
-    } catch {
-      // non-fatal
-    }
+    } catch { /* non-fatal */ }
   }, [userId]);
 
   const refreshMessages = useCallback(async () => {
@@ -60,9 +68,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     try {
       const msgs = await store.getMessages(roomId);
       setMessages(msgs);
-    } catch {
-      // non-fatal
-    }
+    } catch { /* non-fatal */ }
   }, []);
 
   const refreshMembers = useCallback(async () => {
@@ -72,13 +78,13 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     try {
       const members = await store.getRoomMembers(roomId);
       setCurrentRoomMembers(members);
-    } catch {
-      // non-fatal
-    }
+    } catch { /* non-fatal */ }
   }, []);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([refreshRooms(), refreshMessages(), refreshMembers()]);
+    const store = storeRef.current;
+    if (store) setConnectionLabel(store.getConnectionLabel());
   }, [refreshRooms, refreshMessages, refreshMembers]);
 
   // ── Initialization ─────────────────────────────────────────────────────
@@ -87,7 +93,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     if (!applicationId || !userId || !userName) return;
 
     let cancelled = false;
-    const store = getChatStore(applicationId);
+    const store = getChatStore(applicationId, mode, wsUrl);
     storeRef.current = store;
 
     (async () => {
@@ -95,7 +101,6 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         await store.init();
         if (cancelled) return;
 
-        // Ensure the default room exists and user is a member.
         const room = await store.ensureRoom(defaultRoom, "public", userId, userName);
         if (cancelled) return;
 
@@ -112,6 +117,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         setMessages(msgs);
         setUserRooms(rooms);
         setCurrentRoomMembers(members);
+        setConnectionLabel(store.getConnectionLabel());
         setReady(true);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to initialize chat store");
@@ -126,7 +132,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       cancelled = true;
       unsub();
     };
-  }, [applicationId, userId, userName, defaultRoom, refreshAll]);
+  }, [applicationId, userId, userName, defaultRoom, mode, wsUrl, refreshAll]);
 
   // ── Actions ────────────────────────────────────────────────────────────
 
@@ -138,9 +144,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       try {
         await store.sendMessage(roomId, userId, userName, text.trim());
         return true;
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     },
     [userId, userName],
   );
@@ -167,12 +171,8 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     async (name: string, type: "public" | "private", description?: string): Promise<ChatRoom | null> => {
       const store = storeRef.current;
       if (!store) return null;
-      try {
-        const room = await store.createRoom(name, type, userId, userName, description);
-        return room;
-      } catch {
-        return null;
-      }
+      try { return await store.createRoom(name, type, userId, userName, description); }
+      catch { return null; }
     },
     [userId, userName],
   );
@@ -185,9 +185,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         const ok = await store.joinRoom(roomId, userId, userName);
         if (ok) await switchRoom(roomId);
         return ok;
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     },
     [userId, userName, switchRoom],
   );
@@ -210,9 +208,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
           }
         }
         return ok;
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     },
     [userId, switchRoom],
   );
@@ -221,11 +217,8 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     async (query: string): Promise<ChatRoom[]> => {
       const store = storeRef.current;
       if (!store || !query.trim()) return [];
-      try {
-        return await store.getSearchableRooms(userId, query.trim());
-      } catch {
-        return [];
-      }
+      try { return await store.getSearchableRooms(userId, query.trim()); }
+      catch { return []; }
     },
     [userId],
   );
@@ -233,6 +226,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
   return {
     ready,
     error,
+    connectionLabel,
     currentRoom,
     messages,
     userRooms,
