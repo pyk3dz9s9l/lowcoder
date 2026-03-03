@@ -30,6 +30,13 @@ export interface RoomMember {
   joinedAt: number;
 }
 
+export interface TypingUser {
+  userId: string;
+  userName: string;
+  roomId: string;
+  startedAt: number;
+}
+
 export type ChatStoreListener = () => void;
 
 export type SyncMode = "local" | "collaborative" | "hybrid";
@@ -60,6 +67,10 @@ export interface IChatStore {
 
   sendMessage(roomId: string, authorId: string, authorName: string, text: string): Promise<ChatMessage>;
   getMessages(roomId: string, limit?: number): Promise<ChatMessage[]>;
+
+  startTyping(roomId: string, userId: string, userName: string): void;
+  stopTyping(roomId: string, userId: string): void;
+  getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[];
 }
 
 // ─── ALASql local store ──────────────────────────────────────────────────────
@@ -70,6 +81,7 @@ export class LocalChatStore implements IChatStore {
   private dbName: string;
   private ready = false;
   private listeners = new Set<ChatStoreListener>();
+  private typingMap = new Map<string, TypingUser>();
 
   constructor(applicationId: string) {
     this.dbName = `ChatV2_${applicationId.replace(/[^a-zA-Z0-9_]/g, "_")}`;
@@ -236,6 +248,36 @@ export class LocalChatStore implements IChatStore {
     return rows.slice(-limit);
   }
 
+  // ── Typing ─────────────────────────────────────────────────────────────
+
+  private typingKey(roomId: string, userId: string) { return `${roomId}::${userId}`; }
+
+  startTyping(roomId: string, userId: string, userName: string): void {
+    this.typingMap.set(this.typingKey(roomId, userId), { userId, userName, roomId, startedAt: Date.now() });
+    this.notify();
+  }
+
+  stopTyping(roomId: string, userId: string): void {
+    if (this.typingMap.delete(this.typingKey(roomId, userId))) {
+      this.notify();
+    }
+  }
+
+  getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[] {
+    const now = Date.now();
+    const result: TypingUser[] = [];
+    for (const [key, entry] of this.typingMap) {
+      if (entry.roomId !== roomId) continue;
+      if (excludeUserId && entry.userId === excludeUserId) continue;
+      if (now - entry.startedAt > 5000) {
+        this.typingMap.delete(key);
+        continue;
+      }
+      result.push(entry);
+    }
+    return result;
+  }
+
   // ── Internal ───────────────────────────────────────────────────────────
 
   private assert(): void {
@@ -251,6 +293,7 @@ export class YjsChatStore implements IChatStore {
   private messagesMap: Y.Map<any> | null = null;
   private roomsMap: Y.Map<any> | null = null;
   private membersMap: Y.Map<any> | null = null;
+  private typingYMap: Y.Map<any> | null = null;
   private listeners = new Set<ChatStoreListener>();
   private ready = false;
   private wsConnected = false;
@@ -299,12 +342,14 @@ export class YjsChatStore implements IChatStore {
     this.messagesMap = ydoc.getMap("messages");
     this.roomsMap = ydoc.getMap("rooms");
     this.membersMap = ydoc.getMap("members");
+    this.typingYMap = ydoc.getMap("typing");
 
     // React to any Yjs mutation → notify listeners
     const onChange = () => this.notify();
     this.messagesMap.observe(onChange);
     this.roomsMap.observe(onChange);
     this.membersMap.observe(onChange);
+    this.typingYMap.observe(onChange);
 
     if (wsProvider) {
       wsProvider.on("status", (e: { status: string }) => {
@@ -336,6 +381,7 @@ export class YjsChatStore implements IChatStore {
     this.messagesMap = null;
     this.roomsMap = null;
     this.membersMap = null;
+    this.typingYMap = null;
     this.listeners.clear();
     this.ready = false;
   }
@@ -487,6 +533,35 @@ export class YjsChatStore implements IChatStore {
     return msgs.slice(-limit);
   }
 
+  // ── Typing ─────────────────────────────────────────────────────────────
+
+  private typingKey(roomId: string, userId: string) { return `${roomId}::${userId}`; }
+
+  startTyping(roomId: string, userId: string, userName: string): void {
+    this.typingYMap?.set(this.typingKey(roomId, userId), { userId, userName, roomId, startedAt: Date.now() } as TypingUser);
+  }
+
+  stopTyping(roomId: string, userId: string): void {
+    this.typingYMap?.delete(this.typingKey(roomId, userId));
+  }
+
+  getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[] {
+    if (!this.typingYMap) return [];
+    const now = Date.now();
+    const result: TypingUser[] = [];
+    this.typingYMap.forEach((v: any, key: string) => {
+      const entry = v as TypingUser;
+      if (entry.roomId !== roomId) return;
+      if (excludeUserId && entry.userId === excludeUserId) return;
+      if (now - entry.startedAt > 5000) {
+        this.typingYMap!.delete(key);
+        return;
+      }
+      result.push(entry);
+    });
+    return result;
+  }
+
   // ── Internal ───────────────────────────────────────────────────────────
 
   private assert(): void {
@@ -600,6 +675,30 @@ export class HybridChatStore implements IChatStore {
   }
 
   async getMessages(roomId: string, limit?: number) { return this.reader.getMessages(roomId, limit); }
+
+  // ── Typing (prefer Yjs for real-time sync, fallback to local) ─────────
+
+  startTyping(roomId: string, userId: string, userName: string): void {
+    if (this.yjs.isReady()) {
+      this.yjs.startTyping(roomId, userId, userName);
+    } else {
+      this.local.startTyping(roomId, userId, userName);
+    }
+  }
+
+  stopTyping(roomId: string, userId: string): void {
+    if (this.yjs.isReady()) {
+      this.yjs.stopTyping(roomId, userId);
+    } else {
+      this.local.stopTyping(roomId, userId);
+    }
+  }
+
+  getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[] {
+    return this.yjs.isReady()
+      ? this.yjs.getTypingUsers(roomId, excludeUserId)
+      : this.local.getTypingUsers(roomId, excludeUserId);
+  }
 }
 
 // ─── Helpers & cache ─────────────────────────────────────────────────────────

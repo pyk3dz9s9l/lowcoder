@@ -28,7 +28,7 @@ import { EditorContext } from "comps/editorState";
 import { trans } from "i18n";
 
 import { useChatStore } from "./useChatStore";
-import type { ChatMessage, ChatRoom, RoomMember, SyncMode } from "./chatDataStore";
+import type { ChatMessage, ChatRoom, RoomMember, SyncMode, TypingUser } from "./chatDataStore";
 
 // ─── Event definitions ──────────────────────────────────────────────────────
 
@@ -211,6 +211,46 @@ const EmptyChat = styled.div`
   gap: 4px;
 `;
 
+const TypingIndicatorWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  align-self: flex-start;
+`;
+
+const TypingDots = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #e8e8e8;
+  border-radius: 12px;
+  padding: 8px 12px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #999;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+  }
+
+  span:nth-child(1) { animation-delay: 0s; }
+  span:nth-child(2) { animation-delay: 0.2s; }
+  span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+`;
+
+const TypingLabel = styled.span`
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+`;
+
 const SearchResultBadge = styled.span`
   font-size: 10px;
   background: #e6f7ff;
@@ -257,6 +297,8 @@ const ChatBoxView = React.memo((props: any) => {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [createForm] = Form.useForm();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -265,14 +307,30 @@ const ChatBoxView = React.memo((props: any) => {
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
+  const clearTypingTimeout = useCallback(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleStopTyping = useCallback(() => {
+    clearTypingTimeout();
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      chat.stopTyping();
+    }
+  }, [chat.stopTyping, clearTypingTimeout]);
+
   const handleSend = useCallback(async () => {
     if (!draft.trim()) return;
+    handleStopTyping();
     const ok = await chat.sendMessage(draft);
     if (ok) {
       setDraft("");
       onEvent("messageSent");
     }
-  }, [draft, chat.sendMessage, onEvent]);
+  }, [draft, chat.sendMessage, onEvent, handleStopTyping]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -283,6 +341,39 @@ const ChatBoxView = React.memo((props: any) => {
     },
     [handleSend],
   );
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setDraft(value);
+
+      if (!value.trim()) {
+        handleStopTyping();
+        return;
+      }
+
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        chat.startTyping();
+      }
+
+      clearTypingTimeout();
+      typingTimeoutRef.current = setTimeout(() => {
+        handleStopTyping();
+      }, 2000);
+    },
+    [chat.startTyping, handleStopTyping, clearTypingTimeout],
+  );
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      clearTypingTimeout();
+      if (isTypingRef.current) {
+        chat.stopTyping();
+      }
+    };
+  }, [chat.stopTyping, clearTypingTimeout]);
 
   const handleCreateRoom = useCallback(
     async (values: { roomName: string; roomType: "public" | "private"; description?: string }) => {
@@ -495,13 +586,27 @@ const ChatBoxView = React.memo((props: any) => {
               );
             })
           )}
+          {chat.typingUsers.length > 0 && (
+            <TypingIndicatorWrapper>
+              <TypingDots>
+                <span />
+                <span />
+                <span />
+              </TypingDots>
+              <TypingLabel>
+                {chat.typingUsers.length === 1
+                  ? `${chat.typingUsers[0].userName} is typing...`
+                  : `${chat.typingUsers.length} people are typing...`}
+              </TypingLabel>
+            </TypingIndicatorWrapper>
+          )}
           <div ref={messagesEndRef} />
         </MessagesArea>
 
         <InputBar>
           <StyledTextArea
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={chat.ready ? "Type a message..." : "Connecting..."}
             disabled={!chat.ready || !chat.currentRoom}
