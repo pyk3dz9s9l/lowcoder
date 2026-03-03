@@ -1,4 +1,6 @@
 import alasql from "alasql";
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -242,9 +244,6 @@ export class LocalChatStore implements IChatStore {
 }
 
 // ─── Yjs collaborative store ────────────────────────────────────────────────
-
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 
 export class YjsChatStore implements IChatStore {
   private ydoc: Y.Doc | null = null;
