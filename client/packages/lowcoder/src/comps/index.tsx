@@ -974,7 +974,7 @@ export var uiCompMap: Registry = {
     isContainer: true,
   },
 
-  chatBoxV2: {
+  chatBoxV: {
     name: "Chat Box V2",
     enName: "Chat Box V2",
     description: "Chat Box with rooms, messaging, and local persistence",

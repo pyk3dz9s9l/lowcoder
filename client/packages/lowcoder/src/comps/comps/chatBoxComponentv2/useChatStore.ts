@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type IChatStore,
-  type ChatMessage,
-  type ChatRoom,
-  type RoomMember,
-  type TypingUser,
-  type SyncMode,
-  getChatStore,
-} from "./chatDataStore";
+import type {
+  IChatStore,
+  ChatMessage,
+  ChatRoom,
+  RoomMember,
+  TypingUser,
+  SyncMode,
+  ChangeType,
+} from "./store";
+import { getChatStore, releaseChatStore } from "./store";
 
 export interface UseChatStoreConfig {
   applicationId: string;
@@ -39,6 +40,8 @@ export interface UseChatStoreReturn {
   stopTyping: () => void;
 }
 
+const TYPING_POLL_INTERVAL = 1500;
+
 export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
   const { applicationId, defaultRoom, userId, userName, mode, wsUrl } = config;
 
@@ -56,7 +59,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
   const activeRoomIdRef = useRef<string | null>(null);
   const typingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Refresh helpers ────────────────────────────────────────────────────
+  // ── Granular refresh helpers ──────────────────────────────────────────
 
   const refreshRooms = useCallback(async () => {
     const store = storeRef.current;
@@ -91,15 +94,53 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     const store = storeRef.current;
     const roomId = activeRoomIdRef.current;
     if (!store || !roomId) return;
-    setTypingUsers(store.getTypingUsers(roomId, userId));
+    const users = store.getTypingUsers(roomId, userId);
+    setTypingUsers(users);
+    return users;
   }, [userId]);
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([refreshRooms(), refreshMessages(), refreshMembers()]);
-    refreshTyping();
+  const refreshConnection = useCallback(() => {
     const store = storeRef.current;
     if (store) setConnectionLabel(store.getConnectionLabel());
-  }, [refreshRooms, refreshMessages, refreshMembers, refreshTyping]);
+  }, []);
+
+  // ── Smart typing poll: only runs when someone is typing ───────────────
+
+  const startTypingPoll = useCallback(() => {
+    if (typingPollRef.current) return;
+    typingPollRef.current = setInterval(() => {
+      const users = refreshTyping();
+      if (!users || users.length === 0) {
+        if (typingPollRef.current) {
+          clearInterval(typingPollRef.current);
+          typingPollRef.current = null;
+        }
+      }
+    }, TYPING_POLL_INTERVAL);
+  }, [refreshTyping]);
+
+  const stopTypingPoll = useCallback(() => {
+    if (typingPollRef.current) {
+      clearInterval(typingPollRef.current);
+      typingPollRef.current = null;
+    }
+  }, []);
+
+  // ── Handle granular store changes ─────────────────────────────────────
+
+  const handleStoreChange = useCallback(
+    (changes: Set<ChangeType>) => {
+      if (changes.has("rooms")) refreshRooms();
+      if (changes.has("messages")) refreshMessages();
+      if (changes.has("members")) refreshMembers();
+      if (changes.has("connection")) refreshConnection();
+      if (changes.has("typing")) {
+        const users = refreshTyping();
+        if (users && users.length > 0) startTypingPoll();
+      }
+    },
+    [refreshRooms, refreshMessages, refreshMembers, refreshConnection, refreshTyping, startTypingPoll],
+  );
 
   // ── Initialization ─────────────────────────────────────────────────────
 
@@ -134,25 +175,22 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         setConnectionLabel(store.getConnectionLabel());
         setReady(true);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to initialize chat store");
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Failed to initialize chat store");
       }
     })();
 
-    const unsub = store.subscribe(() => {
-      if (!cancelled) refreshAll();
+    const unsub = store.subscribe((changes) => {
+      if (!cancelled) handleStoreChange(changes);
     });
-
-    // Poll typing state every 1.5s to auto-expire stale entries
-    typingPollRef.current = setInterval(() => {
-      if (!cancelled) refreshTyping();
-    }, 1500);
 
     return () => {
       cancelled = true;
       unsub();
-      if (typingPollRef.current) clearInterval(typingPollRef.current);
+      stopTypingPoll();
+      releaseChatStore(applicationId, mode);
     };
-  }, [applicationId, userId, userName, defaultRoom, mode, wsUrl, refreshAll, refreshTyping]);
+  }, [applicationId, userId, userName, defaultRoom, mode, wsUrl, handleStoreChange, stopTypingPoll]);
 
   // ── Actions ────────────────────────────────────────────────────────────
 
@@ -164,35 +202,37 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       try {
         await store.sendMessage(roomId, userId, userName, text.trim());
         return true;
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     },
     [userId, userName],
   );
 
-  const switchRoom = useCallback(
-    async (roomId: string) => {
-      const store = storeRef.current;
-      if (!store) return;
-      const room = await store.getRoom(roomId);
-      if (!room) return;
-      activeRoomIdRef.current = room.id;
-      setCurrentRoom(room);
-      const [msgs, members] = await Promise.all([
-        store.getMessages(room.id),
-        store.getRoomMembers(room.id),
-      ]);
-      setMessages(msgs);
-      setCurrentRoomMembers(members);
-    },
-    [],
-  );
+  const switchRoom = useCallback(async (roomId: string) => {
+    const store = storeRef.current;
+    if (!store) return;
+    const room = await store.getRoom(roomId);
+    if (!room) return;
+    activeRoomIdRef.current = room.id;
+    setCurrentRoom(room);
+    const [msgs, members] = await Promise.all([
+      store.getMessages(room.id),
+      store.getRoomMembers(room.id),
+    ]);
+    setMessages(msgs);
+    setCurrentRoomMembers(members);
+  }, []);
 
   const createRoom = useCallback(
     async (name: string, type: "public" | "private", description?: string): Promise<ChatRoom | null> => {
       const store = storeRef.current;
       if (!store) return null;
-      try { return await store.createRoom(name, type, userId, userName, description); }
-      catch { return null; }
+      try {
+        return await store.createRoom(name, type, userId, userName, description);
+      } catch {
+        return null;
+      }
     },
     [userId, userName],
   );
@@ -205,7 +245,9 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         const ok = await store.joinRoom(roomId, userId, userName);
         if (ok) await switchRoom(roomId);
         return ok;
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     },
     [userId, userName, switchRoom],
   );
@@ -228,7 +270,9 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
           }
         }
         return ok;
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     },
     [userId, switchRoom],
   );
@@ -237,8 +281,11 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     async (query: string): Promise<ChatRoom[]> => {
       const store = storeRef.current;
       if (!store || !query.trim()) return [];
-      try { return await store.getSearchableRooms(userId, query.trim()); }
-      catch { return []; }
+      try {
+        return await store.getSearchableRooms(userId, query.trim());
+      } catch {
+        return [];
+      }
     },
     [userId],
   );
