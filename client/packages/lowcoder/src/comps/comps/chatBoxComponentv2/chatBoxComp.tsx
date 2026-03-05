@@ -6,7 +6,6 @@ import { withMethodExposing } from "../../generators/withMethodExposing";
 import { stringExposingStateControl } from "comps/controls/codeStateControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { StringControl } from "comps/controls/codeControl";
-import { dropdownControl } from "comps/controls/dropdownControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
@@ -34,15 +33,6 @@ const childrenMap = {
   userName: stringExposingStateControl("userName", "User"),
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   defaultRoom: withDefault(StringControl, "general"),
-
-  mode: dropdownControl(
-    [
-      { label: "Local (Browser Storage)", value: "local" },
-      { label: "Collaborative (WebSocket)", value: "collaborative" },
-      { label: "Hybrid (Local + WebSocket)", value: "hybrid" },
-    ],
-    "local",
-  ),
   wsUrl: withDefault(StringControl, "ws://localhost:3005"),
 
   allowRoomCreation: withDefault(BoolControl, true),
@@ -70,15 +60,10 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.userName.propertyView({ label: "User Name", tooltip: "Current user's display name" })}
         {children.applicationId.propertyView({ label: "Application ID", tooltip: "Scopes rooms to this application" })}
         {children.defaultRoom.propertyView({ label: "Default Room", tooltip: "Room to join on load" })}
-        {children.mode.propertyView({
-          label: "Sync Mode",
-          tooltip: "Local: browser-only storage. Collaborative: real-time via WebSocket. Hybrid: both with offline fallback.",
+        {children.wsUrl.propertyView({
+          label: "WebSocket URL",
+          tooltip: "Yjs WebSocket server URL for real-time sync (e.g. ws://localhost:3005)",
         })}
-        {children.mode.getView() !== "local" &&
-          children.wsUrl.propertyView({
-            label: "WebSocket URL",
-            tooltip: "Yjs WebSocket server URL (e.g. ws://localhost:3005)",
-          })}
       </Section>
 
       <Section name="Room Settings">

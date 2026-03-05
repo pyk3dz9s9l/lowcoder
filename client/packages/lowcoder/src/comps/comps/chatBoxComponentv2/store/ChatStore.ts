@@ -1,7 +1,7 @@
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+import alasql from "alasql";
 import type {
-  IChatStore,
   ChatMessage,
   ChatRoom,
   RoomMember,
@@ -11,16 +11,29 @@ import type {
 } from "./types";
 import { uid } from "./types";
 
-export class YjsChatStore implements IChatStore {
+const PERSIST_DEBOUNCE_MS = 500;
+
+/**
+ * Unified chat store backed by YJS (real-time CRDT sync) and ALAsql
+ * (browser-local persistence). On init the ALAsql data seeds the YJS
+ * doc so state survives page reloads even without a server. YJS map
+ * observers write changes back to ALAsql automatically.
+ */
+export class ChatStore {
   private ydoc: Y.Doc | null = null;
   private wsProvider: WebsocketProvider | null = null;
   private messagesMap: Y.Map<any> | null = null;
   private roomsMap: Y.Map<any> | null = null;
   private membersMap: Y.Map<any> | null = null;
   private typingYMap: Y.Map<any> | null = null;
+
   private listeners = new Set<ChatStoreListener>();
   private ready = false;
   private wsConnected = false;
+
+  private dbName: string;
+  private dbReady = false;
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
   private applicationId: string;
   private wsUrl: string;
@@ -32,78 +45,103 @@ export class YjsChatStore implements IChatStore {
   constructor(applicationId: string, wsUrl: string) {
     this.applicationId = applicationId;
     this.wsUrl = wsUrl;
+    this.dbName = `ChatV2_${applicationId.replace(/[^a-zA-Z0-9_]/g, "_")}`;
   }
 
   isReady(): boolean {
     return this.ready;
   }
 
-  isWsConnected(): boolean {
-    return this.wsConnected;
-  }
-
   getConnectionLabel(): string {
     if (!this.ready) return "Connecting...";
-    return this.wsConnected ? "Online" : "Offline (local Yjs)";
+    return this.wsConnected ? "Online" : "Offline (local)";
   }
 
   async init(): Promise<void> {
     if (this.ready) return;
 
-    const docId = `chatv2_${this.applicationId}`;
+    await this.initDb();
 
-    let ydoc = YjsChatStore.docs.get(docId);
-    let wsProvider = YjsChatStore.providers.get(docId);
+    const docId = `chatv2_${this.applicationId}`;
+    let ydoc = ChatStore.docs.get(docId);
+    let isNewDoc = false;
 
     if (!ydoc) {
       ydoc = new Y.Doc();
-      YjsChatStore.docs.set(docId, ydoc);
-      YjsChatStore.refCounts.set(docId, 1);
-
-      wsProvider = new WebsocketProvider(this.wsUrl, docId, ydoc, { connect: true });
-      YjsChatStore.providers.set(docId, wsProvider);
+      ChatStore.docs.set(docId, ydoc);
+      ChatStore.refCounts.set(docId, 1);
+      isNewDoc = true;
     } else {
-      YjsChatStore.refCounts.set(docId, (YjsChatStore.refCounts.get(docId) || 0) + 1);
-      wsProvider = YjsChatStore.providers.get(docId)!;
+      ChatStore.refCounts.set(
+        docId,
+        (ChatStore.refCounts.get(docId) || 0) + 1,
+      );
     }
 
     this.ydoc = ydoc;
-    this.wsProvider = wsProvider;
     this.messagesMap = ydoc.getMap("messages");
     this.roomsMap = ydoc.getMap("rooms");
     this.membersMap = ydoc.getMap("members");
     this.typingYMap = ydoc.getMap("typing");
 
-    this.messagesMap.observe(() => this.notify(new Set(["messages"])));
-    this.roomsMap.observe(() => this.notify(new Set(["rooms"])));
-    this.membersMap.observe(() => this.notify(new Set(["members"])));
+    if (isNewDoc) {
+      await this.hydrateFromDb();
+    }
+
+    let wsProvider = ChatStore.providers.get(docId);
+    if (!wsProvider) {
+      wsProvider = new WebsocketProvider(this.wsUrl, docId, ydoc, {
+        connect: true,
+      });
+      ChatStore.providers.set(docId, wsProvider);
+    }
+    this.wsProvider = wsProvider;
+
+    this.messagesMap.observe(() => {
+      this.schedulePersist();
+      this.notify(new Set(["messages"]));
+    });
+    this.roomsMap.observe(() => {
+      this.schedulePersist();
+      this.notify(new Set(["rooms"]));
+    });
+    this.membersMap.observe(() => {
+      this.schedulePersist();
+      this.notify(new Set(["members"]));
+    });
     this.typingYMap.observe(() => this.notify(new Set(["typing"])));
 
-    if (wsProvider) {
-      wsProvider.on("status", (e: { status: string }) => {
-        this.wsConnected = e.status === "connected";
-        this.notify(new Set(["connection"]));
-      });
-      this.wsConnected = wsProvider.wsconnected;
-    }
+    wsProvider.on("status", (e: { status: string }) => {
+      this.wsConnected = e.status === "connected";
+      this.notify(new Set(["connection"]));
+    });
+    this.wsConnected = wsProvider.wsconnected;
 
     this.ready = true;
     this.notify(new Set(["connection"]));
   }
 
   destroy(): void {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+
+    this.persistToDb();
+
     if (this.ydoc) {
       const docId = `chatv2_${this.applicationId}`;
-      const count = (YjsChatStore.refCounts.get(docId) || 1) - 1;
+      const count = (ChatStore.refCounts.get(docId) || 1) - 1;
       if (count <= 0) {
-        YjsChatStore.providers.get(docId)?.destroy();
-        YjsChatStore.providers.delete(docId);
-        YjsChatStore.docs.delete(docId);
-        YjsChatStore.refCounts.delete(docId);
+        ChatStore.providers.get(docId)?.destroy();
+        ChatStore.providers.delete(docId);
+        ChatStore.docs.delete(docId);
+        ChatStore.refCounts.delete(docId);
       } else {
-        YjsChatStore.refCounts.set(docId, count);
+        ChatStore.refCounts.set(docId, count);
       }
     }
+
     this.ydoc = null;
     this.wsProvider = null;
     this.messagesMap = null;
@@ -123,6 +161,101 @@ export class YjsChatStore implements IChatStore {
     this.listeners.forEach((fn) => fn(changes));
   }
 
+  // ── ALAsql persistence ────────────────────────────────────────────────
+
+  private async initDb(): Promise<void> {
+    alasql.options.autocommit = true;
+    await alasql.promise(
+      `CREATE LOCALSTORAGE DATABASE IF NOT EXISTS ${this.dbName}`,
+    );
+    await alasql.promise(`ATTACH LOCALSTORAGE DATABASE ${this.dbName}`);
+    await alasql.promise(`USE ${this.dbName}`);
+
+    await alasql.promise(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        id STRING PRIMARY KEY, name STRING, description STRING,
+        type STRING, creatorId STRING, createdAt NUMBER, updatedAt NUMBER
+      )
+    `);
+    await alasql.promise(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id STRING PRIMARY KEY, roomId STRING, authorId STRING,
+        authorName STRING, text STRING, timestamp NUMBER
+      )
+    `);
+    await alasql.promise(`
+      CREATE TABLE IF NOT EXISTS members (
+        roomId STRING, userId STRING, userName STRING, joinedAt NUMBER
+      )
+    `);
+    this.dbReady = true;
+  }
+
+  private async hydrateFromDb(): Promise<void> {
+    if (!this.dbReady) return;
+
+    const rooms = (await alasql.promise(
+      `SELECT * FROM rooms`,
+    )) as ChatRoom[];
+    for (const r of rooms) {
+      if (!this.roomsMap!.has(r.id)) this.roomsMap!.set(r.id, r);
+    }
+
+    const messages = (await alasql.promise(
+      `SELECT * FROM messages`,
+    )) as ChatMessage[];
+    for (const m of messages) {
+      if (!this.messagesMap!.has(m.id)) this.messagesMap!.set(m.id, m);
+    }
+
+    const members = (await alasql.promise(
+      `SELECT * FROM members`,
+    )) as RoomMember[];
+    for (const m of members) {
+      const key = `${m.roomId}::${m.userId}`;
+      if (!this.membersMap!.has(key)) this.membersMap!.set(key, m);
+    }
+  }
+
+  private schedulePersist(): void {
+    if (this.persistTimer) return;
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      this.persistToDb();
+    }, PERSIST_DEBOUNCE_MS);
+  }
+
+  private persistToDb(): void {
+    if (!this.dbReady) return;
+    try {
+      alasql(`DELETE FROM rooms`);
+      this.roomsMap?.forEach((v) => {
+        const r = v as ChatRoom;
+        alasql(`INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?, ?)`, [
+          r.id, r.name, r.description, r.type,
+          r.creatorId, r.createdAt, r.updatedAt,
+        ]);
+      });
+
+      alasql(`DELETE FROM messages`);
+      this.messagesMap?.forEach((v) => {
+        const m = v as ChatMessage;
+        alasql(`INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)`, [
+          m.id, m.roomId, m.authorId, m.authorName, m.text, m.timestamp,
+        ]);
+      });
+
+      alasql(`DELETE FROM members`);
+      this.membersMap?.forEach((v: any) => {
+        alasql(`INSERT INTO members VALUES (?, ?, ?, ?)`, [
+          v.roomId, v.userId, v.userName, v.joinedAt,
+        ]);
+      });
+    } catch {
+      /* persistence is best-effort */
+    }
+  }
+
   // ── Rooms ──────────────────────────────────────────────────────────────
 
   async createRoom(
@@ -136,9 +269,16 @@ export class YjsChatStore implements IChatStore {
     this.assert();
     const roomId = id ?? uid();
     const now = Date.now();
-    const room: ChatRoom = { id: roomId, name, description, type, creatorId, createdAt: now, updatedAt: now };
-    this.roomsMap!.set(roomId, room);
-    this.addMemberEntry(roomId, creatorId, creatorName, now);
+    const room: ChatRoom = {
+      id: roomId, name, description, type,
+      creatorId, createdAt: now, updatedAt: now,
+    };
+    this.ydoc!.transact(() => {
+      this.roomsMap!.set(roomId, room);
+      this.membersMap!.set(`${roomId}::${creatorId}`, {
+        roomId, userId: creatorId, userName: creatorName, joinedAt: now,
+      } as RoomMember);
+    });
     return room;
   }
 
@@ -178,7 +318,10 @@ export class YjsChatStore implements IChatStore {
     return rooms;
   }
 
-  async getSearchableRooms(userId: string, query: string): Promise<ChatRoom[]> {
+  async getSearchableRooms(
+    userId: string,
+    query: string,
+  ): Promise<ChatRoom[]> {
     this.assert();
     const memberRoomIds = new Set<string>();
     this.membersMap!.forEach((v: any) => {
@@ -190,7 +333,10 @@ export class YjsChatStore implements IChatStore {
       const r = v as ChatRoom;
       if (r.type !== "public") return;
       if (memberRoomIds.has(r.id)) return;
-      if (r.name.toLowerCase().includes(lq) || r.description.toLowerCase().includes(lq)) {
+      if (
+        r.name.toLowerCase().includes(lq) ||
+        r.description.toLowerCase().includes(lq)
+      ) {
         rooms.push(r);
       }
     });
@@ -213,30 +359,23 @@ export class YjsChatStore implements IChatStore {
 
   // ── Membership ─────────────────────────────────────────────────────────
 
-  private memberKey(roomId: string, userId: string) {
-    return `${roomId}::${userId}`;
-  }
-
-  private addMemberEntry(roomId: string, userId: string, userName: string, joinedAt: number) {
-    this.membersMap!.set(this.memberKey(roomId, userId), {
-      roomId,
-      userId,
-      userName,
-      joinedAt,
-    } as RoomMember);
-  }
-
-  async joinRoom(roomId: string, userId: string, userName: string): Promise<boolean> {
+  async joinRoom(
+    roomId: string,
+    userId: string,
+    userName: string,
+  ): Promise<boolean> {
     this.assert();
-    const key = this.memberKey(roomId, userId);
+    const key = `${roomId}::${userId}`;
     if (this.membersMap!.has(key)) return true;
-    this.addMemberEntry(roomId, userId, userName, Date.now());
+    this.membersMap!.set(key, {
+      roomId, userId, userName, joinedAt: Date.now(),
+    } as RoomMember);
     return true;
   }
 
   async leaveRoom(roomId: string, userId: string): Promise<boolean> {
     this.assert();
-    this.membersMap!.delete(this.memberKey(roomId, userId));
+    this.membersMap!.delete(`${roomId}::${userId}`);
     return true;
   }
 
@@ -252,7 +391,7 @@ export class YjsChatStore implements IChatStore {
 
   async isMember(roomId: string, userId: string): Promise<boolean> {
     this.assert();
-    return this.membersMap!.has(this.memberKey(roomId, userId));
+    return this.membersMap!.has(`${roomId}::${userId}`);
   }
 
   // ── Messages ───────────────────────────────────────────────────────────
@@ -273,11 +412,13 @@ export class YjsChatStore implements IChatStore {
       text,
       timestamp: Date.now(),
     };
-    this.messagesMap!.set(msg.id, msg);
-    const room = this.roomsMap!.get(roomId) as ChatRoom | undefined;
-    if (room) {
-      this.roomsMap!.set(roomId, { ...room, updatedAt: msg.timestamp });
-    }
+    this.ydoc!.transact(() => {
+      this.messagesMap!.set(msg.id, msg);
+      const room = this.roomsMap!.get(roomId) as ChatRoom | undefined;
+      if (room) {
+        this.roomsMap!.set(roomId, { ...room, updatedAt: msg.timestamp });
+      }
+    });
     return msg;
   }
 
@@ -294,21 +435,14 @@ export class YjsChatStore implements IChatStore {
 
   // ── Typing ─────────────────────────────────────────────────────────────
 
-  private typingKey(roomId: string, userId: string) {
-    return `${roomId}::${userId}`;
-  }
-
   startTyping(roomId: string, userId: string, userName: string): void {
-    this.typingYMap?.set(this.typingKey(roomId, userId), {
-      userId,
-      userName,
-      roomId,
-      startedAt: Date.now(),
+    this.typingYMap?.set(`${roomId}::${userId}`, {
+      userId, userName, roomId, startedAt: Date.now(),
     } as TypingUser);
   }
 
   stopTyping(roomId: string, userId: string): void {
-    this.typingYMap?.delete(this.typingKey(roomId, userId));
+    this.typingYMap?.delete(`${roomId}::${userId}`);
   }
 
   getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[] {
@@ -331,6 +465,7 @@ export class YjsChatStore implements IChatStore {
   // ── Internal ───────────────────────────────────────────────────────────
 
   private assert(): void {
-    if (!this.ready) throw new Error("YjsChatStore not initialized. Call init() first.");
+    if (!this.ready)
+      throw new Error("ChatStore not initialized. Call init() first.");
   }
 }

@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from "react";
 import { UserOutlined } from "@ant-design/icons";
-import type { SyncMode } from "../store";
 import { useChatStore } from "../useChatStore";
 import { Wrapper, ChatPanelContainer, ChatHeaderBar, ConnectionBanner, ConnectionDot } from "../styles";
 import { RoomPanel } from "./RoomPanel";
@@ -14,7 +13,6 @@ export interface ChatBoxViewProps {
   userName: { value: string };
   applicationId: { value: string };
   defaultRoom: string;
-  mode: string;
   wsUrl: string;
   allowRoomCreation: boolean;
   allowRoomSearch: boolean;
@@ -39,7 +37,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     userName,
     applicationId,
     defaultRoom,
-    mode,
     wsUrl,
     allowRoomCreation,
     allowRoomSearch,
@@ -55,7 +52,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     defaultRoom: defaultRoom || "general",
     userId: userId.value || "user_1",
     userName: userName.value || "User",
-    mode: (mode as SyncMode) || "local",
     wsUrl: wsUrl || "ws://localhost:3005",
   });
 

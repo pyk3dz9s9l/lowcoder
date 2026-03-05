@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
-  IChatStore,
   ChatMessage,
   ChatRoom,
   RoomMember,
   TypingUser,
-  SyncMode,
   ChangeType,
 } from "./store";
 import { getChatStore, releaseChatStore } from "./store";
+import type { ChatStore } from "./store";
 
 export interface UseChatStoreConfig {
   applicationId: string;
   defaultRoom: string;
   userId: string;
   userName: string;
-  mode: SyncMode;
   wsUrl: string;
 }
 
@@ -43,9 +41,9 @@ export interface UseChatStoreReturn {
 const TYPING_POLL_INTERVAL = 1500;
 
 export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
-  const { applicationId, defaultRoom, userId, userName, mode, wsUrl } = config;
+  const { applicationId, defaultRoom, userId, userName, wsUrl } = config;
 
-  const storeRef = useRef<IChatStore | null>(null);
+  const storeRef = useRef<ChatStore | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectionLabel, setConnectionLabel] = useState("Connecting...");
@@ -130,7 +128,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
 
   const handleStoreChange = useCallback(
     (changes: Set<ChangeType>) => {
-      if (changes.has("rooms")) refreshRooms();
+      if (changes.has("rooms") || changes.has("members")) refreshRooms();
       if (changes.has("messages")) refreshMessages();
       if (changes.has("members")) refreshMembers();
       if (changes.has("connection")) refreshConnection();
@@ -148,7 +146,7 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     if (!applicationId || !userId || !userName) return;
 
     let cancelled = false;
-    const store = getChatStore(applicationId, mode, wsUrl);
+    const store = getChatStore(applicationId, wsUrl);
     storeRef.current = store;
 
     (async () => {
@@ -188,9 +186,9 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       cancelled = true;
       unsub();
       stopTypingPoll();
-      releaseChatStore(applicationId, mode);
+      releaseChatStore(applicationId);
     };
-  }, [applicationId, userId, userName, defaultRoom, mode, wsUrl, handleStoreChange, stopTypingPoll]);
+  }, [applicationId, userId, userName, defaultRoom, wsUrl, handleStoreChange, stopTypingPoll]);
 
   // ── Actions ────────────────────────────────────────────────────────────
 
