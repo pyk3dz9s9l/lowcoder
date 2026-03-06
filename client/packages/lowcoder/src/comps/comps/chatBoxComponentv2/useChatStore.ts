@@ -11,7 +11,6 @@ import type { ChatStore } from "./store";
 
 export interface UseChatStoreConfig {
   applicationId: string;
-  defaultRoom: string;
   userId: string;
   userName: string;
   wsUrl: string;
@@ -38,10 +37,8 @@ export interface UseChatStoreReturn {
   stopTyping: () => void;
 }
 
-const TYPING_POLL_INTERVAL = 1500;
-
 export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
-  const { applicationId, defaultRoom, userId, userName, wsUrl } = config;
+  const { applicationId, userId, userName, wsUrl } = config;
 
   const storeRef = useRef<ChatStore | null>(null);
   const [ready, setReady] = useState(false);
@@ -55,7 +52,6 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
 
   const activeRoomIdRef = useRef<string | null>(null);
-  const typingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Granular refresh helpers ──────────────────────────────────────────
 
@@ -102,28 +98,6 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     if (store) setConnectionLabel(store.getConnectionLabel());
   }, []);
 
-  // ── Smart typing poll: only runs when someone is typing ───────────────
-
-  const startTypingPoll = useCallback(() => {
-    if (typingPollRef.current) return;
-    typingPollRef.current = setInterval(() => {
-      const users = refreshTyping();
-      if (!users || users.length === 0) {
-        if (typingPollRef.current) {
-          clearInterval(typingPollRef.current);
-          typingPollRef.current = null;
-        }
-      }
-    }, TYPING_POLL_INTERVAL);
-  }, [refreshTyping]);
-
-  const stopTypingPoll = useCallback(() => {
-    if (typingPollRef.current) {
-      clearInterval(typingPollRef.current);
-      typingPollRef.current = null;
-    }
-  }, []);
-
   // ── Handle granular store changes ─────────────────────────────────────
 
   const handleStoreChange = useCallback(
@@ -132,12 +106,9 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       if (changes.has("messages")) refreshMessages();
       if (changes.has("members")) refreshMembers();
       if (changes.has("connection")) refreshConnection();
-      if (changes.has("typing")) {
-        const users = refreshTyping();
-        if (users && users.length > 0) startTypingPoll();
-      }
+      if (changes.has("typing")) refreshTyping();
     },
-    [refreshRooms, refreshMessages, refreshMembers, refreshConnection, refreshTyping, startTypingPoll],
+    [refreshRooms, refreshMessages, refreshMembers, refreshConnection, refreshTyping],
   );
 
   // ── Initialization ─────────────────────────────────────────────────────
@@ -154,22 +125,24 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         await store.init();
         if (cancelled) return;
 
-        const room = await store.ensureRoom(defaultRoom, "public", userId, userName);
+        const rooms = await store.getUserRooms(userId);
         if (cancelled) return;
 
-        activeRoomIdRef.current = room.id;
-        setCurrentRoom(room);
-
-        const [msgs, rooms, members] = await Promise.all([
-          store.getMessages(room.id),
-          store.getUserRooms(userId),
-          store.getRoomMembers(room.id),
-        ]);
-        if (cancelled) return;
-
-        setMessages(msgs);
         setUserRooms(rooms);
-        setCurrentRoomMembers(members);
+
+        // if (rooms.length > 0) {
+        //   const first = rooms[0];
+        //   activeRoomIdRef.current = first.id;
+        //   setCurrentRoom(first);
+        //   const [msgs, members] = await Promise.all([
+        //     store.getMessages(first.id),
+        //     store.getRoomMembers(first.id),
+        //   ]);
+        //   if (cancelled) return;
+        //   setMessages(msgs);
+        //   setCurrentRoomMembers(members);
+        // }
+
         setConnectionLabel(store.getConnectionLabel());
         setReady(true);
       } catch (e) {
@@ -185,10 +158,9 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     return () => {
       cancelled = true;
       unsub();
-      stopTypingPoll();
       releaseChatStore(applicationId);
     };
-  }, [applicationId, userId, userName, defaultRoom, wsUrl, handleStoreChange, stopTypingPoll]);
+  }, [applicationId, userId, userName, wsUrl, handleStoreChange]);
 
   // ── Actions ────────────────────────────────────────────────────────────
 

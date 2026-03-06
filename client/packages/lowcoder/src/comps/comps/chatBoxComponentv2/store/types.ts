@@ -28,7 +28,6 @@ export interface TypingUser {
   userId: string;
   userName: string;
   roomId: string;
-  startedAt: number;
 }
 
 export type ChangeType = "rooms" | "messages" | "members" | "typing" | "connection";

@@ -32,7 +32,6 @@ const childrenMap = {
   userId: stringExposingStateControl("userId", "user_1"),
   userName: stringExposingStateControl("userName", "User"),
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
-  defaultRoom: withDefault(StringControl, "general"),
   wsUrl: withDefault(StringControl, "ws://localhost:3005"),
 
   allowRoomCreation: withDefault(BoolControl, true),
@@ -59,7 +58,6 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.userId.propertyView({ label: "User ID", tooltip: "Current user's unique identifier" })}
         {children.userName.propertyView({ label: "User Name", tooltip: "Current user's display name" })}
         {children.applicationId.propertyView({ label: "Application ID", tooltip: "Scopes rooms to this application" })}
-        {children.defaultRoom.propertyView({ label: "Default Room", tooltip: "Room to join on load" })}
         {children.wsUrl.propertyView({
           label: "WebSocket URL",
           tooltip: "Yjs WebSocket server URL for real-time sync (e.g. ws://localhost:3005)",

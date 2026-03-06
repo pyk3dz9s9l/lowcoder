@@ -7,12 +7,13 @@ import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
 import { CreateRoomModal } from "./CreateRoomModal";
 
+type ChatBoxEventName = "messageSent" | "messageReceived" | "roomJoined" | "roomLeft";
+
 export interface ChatBoxViewProps {
   chatName: { value: string };
   userId: { value: string };
   userName: { value: string };
   applicationId: { value: string };
-  defaultRoom: string;
   wsUrl: string;
   allowRoomCreation: boolean;
   allowRoomSearch: boolean;
@@ -20,7 +21,7 @@ export interface ChatBoxViewProps {
   roomPanelWidth: string;
   style: any;
   animationStyle: any;
-  onEvent: (event: string) => any;
+  onEvent: (event: ChatBoxEventName) => any;
   [key: string]: any;
 }
 
@@ -36,7 +37,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     userId,
     userName,
     applicationId,
-    defaultRoom,
     wsUrl,
     allowRoomCreation,
     allowRoomSearch,
@@ -49,7 +49,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
 
   const chat = useChatStore({
     applicationId: applicationId.value || "lowcoder_app",
-    defaultRoom: defaultRoom || "general",
     userId: userId.value || "user_1",
     userName: userName.value || "User",
     wsUrl: wsUrl || "ws://localhost:3005",

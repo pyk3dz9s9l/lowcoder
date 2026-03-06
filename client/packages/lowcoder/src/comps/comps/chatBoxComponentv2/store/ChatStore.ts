@@ -25,7 +25,7 @@ export class ChatStore {
   private messagesMap: Y.Map<any> | null = null;
   private roomsMap: Y.Map<any> | null = null;
   private membersMap: Y.Map<any> | null = null;
-  private typingYMap: Y.Map<any> | null = null;
+  private awarenessHandler: (() => void) | null = null;
 
   private listeners = new Set<ChatStoreListener>();
   private ready = false;
@@ -71,18 +71,19 @@ export class ChatStore {
       ChatStore.docs.set(docId, ydoc);
       ChatStore.refCounts.set(docId, 1);
       isNewDoc = true;
+      console.log(`[YJS] Created new document: ${docId}`);
     } else {
       ChatStore.refCounts.set(
         docId,
         (ChatStore.refCounts.get(docId) || 0) + 1,
       );
+      console.log(`[YJS] Reusing existing document: ${docId}`);
     }
 
     this.ydoc = ydoc;
     this.messagesMap = ydoc.getMap("messages");
     this.roomsMap = ydoc.getMap("rooms");
     this.membersMap = ydoc.getMap("members");
-    this.typingYMap = ydoc.getMap("typing");
 
     if (isNewDoc) {
       await this.hydrateFromDb();
@@ -90,6 +91,7 @@ export class ChatStore {
 
     let wsProvider = ChatStore.providers.get(docId);
     if (!wsProvider) {
+      console.log(`[YJS] Creating WebSocket provider for ${docId} at ${this.wsUrl}`);
       wsProvider = new WebsocketProvider(this.wsUrl, docId, ydoc, {
         connect: true,
       });
@@ -98,26 +100,34 @@ export class ChatStore {
     this.wsProvider = wsProvider;
 
     this.messagesMap.observe(() => {
+      console.log(`[YJS] Messages map changed (size: ${this.messagesMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["messages"]));
     });
     this.roomsMap.observe(() => {
+      console.log(`[YJS] Rooms map changed (size: ${this.roomsMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["rooms"]));
     });
     this.membersMap.observe(() => {
+      console.log(`[YJS] Members map changed (size: ${this.membersMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["members"]));
     });
-    this.typingYMap.observe(() => this.notify(new Set(["typing"])));
+
+    const awarenessHandler = () => this.notify(new Set(["typing"]));
+    wsProvider.awareness.on("change", awarenessHandler);
+    this.awarenessHandler = awarenessHandler;
 
     wsProvider.on("status", (e: { status: string }) => {
       this.wsConnected = e.status === "connected";
+      console.log(`[YJS] WebSocket status: ${e.status}`);
       this.notify(new Set(["connection"]));
     });
     this.wsConnected = wsProvider.wsconnected;
 
     this.ready = true;
+    console.log(`[YJS] ChatStore initialized for ${this.applicationId} (${this.wsConnected ? 'online' : 'offline'})`);
     this.notify(new Set(["connection"]));
   }
 
@@ -142,12 +152,17 @@ export class ChatStore {
       }
     }
 
+    if (this.wsProvider && this.awarenessHandler) {
+      this.wsProvider.awareness.setLocalStateField("typing", null);
+      this.wsProvider.awareness.off("change", this.awarenessHandler);
+      this.awarenessHandler = null;
+    }
+
     this.ydoc = null;
     this.wsProvider = null;
     this.messagesMap = null;
     this.roomsMap = null;
     this.membersMap = null;
-    this.typingYMap = null;
     this.listeners.clear();
     this.ready = false;
   }
@@ -273,6 +288,7 @@ export class ChatStore {
       id: roomId, name, description, type,
       creatorId, createdAt: now, updatedAt: now,
     };
+    console.log(`[YJS] Creating room: ${name} (${roomId})`);
     this.ydoc!.transact(() => {
       this.roomsMap!.set(roomId, room);
       this.membersMap!.set(`${roomId}::${creatorId}`, {
@@ -367,6 +383,7 @@ export class ChatStore {
     this.assert();
     const key = `${roomId}::${userId}`;
     if (this.membersMap!.has(key)) return true;
+    console.log(`[YJS] User ${userName} (${userId}) joining room ${roomId}`);
     this.membersMap!.set(key, {
       roomId, userId, userName, joinedAt: Date.now(),
     } as RoomMember);
@@ -412,6 +429,7 @@ export class ChatStore {
       text,
       timestamp: Date.now(),
     };
+    console.log(`[YJS] Sending message to room ${roomId}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
     this.ydoc!.transact(() => {
       this.messagesMap!.set(msg.id, msg);
       const room = this.roomsMap!.get(roomId) as ChatRoom | undefined;
@@ -433,31 +451,27 @@ export class ChatStore {
     return msgs.slice(-limit);
   }
 
-  // ── Typing ─────────────────────────────────────────────────────────────
+  // ── Typing (via Awareness — ephemeral, auto-clears on disconnect) ──────
 
   startTyping(roomId: string, userId: string, userName: string): void {
-    this.typingYMap?.set(`${roomId}::${userId}`, {
-      userId, userName, roomId, startedAt: Date.now(),
-    } as TypingUser);
+    this.wsProvider?.awareness.setLocalStateField("typing", { userId, userName, roomId });
   }
 
-  stopTyping(roomId: string, userId: string): void {
-    this.typingYMap?.delete(`${roomId}::${userId}`);
+  stopTyping(_roomId: string, _userId: string): void {
+    this.wsProvider?.awareness.setLocalStateField("typing", null);
   }
 
   getTypingUsers(roomId: string, excludeUserId?: string): TypingUser[] {
-    if (!this.typingYMap) return [];
-    const now = Date.now();
+    if (!this.wsProvider) return [];
+    const myClientId = this.wsProvider.awareness.clientID;
     const result: TypingUser[] = [];
-    this.typingYMap.forEach((v: any, key: string) => {
-      const entry = v as TypingUser;
-      if (entry.roomId !== roomId) return;
-      if (excludeUserId && entry.userId === excludeUserId) return;
-      if (now - entry.startedAt > 5000) {
-        this.typingYMap!.delete(key);
-        return;
-      }
-      result.push(entry);
+    this.wsProvider.awareness.getStates().forEach((state, clientId) => {
+      if (clientId === myClientId) return;
+      const typing = state.typing as TypingUser | null | undefined;
+      if (!typing) return;
+      if (typing.roomId !== roomId) return;
+      if (excludeUserId && typing.userId === excludeUserId) return;
+      result.push(typing);
     });
     return result;
   }
