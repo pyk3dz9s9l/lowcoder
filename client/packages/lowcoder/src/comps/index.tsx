@@ -196,6 +196,7 @@ import { ContainerComp as FloatTextContainerComp } from "./comps/containerComp/t
 import { ChatComp } from "./comps/chatComp";
 import { ChatBoxComp } from "./comps/chatBoxComponent";
 import { ChatControllerComp } from "./comps/chatBoxComponent/chatControllerComp";
+import { ChatControllerV2Comp } from "./hooks/chatControllerV2Comp";
 import { ChatBoxV2Comp } from "./comps/chatBoxComponentv2";
 
 type Registry = {
@@ -972,6 +973,16 @@ export var uiCompMap: Registry = {
     keywords: "chatbox,chat,conversation,rooms,messaging",
     comp: ChatControllerComp,
     isContainer: true,
+  },
+
+  chatControllerV2: {
+    name: "Chat Controller V2",
+    enName: "Chat Controller V2",
+    description: "Headless chat controller — exposes state, methods & events so you can build custom chat UIs with built-in components",
+    categories: ["collaboration"],
+    icon: CommentCompIcon,
+    keywords: "chatbox,chat,controller,headless,rooms,messaging,v2",
+    comp: ChatControllerV2Comp,
   },
 
   chatBoxV: {

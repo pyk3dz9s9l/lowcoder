@@ -38,6 +38,7 @@ import UrlParamsHookComp from "./UrlParamsHookComp";
 import { UtilsComp } from "./utilsComp";
 import { ScreenInfoHookComp } from "./screenInfoComp";
 import { ChatControllerComp } from "../comps/chatBoxComponent/chatControllerComp";
+import { ChatControllerV2Comp } from "./chatControllerV2Comp";
 
 window._ = _;
 window.dayjs = dayjs;
@@ -120,6 +121,7 @@ const HookMap: HookCompMapRawType = {
   drawer: DrawerComp,
   theme: ThemeComp,
   chatController: ChatControllerComp,
+  chatControllerV2: ChatControllerV2Comp,
 };
 
 export const HookTmpComp = withTypeAndChildren(HookMap, "title", {

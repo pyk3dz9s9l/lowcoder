@@ -20,11 +20,6 @@ export interface MessageListProps {
 
 export const MessageList = React.memo((props: MessageListProps) => {
   const { messages, typingUsers, currentUserId, ready } = props;
-  const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   return (
     <MessagesArea>
@@ -67,7 +62,6 @@ export const MessageList = React.memo((props: MessageListProps) => {
           </TypingLabel>
         </TypingIndicatorWrapper>
       )}
-      <div ref={endRef} />
     </MessagesArea>
   );
 });
