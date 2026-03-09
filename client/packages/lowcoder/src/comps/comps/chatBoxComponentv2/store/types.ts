@@ -5,13 +5,18 @@ export interface ChatMessage {
   authorName: string;
   text: string;
   timestamp: number;
+  /** Distinguishes human messages from LLM responses. Absent on legacy messages → treated as "user". */
+  authorType?: "user" | "assistant";
 }
 
 export interface ChatRoom {
   id: string;
   name: string;
   description: string;
-  type: "public" | "private";
+  /** "llm" rooms broadcast AI responses to every member via YJS. */
+  type: "public" | "private" | "llm";
+  /** Name of the Lowcoder query that handles LLM calls (only for type === "llm"). */
+  llmQueryName?: string;
   creatorId: string;
   createdAt: number;
   updatedAt: number;
@@ -33,6 +38,9 @@ export interface TypingUser {
 export type ChangeType = "rooms" | "messages" | "members" | "typing" | "connection";
 
 export type ChatStoreListener = (changes: Set<ChangeType>) => void;
+
+/** Fixed authorId used for all AI-generated messages so they are identifiable across rooms. */
+export const LLM_BOT_AUTHOR_ID = "__llm_bot__";
 
 export function uid(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;

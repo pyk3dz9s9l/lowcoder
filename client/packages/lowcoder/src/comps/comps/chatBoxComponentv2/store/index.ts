@@ -6,7 +6,7 @@ export type {
   ChangeType,
   ChatStoreListener,
 } from "./types";
-export { uid } from "./types";
+export { uid, LLM_BOT_AUTHOR_ID } from "./types";
 export { ChatStore } from "./ChatStore";
 
 import { ChatStore } from "./ChatStore";

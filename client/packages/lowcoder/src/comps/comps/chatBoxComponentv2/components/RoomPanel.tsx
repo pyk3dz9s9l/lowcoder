@@ -6,6 +6,7 @@ import {
   GlobalOutlined,
   LockOutlined,
   LogoutOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import type { ChatRoom } from "../store";
 import {
@@ -14,6 +15,7 @@ import {
   RoomListContainer,
   RoomItemStyled,
   SearchResultBadge,
+  LlmRoomBadge,
 } from "../styles";
 
 export interface RoomPanelProps {
@@ -150,7 +152,9 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
               }}
               title={isSearch ? `Join "${room.name}"` : room.name}
             >
-              {room.type === "public" ? (
+              {room.type === "llm" ? (
+                <RobotOutlined style={{ fontSize: 12, flexShrink: 0, color: isActive ? "#fff" : "#c084fc" }} />
+              ) : room.type === "public" ? (
                 <GlobalOutlined style={{ fontSize: 12, flexShrink: 0 }} />
               ) : (
                 <LockOutlined style={{ fontSize: 12, flexShrink: 0 }} />
@@ -165,6 +169,11 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
               >
                 {room.name}
               </span>
+              {room.type === "llm" && !isSearch && (
+                <LlmRoomBadge style={isActive ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : undefined}>
+                  AI
+                </LlmRoomBadge>
+              )}
               {isSearch && <SearchResultBadge>Join</SearchResultBadge>}
               {isActive && !isSearch && (
                 <Popconfirm

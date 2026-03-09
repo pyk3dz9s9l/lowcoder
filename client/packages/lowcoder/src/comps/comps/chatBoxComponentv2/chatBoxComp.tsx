@@ -1,9 +1,9 @@
-import React, { useContext } from "react";
+import React, { useCallback, useContext, useEffect, useRef } from "react";
 import { Section, sectionNames } from "lowcoder-design";
 import { UICompBuilder, withDefault } from "../../generators";
 import { NameConfig, NameConfigHidden, withExposingConfigs } from "../../generators/withExposing";
 import { withMethodExposing } from "../../generators/withMethodExposing";
-import { stringExposingStateControl } from "comps/controls/codeStateControl";
+import { stringExposingStateControl, arrayObjectExposingStateControl } from "comps/controls/codeStateControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { StringControl } from "comps/controls/codeControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
@@ -16,36 +16,54 @@ import { trans } from "i18n";
 
 import { ChatBoxView } from "./components/ChatBoxView";
 
-// ─── Event definitions ──────────────────────────────────────────────────────
+// ─── Event definitions ───────────────────────────────────────────────────────
 
 const ChatEvents = [
   { label: trans("chatBox.messageSent"), value: "messageSent", description: trans("chatBox.messageSentDesc") },
   { label: trans("chatBox.messageReceived"), value: "messageReceived", description: trans("chatBox.messageReceivedDesc") },
   { label: trans("chatBox.roomJoined"), value: "roomJoined", description: trans("chatBox.roomJoinedDesc") },
   { label: trans("chatBox.roomLeft"), value: "roomLeft", description: trans("chatBox.roomLeftDesc") },
+  {
+    label: "LLM Message Received",
+    value: "llmMessageReceived",
+    description: "Fired when an AI response arrives in an LLM room",
+  },
 ] as const;
 
-// ─── Children map (component properties) ────────────────────────────────────
+// ─── Children map (component properties) ─────────────────────────────────────
 
 const childrenMap = {
+  // ── Identity / connection
   chatName: stringExposingStateControl("chatName", "Chat Room"),
   userId: stringExposingStateControl("userId", "user_1"),
   userName: stringExposingStateControl("userName", "User"),
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   wsUrl: withDefault(StringControl, "ws://localhost:3005"),
 
+  // ── Room panel
   allowRoomCreation: withDefault(BoolControl, true),
   allowRoomSearch: withDefault(BoolControl, true),
   showRoomPanel: withDefault(BoolControl, true),
   roomPanelWidth: withDefault(StringControl, "220px"),
 
+  // ── LLM settings
+  systemPrompt: withDefault(
+    StringControl,
+    "You are a helpful AI assistant. Answer concisely and clearly.",
+  ),
+  llmBotName: withDefault(StringControl, "AI Assistant"),
+
+  // ── Exposed state
+  llmConversationHistory: arrayObjectExposingStateControl("llmConversationHistory", []),
+
+  // ── Layout / style
   autoHeight: AutoHeightControl,
   onEvent: eventHandlerControl(ChatEvents),
   style: styleControl(TextStyle, "style"),
   animationStyle: styleControl(AnimationStyle, "animationStyle"),
 };
 
-// ─── Property panel ─────────────────────────────────────────────────────────
+// ─── Property panel ───────────────────────────────────────────────────────────
 
 const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   const { children } = props;
@@ -69,6 +87,18 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.allowRoomSearch.propertyView({ label: "Allow Room Search" })}
         {children.showRoomPanel.propertyView({ label: "Show Room Panel" })}
         {children.roomPanelWidth.propertyView({ label: "Panel Width", tooltip: "e.g. 220px or 25%" })}
+      </Section>
+
+      <Section name="AI / LLM Settings">
+        {children.systemPrompt.propertyView({
+          label: "System Prompt",
+          tooltip:
+            "Prepended to the conversation history sent to your query. Tells the AI how to behave.",
+        })}
+        {children.llmBotName.propertyView({
+          label: "AI Bot Name",
+          tooltip: "Display name shown on AI messages in LLM rooms.",
+        })}
       </Section>
 
       {["logic", "both"].includes(editorMode) && (
@@ -97,10 +127,34 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
 
 ChatBoxPropertyView.displayName = "ChatBoxV2PropertyView";
 
-// ─── Build component ────────────────────────────────────────────────────────
+// ─── Build component ──────────────────────────────────────────────────────────
 
 let ChatBoxV2Tmp = (function () {
-  return new UICompBuilder(childrenMap, (props) => <ChatBoxView {...props} />)
+  return new UICompBuilder(childrenMap, (props, dispatch) => {
+    // Keep a ref to the latest onChange so the callback below never changes
+    // identity — preventing the infinite re-render loop that occurs when
+    // calling onChange updates llmConversationHistory, which creates a new
+    // props.llmConversationHistory reference, which would recreate this
+    // callback, which would re-trigger the useEffect in ChatBoxView, etc.
+    const onChangeRef = useRef(props.llmConversationHistory.onChange);
+    useEffect(() => {
+      onChangeRef.current = props.llmConversationHistory.onChange;
+    });
+
+    const onConversationHistoryChange = useCallback((history: any[]) => {
+      onChangeRef.current(history);
+    }, []);
+
+    return (
+      <ChatBoxView
+        {...props}
+        dispatch={dispatch}
+        onConversationHistoryChange={onConversationHistoryChange}
+        systemPrompt={props.systemPrompt}
+        llmBotName={props.llmBotName}
+      />
+    );
+  })
     .setPropertyViewFn((children) => <ChatBoxPropertyView children={children} />)
     .build();
 })();
@@ -111,7 +165,7 @@ ChatBoxV2Tmp = class extends ChatBoxV2Tmp {
   }
 };
 
-// ─── Methods ────────────────────────────────────────────────────────────────
+// ─── Methods ─────────────────────────────────────────────────────────────────
 
 ChatBoxV2Tmp = withMethodExposing(ChatBoxV2Tmp, [
   {
@@ -130,12 +184,13 @@ ChatBoxV2Tmp = withMethodExposing(ChatBoxV2Tmp, [
   },
 ]);
 
-// ─── Exposing configs ───────────────────────────────────────────────────────
+// ─── Exposing configs ─────────────────────────────────────────────────────────
 
 export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
   new NameConfig("chatName", "Chat display name"),
   new NameConfig("userId", "Current user ID"),
   new NameConfig("userName", "Current user name"),
   new NameConfig("applicationId", "Application scope"),
+  new NameConfig("llmConversationHistory", "Conversation history for the active LLM room (role + content array)"),
   NameConfigHidden,
 ]);

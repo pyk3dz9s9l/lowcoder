@@ -11,10 +11,13 @@ export interface InputBarProps {
   onStartTyping: () => void;
   onStopTyping: () => void;
   onMessageSentEvent: () => void;
+  isLlmLoading?: boolean;
+  isLlmRoom?: boolean;
 }
 
 export const InputBar = React.memo((props: InputBarProps) => {
-  const { ready, currentRoom, onSend, onStartTyping, onStopTyping, onMessageSentEvent } = props;
+  const { ready, currentRoom, onSend, onStartTyping, onStopTyping, onMessageSentEvent, isLlmLoading, isLlmRoom } = props;
+  const isDisabled = !ready || !currentRoom || !!isLlmLoading;
   const [draft, setDraft] = useState("");
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -83,8 +86,16 @@ export const InputBar = React.memo((props: InputBarProps) => {
         value={draft}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        placeholder={ready ? "Type a message..." : "Connecting..."}
-        disabled={!ready || !currentRoom}
+        placeholder={
+          isLlmLoading
+            ? "AI is responding..."
+            : ready
+            ? isLlmRoom
+              ? "Ask the AI..."
+              : "Type a message..."
+            : "Connecting..."
+        }
+        disabled={isDisabled}
         rows={1}
       />
       <Button
@@ -92,7 +103,8 @@ export const InputBar = React.memo((props: InputBarProps) => {
         shape="circle"
         icon={<SendOutlined />}
         onClick={handleSend}
-        disabled={!draft.trim() || !ready || !currentRoom}
+        disabled={!draft.trim() || isDisabled}
+        loading={isLlmLoading}
       />
     </InputBarContainer>
   );

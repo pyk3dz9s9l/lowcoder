@@ -9,15 +9,20 @@ import type {
   ChangeType,
   ChatStoreListener,
 } from "./types";
-import { uid } from "./types";
+import { uid, LLM_BOT_AUTHOR_ID } from "./types";
 
 const PERSIST_DEBOUNCE_MS = 500;
 
 /**
- * Unified chat store backed by YJS (real-time CRDT sync) and ALAsql
- * (browser-local persistence). On init the ALAsql data seeds the YJS
+ * Unified chat store backed by YJS (real-time CRDT sync) and AlaSQL
+ * (browser-local persistence). On init the AlaSQL data seeds the YJS
  * doc so state survives page reloads even without a server. YJS map
- * observers write changes back to ALAsql automatically.
+ * observers write changes back to AlaSQL automatically.
+ *
+ * LLM rooms: rooms with type === "llm" store a llmQueryName field. The
+ * hook layer (useChatStore) is responsible for firing the query and
+ * writing the AI response back as a message with authorType === "assistant".
+ * All connected clients see the response via YJS sync automatically.
  */
 export class ChatStore {
   private ydoc: Y.Doc | null = null;
@@ -100,17 +105,14 @@ export class ChatStore {
     this.wsProvider = wsProvider;
 
     this.messagesMap.observe(() => {
-      console.log(`[YJS] Messages map changed (size: ${this.messagesMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["messages"]));
     });
     this.roomsMap.observe(() => {
-      console.log(`[YJS] Rooms map changed (size: ${this.roomsMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["rooms"]));
     });
     this.membersMap.observe(() => {
-      console.log(`[YJS] Members map changed (size: ${this.membersMap.size})`);
       this.schedulePersist();
       this.notify(new Set(["members"]));
     });
@@ -121,13 +123,12 @@ export class ChatStore {
 
     wsProvider.on("status", (e: { status: string }) => {
       this.wsConnected = e.status === "connected";
-      console.log(`[YJS] WebSocket status: ${e.status}`);
       this.notify(new Set(["connection"]));
     });
     this.wsConnected = wsProvider.wsconnected;
 
     this.ready = true;
-    console.log(`[YJS] ChatStore initialized for ${this.applicationId} (${this.wsConnected ? 'online' : 'offline'})`);
+    console.log(`[YJS] ChatStore initialized for ${this.applicationId} (${this.wsConnected ? "online" : "offline"})`);
     this.notify(new Set(["connection"]));
   }
 
@@ -176,7 +177,7 @@ export class ChatStore {
     this.listeners.forEach((fn) => fn(changes));
   }
 
-  // ── ALAsql persistence ────────────────────────────────────────────────
+  // ── AlaSQL persistence ─────────────────────────────────────────────────
 
   private async initDb(): Promise<void> {
     alasql.options.autocommit = true;
@@ -189,13 +190,14 @@ export class ChatStore {
     await alasql.promise(`
       CREATE TABLE IF NOT EXISTS rooms (
         id STRING PRIMARY KEY, name STRING, description STRING,
-        type STRING, creatorId STRING, createdAt NUMBER, updatedAt NUMBER
+        type STRING, llmQueryName STRING,
+        creatorId STRING, createdAt NUMBER, updatedAt NUMBER
       )
     `);
     await alasql.promise(`
       CREATE TABLE IF NOT EXISTS messages (
         id STRING PRIMARY KEY, roomId STRING, authorId STRING,
-        authorName STRING, text STRING, timestamp NUMBER
+        authorName STRING, text STRING, timestamp NUMBER, authorType STRING
       )
     `);
     await alasql.promise(`
@@ -203,29 +205,29 @@ export class ChatStore {
         roomId STRING, userId STRING, userName STRING, joinedAt NUMBER
       )
     `);
+
+    // Schema migration: add new columns to pre-existing tables that may
+    // not have them. AlaSQL throws if the column already exists — that's fine.
+    try { await alasql.promise(`ALTER TABLE rooms ADD COLUMN llmQueryName STRING`); } catch { /* already exists */ }
+    try { await alasql.promise(`ALTER TABLE messages ADD COLUMN authorType STRING`); } catch { /* already exists */ }
+
     this.dbReady = true;
   }
 
   private async hydrateFromDb(): Promise<void> {
     if (!this.dbReady) return;
 
-    const rooms = (await alasql.promise(
-      `SELECT * FROM rooms`,
-    )) as ChatRoom[];
+    const rooms = (await alasql.promise(`SELECT * FROM rooms`)) as ChatRoom[];
     for (const r of rooms) {
       if (!this.roomsMap!.has(r.id)) this.roomsMap!.set(r.id, r);
     }
 
-    const messages = (await alasql.promise(
-      `SELECT * FROM messages`,
-    )) as ChatMessage[];
+    const messages = (await alasql.promise(`SELECT * FROM messages`)) as ChatMessage[];
     for (const m of messages) {
       if (!this.messagesMap!.has(m.id)) this.messagesMap!.set(m.id, m);
     }
 
-    const members = (await alasql.promise(
-      `SELECT * FROM members`,
-    )) as RoomMember[];
+    const members = (await alasql.promise(`SELECT * FROM members`)) as RoomMember[];
     for (const m of members) {
       const key = `${m.roomId}::${m.userId}`;
       if (!this.membersMap!.has(key)) this.membersMap!.set(key, m);
@@ -246,8 +248,8 @@ export class ChatStore {
       alasql(`DELETE FROM rooms`);
       this.roomsMap?.forEach((v) => {
         const r = v as ChatRoom;
-        alasql(`INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-          r.id, r.name, r.description, r.type,
+        alasql(`INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+          r.id, r.name, r.description, r.type, r.llmQueryName ?? null,
           r.creatorId, r.createdAt, r.updatedAt,
         ]);
       });
@@ -255,8 +257,9 @@ export class ChatStore {
       alasql(`DELETE FROM messages`);
       this.messagesMap?.forEach((v) => {
         const m = v as ChatMessage;
-        alasql(`INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)`, [
+        alasql(`INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?, ?)`, [
           m.id, m.roomId, m.authorId, m.authorName, m.text, m.timestamp,
+          m.authorType ?? null,
         ]);
       });
 
@@ -275,10 +278,11 @@ export class ChatStore {
 
   async createRoom(
     name: string,
-    type: "public" | "private",
+    type: "public" | "private" | "llm",
     creatorId: string,
     creatorName: string,
     description = "",
+    llmQueryName?: string,
     id?: string,
   ): Promise<ChatRoom> {
     this.assert();
@@ -286,9 +290,10 @@ export class ChatStore {
     const now = Date.now();
     const room: ChatRoom = {
       id: roomId, name, description, type,
+      llmQueryName: type === "llm" ? (llmQueryName ?? "") : undefined,
       creatorId, createdAt: now, updatedAt: now,
     };
-    console.log(`[YJS] Creating room: ${name} (${roomId})`);
+    console.log(`[YJS] Creating room: ${name} (${roomId}) type=${type}`);
     this.ydoc!.transact(() => {
       this.roomsMap!.set(roomId, room);
       this.membersMap!.set(`${roomId}::${creatorId}`, {
@@ -334,10 +339,7 @@ export class ChatStore {
     return rooms;
   }
 
-  async getSearchableRooms(
-    userId: string,
-    query: string,
-  ): Promise<ChatRoom[]> {
+  async getSearchableRooms(userId: string, query: string): Promise<ChatRoom[]> {
     this.assert();
     const memberRoomIds = new Set<string>();
     this.membersMap!.forEach((v: any) => {
@@ -347,7 +349,8 @@ export class ChatStore {
     const rooms: ChatRoom[] = [];
     this.roomsMap!.forEach((v) => {
       const r = v as ChatRoom;
-      if (r.type !== "public") return;
+      // Only public and llm rooms are discoverable via search
+      if (r.type === "private") return;
       if (memberRoomIds.has(r.id)) return;
       if (
         r.name.toLowerCase().includes(lq) ||
@@ -362,24 +365,21 @@ export class ChatStore {
 
   async ensureRoom(
     name: string,
-    type: "public" | "private",
+    type: "public" | "private" | "llm",
     creatorId: string,
     creatorName: string,
+    llmQueryName?: string,
   ): Promise<ChatRoom> {
     let room = await this.getRoomByName(name);
-    if (!room) room = await this.createRoom(name, type, creatorId, creatorName);
+    if (!room) room = await this.createRoom(name, type, creatorId, creatorName, "", llmQueryName);
     if (!(await this.isMember(room.id, creatorId)))
       await this.joinRoom(room.id, creatorId, creatorName);
     return room;
   }
 
-  // ── Membership ─────────────────────────────────────────────────────────
+  // ── Membership ──────────────────────────────────────────────────────────
 
-  async joinRoom(
-    roomId: string,
-    userId: string,
-    userName: string,
-  ): Promise<boolean> {
+  async joinRoom(roomId: string, userId: string, userName: string): Promise<boolean> {
     this.assert();
     const key = `${roomId}::${userId}`;
     if (this.membersMap!.has(key)) return true;
@@ -418,6 +418,7 @@ export class ChatStore {
     authorId: string,
     authorName: string,
     text: string,
+    authorType: "user" | "assistant" = "user",
     id?: string,
   ): Promise<ChatMessage> {
     this.assert();
@@ -428,8 +429,9 @@ export class ChatStore {
       authorName,
       text,
       timestamp: Date.now(),
+      authorType,
     };
-    console.log(`[YJS] Sending message to room ${roomId}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+    console.log(`[YJS] ${authorType === "assistant" ? "[AI]" : "[User]"} → room ${roomId}: "${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`);
     this.ydoc!.transact(() => {
       this.messagesMap!.set(msg.id, msg);
       const room = this.roomsMap!.get(roomId) as ChatRoom | undefined;
@@ -449,6 +451,21 @@ export class ChatStore {
     });
     msgs.sort((a, b) => a.timestamp - b.timestamp);
     return msgs.slice(-limit);
+  }
+
+  /**
+   * Returns the conversation history for an LLM room in the standard
+   * { role, content } format suitable for passing to AI APIs.
+   * The system prompt (if any) is NOT prepended here — the hook layer adds it.
+   */
+  async getLlmConversationHistory(roomId: string): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
+    const messages = await this.getMessages(roomId);
+    return messages
+      .filter((m) => m.authorId !== LLM_BOT_AUTHOR_ID || m.authorType === "assistant")
+      .map((m) => ({
+        role: (m.authorType === "assistant" ? "assistant" : "user") as "user" | "assistant",
+        content: m.text,
+      }));
   }
 
   // ── Typing (via Awareness — ephemeral, auto-clears on disconnect) ──────
@@ -476,7 +493,7 @@ export class ChatStore {
     return result;
   }
 
-  // ── Internal ───────────────────────────────────────────────────────────
+  // ── Internal ────────────────────────────────────────────────────────────
 
   private assert(): void {
     if (!this.ready)
