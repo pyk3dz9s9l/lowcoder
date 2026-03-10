@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { UserOutlined, RobotOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
+import { Tag, Button, Tooltip } from "antd";
 import { useChatStore } from "../useChatStore";
 import { Wrapper, ChatPanelContainer, ChatHeaderBar, ConnectionBanner, ConnectionDot } from "../styles";
 import { RoomPanel } from "./RoomPanel";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
 import { CreateRoomModal } from "./CreateRoomModal";
+import { InviteUserModal } from "./InviteUserModal";
 import { LLM_BOT_AUTHOR_ID } from "../store";
 
 type ChatBoxEventName = "messageSent" | "messageReceived" | "roomJoined" | "roomLeft" | "llmMessageReceived";
@@ -16,7 +17,6 @@ export interface ChatBoxViewProps {
   userId: { value: string };
   userName: { value: string };
   applicationId: { value: string };
-  wsUrl: string;
   allowRoomCreation: boolean;
   allowRoomSearch: boolean;
   showRoomPanel: boolean;
@@ -42,8 +42,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     chatName,
     userId,
     userName,
-    applicationId,
-    wsUrl,
     allowRoomCreation,
     allowRoomSearch,
     showRoomPanel,
@@ -58,20 +56,19 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
   } = props;
 
   const chat = useChatStore({
-    applicationId: applicationId.value || "lowcoder_app",
     userId: userId.value || "user_1",
     userName: userName.value || "User",
-    wsUrl: wsUrl || "ws://localhost:3005",
     dispatch,
     systemPrompt,
     llmBotName: llmBotName || "AI Assistant",
   });
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const isLlmRoom = chat.currentRoom?.type === "llm";
+  const isPrivateRoom = chat.currentRoom?.type === "private";
 
-  // ── Sync conversation history exposed state for LLM rooms ────────────────
   useEffect(() => {
     if (!isLlmRoom) return;
     const history = chat.messages
@@ -85,7 +82,6 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     onConversationHistoryChange(history);
   }, [chat.messages, isLlmRoom, onConversationHistoryChange]);
 
-  // ── Fire messageReceived event when a new AI message lands ───────────────
   const lastMessageRef = React.useRef<string | null>(null);
   useEffect(() => {
     const lastMsg = chat.messages[chat.messages.length - 1];
@@ -99,18 +95,17 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
     }
   }, [chat.messages, onEvent]);
 
-  // ── Room actions ──────────────────────────────────────────────────────────
   const handleLeaveRoom = useCallback(
-    async (roomId: string) => {
-      const ok = await chat.leaveRoom(roomId);
+    (roomId: string) => {
+      const ok = chat.leaveRoom(roomId);
       if (ok) onEvent("roomLeft");
     },
     [chat.leaveRoom, onEvent],
   );
 
   const handleJoinRoom = useCallback(
-    async (roomId: string) => {
-      const ok = await chat.joinRoom(roomId);
+    (roomId: string) => {
+      const ok = chat.joinRoom(roomId);
       if (ok) onEvent("roomJoined");
     },
     [chat.joinRoom, onEvent],
@@ -118,10 +113,24 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
 
   const handleSend = useCallback(
     async (text: string): Promise<boolean> => {
-      const ok = await chat.sendMessage(text);
-      return ok;
+      return chat.sendMessage(text);
     },
     [chat.sendMessage],
+  );
+
+  const handleAcceptInvite = useCallback(
+    (inviteId: string) => {
+      const ok = chat.acceptInvite(inviteId);
+      if (ok) onEvent("roomJoined");
+    },
+    [chat.acceptInvite, onEvent],
+  );
+
+  const handleDeclineInvite = useCallback(
+    (inviteId: string) => {
+      chat.declineInvite(inviteId);
+    },
+    [chat.declineInvite],
   );
 
   const status = connectionStatus(chat.ready, chat.connectionLabel);
@@ -140,6 +149,9 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
           onJoinRoom={handleJoinRoom}
           onLeaveRoom={handleLeaveRoom}
           onSearchRooms={chat.searchRooms}
+          pendingInvites={chat.pendingInvites}
+          onAcceptInvite={handleAcceptInvite}
+          onDeclineInvite={handleDeclineInvite}
           onCreateModalOpen={() => setCreateModalOpen(true)}
         />
       )}
@@ -174,10 +186,19 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
               )}
             </div>
           </div>
-          <ConnectionBanner $status={status}>
-            <ConnectionDot $status={status} />
-            {chat.ready ? chat.connectionLabel : chat.error || "Connecting..."}
-          </ConnectionBanner>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {isPrivateRoom && (
+              <Tooltip title="Invite user to this private room">
+                <Button size="small" onClick={() => setInviteModalOpen(true)}>
+                  Invite
+                </Button>
+              </Tooltip>
+            )}
+            <ConnectionBanner $status={status}>
+              <ConnectionDot $status={status} />
+              {chat.ready ? chat.connectionLabel : chat.error || "Connecting..."}
+            </ConnectionBanner>
+          </div>
         </ChatHeaderBar>
 
         <MessageList
@@ -207,6 +228,12 @@ export const ChatBoxView = React.memo((props: ChatBoxViewProps) => {
         onClose={() => setCreateModalOpen(false)}
         onCreateRoom={chat.createRoom}
         onRoomCreatedEvent={() => onEvent("roomJoined")}
+      />
+      <InviteUserModal
+        open={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        currentRoom={chat.currentRoom}
+        onSendInvite={chat.sendPrivateInvite}
       />
     </Wrapper>
   );

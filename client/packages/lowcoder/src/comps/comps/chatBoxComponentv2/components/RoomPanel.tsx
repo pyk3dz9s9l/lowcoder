@@ -7,8 +7,10 @@ import {
   LockOutlined,
   LogoutOutlined,
   RobotOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import type { ChatRoom } from "../store";
+import type { PendingRoomInvite } from "../useChatStore";
 import {
   RoomPanelContainer,
   RoomPanelHeader,
@@ -29,6 +31,9 @@ export interface RoomPanelProps {
   onJoinRoom: (roomId: string) => void;
   onLeaveRoom: (roomId: string) => void;
   onSearchRooms: (query: string) => Promise<ChatRoom[]>;
+  pendingInvites: PendingRoomInvite[];
+  onAcceptInvite: (inviteId: string) => void;
+  onDeclineInvite: (inviteId: string) => void;
   onCreateModalOpen: () => void;
 }
 
@@ -44,6 +49,9 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     onJoinRoom,
     onLeaveRoom,
     onSearchRooms,
+    pendingInvites,
+    onAcceptInvite,
+    onDeclineInvite,
     onCreateModalOpen,
   } = props;
 
@@ -125,6 +133,50 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
           >
             Back
           </Button>
+        </div>
+      )}
+
+      {!isSearchMode && pendingInvites.length > 0 && (
+        <div style={{ padding: "8px 8px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#666", marginBottom: 6, fontWeight: 600 }}>
+            <MailOutlined />
+            Pending Invites ({pendingInvites.length})
+          </div>
+          {pendingInvites.map((invite) => (
+            <div
+              key={invite.id}
+              style={{
+                border: "1px solid #f0f0f0",
+                borderRadius: 8,
+                padding: 8,
+                marginBottom: 6,
+                background: "#fff",
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#333", marginBottom: 2 }}>
+                <LockOutlined style={{ marginRight: 6, color: "#fa8c16" }} />
+                {invite.roomName}
+              </div>
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 8 }}>
+                Invited by {invite.fromUserName}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Button
+                  type="primary"
+                  size="small"
+                  onClick={() => onAcceptInvite(invite.id)}
+                >
+                  Accept
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => onDeclineInvite(invite.id)}
+                >
+                  Decline
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

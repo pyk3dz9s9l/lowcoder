@@ -14,9 +14,9 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
 import { trans } from "i18n";
 
+import { PluvRoomProvider, pluvConfig } from "./store";
+import { yjs } from "@pluv/crdt-yjs";
 import { ChatBoxView } from "./components/ChatBoxView";
-
-// ─── Event definitions ───────────────────────────────────────────────────────
 
 const ChatEvents = [
   { label: trans("chatBox.messageSent"), value: "messageSent", description: trans("chatBox.messageSentDesc") },
@@ -30,40 +30,38 @@ const ChatEvents = [
   },
 ] as const;
 
-// ─── Children map (component properties) ─────────────────────────────────────
-
 const childrenMap = {
-  // ── Identity / connection
   chatName: stringExposingStateControl("chatName", "Chat Room"),
   userId: stringExposingStateControl("userId", "user_1"),
   userName: stringExposingStateControl("userName", "User"),
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
-  wsUrl: withDefault(StringControl, "ws://localhost:3005"),
 
-  // ── Room panel
+  // Pluv.io connection settings
+  pluvPublicKey: withDefault(StringControl, ""),
+  pluvAuthUrl: withDefault(StringControl, "/api/auth/pluv"),
+
+  // Room panel
   allowRoomCreation: withDefault(BoolControl, true),
   allowRoomSearch: withDefault(BoolControl, true),
   showRoomPanel: withDefault(BoolControl, true),
   roomPanelWidth: withDefault(StringControl, "220px"),
 
-  // ── LLM settings
+  // LLM settings
   systemPrompt: withDefault(
     StringControl,
     "You are a helpful AI assistant. Answer concisely and clearly.",
   ),
   llmBotName: withDefault(StringControl, "AI Assistant"),
 
-  // ── Exposed state
+  // Exposed state
   llmConversationHistory: arrayObjectExposingStateControl("llmConversationHistory", []),
 
-  // ── Layout / style
+  // Layout / style
   autoHeight: AutoHeightControl,
   onEvent: eventHandlerControl(ChatEvents),
   style: styleControl(TextStyle, "style"),
   animationStyle: styleControl(AnimationStyle, "animationStyle"),
 };
-
-// ─── Property panel ───────────────────────────────────────────────────────────
 
 const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   const { children } = props;
@@ -76,9 +74,16 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.userId.propertyView({ label: "User ID", tooltip: "Current user's unique identifier" })}
         {children.userName.propertyView({ label: "User Name", tooltip: "Current user's display name" })}
         {children.applicationId.propertyView({ label: "Application ID", tooltip: "Scopes rooms to this application" })}
-        {children.wsUrl.propertyView({
-          label: "WebSocket URL",
-          tooltip: "Yjs WebSocket server URL for real-time sync (e.g. ws://localhost:3005)",
+      </Section>
+
+      <Section name="Pluv.io Connection">
+        {children.pluvPublicKey.propertyView({
+          label: "Public Key",
+          tooltip: "Pluv.io publishable key (pk_...). Can also be set via VITE_PLUV_PUBLIC_KEY env var.",
+        })}
+        {children.pluvAuthUrl.propertyView({
+          label: "Auth URL",
+          tooltip: "Pluv auth endpoint URL for token exchange (e.g. /api/auth/pluv or http://localhost:3006/api/auth/pluv)",
         })}
       </Section>
 
@@ -92,8 +97,7 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
       <Section name="AI / LLM Settings">
         {children.systemPrompt.propertyView({
           label: "System Prompt",
-          tooltip:
-            "Prepended to the conversation history sent to your query. Tells the AI how to behave.",
+          tooltip: "Prepended to the conversation history sent to your query. Tells the AI how to behave.",
         })}
         {children.llmBotName.propertyView({
           label: "AI Bot Name",
@@ -127,15 +131,8 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
 
 ChatBoxPropertyView.displayName = "ChatBoxV2PropertyView";
 
-// ─── Build component ──────────────────────────────────────────────────────────
-
 let ChatBoxV2Tmp = (function () {
   return new UICompBuilder(childrenMap, (props, dispatch) => {
-    // Keep a ref to the latest onChange so the callback below never changes
-    // identity — preventing the infinite re-render loop that occurs when
-    // calling onChange updates llmConversationHistory, which creates a new
-    // props.llmConversationHistory reference, which would recreate this
-    // callback, which would re-trigger the useEffect in ChatBoxView, etc.
     const onChangeRef = useRef(props.llmConversationHistory.onChange);
     useEffect(() => {
       onChangeRef.current = props.llmConversationHistory.onChange;
@@ -145,14 +142,38 @@ let ChatBoxV2Tmp = (function () {
       onChangeRef.current(history);
     }, []);
 
+    const appId = props.applicationId.value || "lowcoder_app";
+    const userId = props.userId.value || "user_1";
+    const userName = props.userName.value || "User";
+    const roomName = `chatv2_${appId}`;
+
+    // Update the module-level config before pluv connects
+    pluvConfig.userId = userId;
+    pluvConfig.userName = userName;
+    pluvConfig.authUrl = props.pluvAuthUrl || "/api/auth/pluv";
+
     return (
-      <ChatBoxView
-        {...props}
-        dispatch={dispatch}
-        onConversationHistoryChange={onConversationHistoryChange}
-        systemPrompt={props.systemPrompt}
-        llmBotName={props.llmBotName}
-      />
+      <PluvRoomProvider
+        room={roomName}
+        initialPresence={{ typing: null } as any}
+        initialStorage={(t: any) => ({
+          rooms: t.map("rooms", []),
+          members: t.map("members", []),
+          invites: t.map("invites", []),
+          messages: t.map("messages", []),
+        })}
+        onAuthorizationFail={(error: Error) => {
+          console.error("[PluvChat] Auth failed:", error);
+        }}
+      >
+        <ChatBoxView
+          {...props}
+          dispatch={dispatch}
+          onConversationHistoryChange={onConversationHistoryChange}
+          systemPrompt={props.systemPrompt}
+          llmBotName={props.llmBotName}
+        />
+      </PluvRoomProvider>
     );
   })
     .setPropertyViewFn((children) => <ChatBoxPropertyView children={children} />)
@@ -164,8 +185,6 @@ ChatBoxV2Tmp = class extends ChatBoxV2Tmp {
     return this.children.autoHeight.getView();
   }
 };
-
-// ─── Methods ─────────────────────────────────────────────────────────────────
 
 ChatBoxV2Tmp = withMethodExposing(ChatBoxV2Tmp, [
   {
@@ -183,8 +202,6 @@ ChatBoxV2Tmp = withMethodExposing(ChatBoxV2Tmp, [
     },
   },
 ]);
-
-// ─── Exposing configs ─────────────────────────────────────────────────────────
 
 export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
   new NameConfig("chatName", "Chat display name"),
