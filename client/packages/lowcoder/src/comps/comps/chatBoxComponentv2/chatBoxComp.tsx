@@ -147,10 +147,13 @@ let ChatBoxV2Tmp = (function () {
     const userName = props.userName.value || "User";
     const roomName = `chatv2_${appId}`;
 
-    // Update the module-level config before pluv connects
+    // Update the module-level config before pluv connects.
+    // publicKey MUST be set here so resolvePluvPublicKey() returns the right
+    // value when PluvRoomProvider opens its WebSocket connection.
     pluvConfig.userId = userId;
     pluvConfig.userName = userName;
     pluvConfig.authUrl = props.pluvAuthUrl || "/api/auth/pluv";
+    pluvConfig.publicKey = props.pluvPublicKey || "";
 
     return (
       <PluvRoomProvider

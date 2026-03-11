@@ -90,7 +90,32 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// Auth endpoint — creates a JWT token for the requesting user
+// Webhook endpoint — pluv.io sends server events here
+app.post("/api/pluv/webhook", async (req, res) => {
+  try {
+    // Convert express req/res to a standard Request for ioServer.fetch
+    const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (typeof value === "string") headers.set(key, value);
+    }
+
+    const fetchReq = new Request(url, {
+      method: req.method,
+      headers,
+      body: req.method !== "GET" ? JSON.stringify(req.body) : undefined,
+    });
+
+    const fetchRes = await ioServer.fetch(fetchReq);
+    const body = await fetchRes.text();
+    res.status(fetchRes.status).send(body);
+  } catch (err) {
+    console.error("[pluv] Webhook error:", err);
+    res.status(500).json({ error: "Webhook handling failed" });
+  }
+});
+
+// Auth endpoint — creates a JWT token for the requesting user (must be after webhook route)
 app.get("/api/auth/pluv", async (req, res) => {
   try {
     const room = req.query.room;
@@ -117,36 +142,11 @@ app.get("/api/auth/pluv", async (req, res) => {
   }
 });
 
-// Webhook endpoint — pluv.io sends server events here
-app.all("/api/pluv", async (req, res) => {
-  try {
-    // Convert express req/res to a standard Request for ioServer.fetch
-    const url = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (typeof value === "string") headers.set(key, value);
-    }
-
-    const fetchReq = new Request(url, {
-      method: req.method,
-      headers,
-      body: req.method !== "GET" ? JSON.stringify(req.body) : undefined,
-    });
-
-    const fetchRes = await ioServer.fetch(fetchReq);
-    const body = await fetchRes.text();
-    res.status(fetchRes.status).send(body);
-  } catch (err) {
-    console.error("[pluv] Webhook error:", err);
-    res.status(500).json({ error: "Webhook handling failed" });
-  }
-});
-
 // ── Start server ──────────────────────────────────────────────────────────
 
 app.listen(PORT, HOST, () => {
   console.log(`\n  Pluv Chat Server running on http://${HOST}:${PORT}`);
   console.log(`  Auth endpoint:    GET  /api/auth/pluv?room=...&userId=...`);
-  console.log(`  Webhook endpoint: POST /api/pluv`);
+  console.log(`  Webhook endpoint: POST /api/pluv/webhook`);
   console.log(`  Health check:     GET  /health\n`);
 });

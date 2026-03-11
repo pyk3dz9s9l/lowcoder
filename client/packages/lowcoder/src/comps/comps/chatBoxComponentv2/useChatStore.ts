@@ -1,27 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { routeByNameAction, executeQueryAction } from "lowcoder-core";
 import { getPromiseAfterDispatch } from "util/promiseUtils";
+import {
+  useStorage,
+  useMyPresence,
+  useOthers,
+  useConnection,
+  LLM_BOT_AUTHOR_ID,
+  uid,
+} from "./store";
 import type {
   ChatMessage,
   ChatRoom,
   RoomMember,
+  RoomInvite,
   TypingUser,
-  ChangeType,
 } from "./store";
-import { getChatStore, releaseChatStore, LLM_BOT_AUTHOR_ID } from "./store";
-import type { ChatStore } from "./store";
+
+// ── Public interfaces ──────────────────────────────────────────────────────
 
 export interface UseChatStoreConfig {
-  applicationId: string;
   userId: string;
   userName: string;
-  wsUrl: string;
-  /** Lowcoder component dispatch — required for firing LLM queries. */
   dispatch?: (...args: any[]) => void;
-  /** System prompt prepended to conversation history passed to the query. */
   systemPrompt?: string;
-  /** Display name for AI-generated messages. */
   llmBotName?: string;
+}
+
+export interface PendingRoomInvite extends RoomInvite {
+  roomName: string;
 }
 
 export interface UseChatStoreReturn {
@@ -35,59 +42,45 @@ export interface UseChatStoreReturn {
   userRooms: ChatRoom[];
   currentRoomMembers: RoomMember[];
   typingUsers: TypingUser[];
+  pendingInvites: PendingRoomInvite[];
 
   sendMessage: (text: string) => Promise<boolean>;
-  switchRoom: (roomId: string) => Promise<void>;
+  switchRoom: (roomId: string) => void;
   createRoom: (
     name: string,
     type: "public" | "private" | "llm",
     description?: string,
     llmQueryName?: string,
   ) => Promise<ChatRoom | null>;
-  joinRoom: (roomId: string) => Promise<boolean>;
-  leaveRoom: (roomId: string) => Promise<boolean>;
+  joinRoom: (roomId: string) => boolean;
+  leaveRoom: (roomId: string) => boolean;
   searchRooms: (query: string) => Promise<ChatRoom[]>;
+  sendPrivateInvite: (toUserId: string, toUserName?: string) => Promise<boolean>;
+  acceptInvite: (inviteId: string) => boolean;
+  declineInvite: (inviteId: string) => boolean;
   startTyping: () => void;
   stopTyping: () => void;
 }
 
-// ── Response extraction ────────────────────────────────────────────────────
+// ── LLM response extraction ───────────────────────────────────────────────
 
-/**
- * Pulls a text string out of whatever the Lowcoder query returned.
- *
- * Supported shapes (checked in priority order):
- *   OpenAI / Ollama-compatible : result.choices[0].message.content
- *   Ollama /api/chat           : result.message.content
- *   Anthropic                  : result.content[0].text
- *   Simple object              : result.content | result.text | result.response | result.output
- *   chatComp style             : result.message  (string)
- *   Plain string               : result
- */
 function extractAiText(result: any): string {
   if (!result) return "No response received.";
   if (typeof result === "string") return result;
 
-  // OpenAI / Ollama OpenAI-compat / LM Studio → choices[0].message.content
   if (Array.isArray(result.choices) && result.choices.length > 0) {
     const choice = result.choices[0];
     if (choice?.message?.content) return String(choice.message.content);
     if (choice?.text) return String(choice.text);
   }
-
-  // Anthropic → content[0].text
   if (Array.isArray(result.content) && result.content.length > 0) {
     const first = result.content[0];
     if (first?.text) return String(first.text);
   }
-
-  // Ollama /api/chat native format → message.content
   if (result.message && typeof result.message === "object" && result.message.content) {
     return String(result.message.content);
   }
   if (result.message && typeof result.message === "string") return result.message;
-
-  // Simple flat shapes (custom APIs, N8N, etc.)
   if (result.content && typeof result.content === "string") return result.content;
   if (result.text && typeof result.text === "string") return result.text;
   if (result.response && typeof result.response === "string") return result.response;
@@ -95,32 +88,38 @@ function extractAiText(result: any): string {
   if (result.answer && typeof result.answer === "string") return result.answer;
   if (result.reply && typeof result.reply === "string") return result.reply;
 
-  // Fallback — pretty-print whatever came back
-  try { return JSON.stringify(result, null, 2); } catch { return String(result); }
+  try {
+    return JSON.stringify(result, null, 2);
+  } catch {
+    return String(result);
+  }
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────
+// ── Hook ───────────────────────────────────────────────────────────────────
 
 export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
-  const { applicationId, userId, userName, wsUrl, dispatch, systemPrompt, llmBotName } = config;
+  const { userId, userName, dispatch, systemPrompt, llmBotName } = config;
 
-  const storeRef = useRef<ChatStore | null>(null);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [connectionLabel, setConnectionLabel] = useState("Connecting...");
+  // ── Pluv storage hooks (reactive — re-render on change) ──────────────
+  const [rooms, roomsYMap] = useStorage("rooms");
+  const [members, membersYMap] = useStorage("members");
+  const [allMessages, messagesYMap] = useStorage("messages");
+  const [invites, invitesYMap] = useStorage("invites");
+
+  // ── Pluv presence + connection ───────────────────────────────────────
+  const [, updateMyPresence] = useMyPresence();
+  const others = useOthers();
+  const connection = useConnection();
+
+  // ── Local state ──────────────────────────────────────────────────────
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [isLlmLoading, setIsLlmLoading] = useState(false);
+  const [error] = useState<string | null>(null);
 
-  const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [userRooms, setUserRooms] = useState<ChatRoom[]>([]);
-  const [currentRoomMembers, setCurrentRoomMembers] = useState<RoomMember[]>([]);
-  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const activeRoomIdRef = useRef(activeRoomId);
+  activeRoomIdRef.current = activeRoomId;
 
-  const activeRoomIdRef = useRef<string | null>(null);
-  const currentRoomRef = useRef<ChatRoom | null>(null);
-
-  // Keep refs in sync so callbacks always see latest values without
-  // needing to be in dependency arrays.
+  // Keep refs in sync so callbacks see latest values
   const dispatchRef = useRef(dispatch);
   const systemPromptRef = useRef(systemPrompt);
   const llmBotNameRef = useRef(llmBotName);
@@ -128,120 +127,96 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
   useEffect(() => { systemPromptRef.current = systemPrompt; }, [systemPrompt]);
   useEffect(() => { llmBotNameRef.current = llmBotName; }, [llmBotName]);
 
-  // ── Granular refresh helpers ────────────────────────────────────────────
+  // ── Derived state ────────────────────────────────────────────────────
 
-  const refreshRooms = useCallback(async () => {
-    const store = storeRef.current;
-    if (!store || !userId) return;
-    try {
-      const rooms = await store.getUserRooms(userId);
-      setUserRooms(rooms);
-    } catch { /* non-fatal */ }
-  }, [userId]);
+  const ready = connection.state === "open" && rooms != null;
 
-  const refreshMessages = useCallback(async () => {
-    const store = storeRef.current;
-    const roomId = activeRoomIdRef.current;
-    if (!store || !roomId) return;
-    try {
-      const msgs = await store.getMessages(roomId);
-      setMessages(msgs);
-    } catch { /* non-fatal */ }
-  }, []);
+  const connectionLabel = useMemo(() => {
+    if (connection.state === "open") return "Online";
+    if (connection.state === "connecting") return "Connecting...";
+    return "Offline";
+  }, [connection.state]);
 
-  const refreshMembers = useCallback(async () => {
-    const store = storeRef.current;
-    const roomId = activeRoomIdRef.current;
-    if (!store || !roomId) return;
-    try {
-      const members = await store.getRoomMembers(roomId);
-      setCurrentRoomMembers(members);
-    } catch { /* non-fatal */ }
-  }, []);
+  const roomsRecord = rooms as Record<string, ChatRoom> | null;
+  const membersRecord = members as Record<string, RoomMember> | null;
+  const messagesRecord = allMessages as Record<string, ChatMessage> | null;
+  const invitesRecord = invites as Record<string, RoomInvite> | null;
 
-  const refreshTyping = useCallback(() => {
-    const store = storeRef.current;
-    const roomId = activeRoomIdRef.current;
-    if (!store || !roomId) return;
-    const users = store.getTypingUsers(roomId, userId);
-    setTypingUsers(users);
-  }, [userId]);
+  const currentRoom = useMemo<ChatRoom | null>(() => {
+    if (!activeRoomId || !roomsRecord) return null;
+    return roomsRecord[activeRoomId] ?? null;
+  }, [roomsRecord, activeRoomId]);
 
-  const refreshConnection = useCallback(() => {
-    const store = storeRef.current;
-    if (store) setConnectionLabel(store.getConnectionLabel());
-  }, []);
+  const userRooms = useMemo<ChatRoom[]>(() => {
+    if (!roomsRecord || !membersRecord) return [];
+    const memberRoomIds = new Set<string>();
+    for (const member of Object.values(membersRecord)) {
+      if (member.userId === userId) memberRoomIds.add(member.roomId);
+    }
+    return Object.values(roomsRecord)
+      .filter((r) => memberRoomIds.has(r.id))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [roomsRecord, membersRecord, userId]);
 
-  const handleStoreChange = useCallback(
-    (changes: Set<ChangeType>) => {
-      if (changes.has("rooms") || changes.has("members")) refreshRooms();
-      if (changes.has("messages")) refreshMessages();
-      if (changes.has("members")) refreshMembers();
-      if (changes.has("connection")) refreshConnection();
-      if (changes.has("typing")) refreshTyping();
-    },
-    [refreshRooms, refreshMessages, refreshMembers, refreshConnection, refreshTyping],
-  );
+  const messages = useMemo<ChatMessage[]>(() => {
+    if (!messagesRecord || !activeRoomId) return [];
+    return Object.values(messagesRecord)
+      .filter((m) => m.roomId === activeRoomId)
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [messagesRecord, activeRoomId]);
 
-  // ── Initialization ──────────────────────────────────────────────────────
+  const currentRoomMembers = useMemo<RoomMember[]>(() => {
+    if (!membersRecord || !activeRoomId) return [];
+    return Object.values(membersRecord)
+      .filter((m) => m.roomId === activeRoomId)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+  }, [membersRecord, activeRoomId]);
 
-  useEffect(() => {
-    if (!applicationId || !userId || !userName) return;
+  const typingUsers = useMemo<TypingUser[]>(() => {
+    if (!activeRoomId) return [];
+    return others
+      .filter((o) => {
+        const t = (o.presence as any)?.typing;
+        return t?.roomId === activeRoomId && t?.userId !== userId;
+      })
+      .map((o) => (o.presence as any).typing as TypingUser);
+  }, [others, activeRoomId, userId]);
 
-    let cancelled = false;
-    const store = getChatStore(applicationId, wsUrl);
-    storeRef.current = store;
+  const pendingInvites = useMemo<PendingRoomInvite[]>(() => {
+    if (!invitesRecord || !roomsRecord) return [];
+    return Object.values(invitesRecord)
+      .filter((inv) => inv.toUserId === userId && inv.status === "pending")
+      .map((inv) => {
+        const room = roomsRecord[inv.roomId];
+        if (!room || room.type !== "private") return null;
+        return { ...inv, roomName: room.name };
+      })
+      .filter((v): v is PendingRoomInvite => v != null)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }, [invitesRecord, roomsRecord, userId]);
 
-    (async () => {
-      try {
-        await store.init();
-        if (cancelled) return;
+  // ── LLM query invocation ─────────────────────────────────────────────
 
-        const rooms = await store.getUserRooms(userId);
-        if (cancelled) return;
-
-        setUserRooms(rooms);
-        setConnectionLabel(store.getConnectionLabel());
-        setReady(true);
-      } catch (e) {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : "Failed to initialize chat store");
-      }
-    })();
-
-    const unsub = store.subscribe((changes) => {
-      if (!cancelled) handleStoreChange(changes);
-    });
-
-    return () => {
-      cancelled = true;
-      unsub();
-      releaseChatStore(applicationId);
-    };
-  }, [applicationId, userId, userName, wsUrl, handleStoreChange]);
-
-  // ── LLM query invocation ─────────────────────────────────────────────────
-
-  /**
-   * Fires the configured Lowcoder query for the current LLM room, passing:
-   *   - prompt / message  : the user's text (backward compat)
-   *   - conversationHistory : [{role, content}] array for AI APIs
-   *   - systemPrompt      : the configured system prompt
-   *   - roomId            : so the query can segment by room if needed
-   */
   const invokeLlmQuery = useCallback(
     async (queryName: string, userText: string, roomId: string): Promise<string> => {
-      const store = storeRef.current;
       const currentDispatch = dispatchRef.current;
-
       if (!currentDispatch) {
-        return "(LLM error: no dispatch available. Is the component configured?)";
+        return "(LLM error: no dispatch available)";
       }
 
-      // Build history before the message we just sent (inclusive of it)
-      const rawHistory = store ? await store.getLlmConversationHistory(roomId) : [];
+      const rawHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+      if (messagesRecord) {
+        const roomMsgs = Object.values(messagesRecord)
+          .filter((m) => m.roomId === roomId)
+          .sort((a, b) => a.timestamp - b.timestamp);
+        for (const m of roomMsgs) {
+          rawHistory.push({
+            role: m.authorType === "assistant" ? "assistant" : "user",
+            content: m.text,
+          });
+        }
+      }
 
-      // Prepend system prompt if configured
       const sysPrompt = systemPromptRef.current?.trim();
       const conversationHistory = sysPrompt
         ? [{ role: "system" as const, content: sysPrompt }, ...rawHistory]
@@ -269,43 +244,61 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         throw new Error(e?.message || "LLM query failed");
       }
     },
-    [],
+    [messagesRecord],
   );
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+  // ── Actions ──────────────────────────────────────────────────────────
 
-  /**
-   * Sends a user message. If the active room is an LLM room the sender's
-   * client also fires the configured query and writes the AI response to YJS,
-   * which syncs to all connected members automatically.
-   */
   const sendMessage = useCallback(
     async (text: string): Promise<boolean> => {
-      const store = storeRef.current;
       const roomId = activeRoomIdRef.current;
-      const room = currentRoomRef.current;
-      if (!store || !roomId || !text.trim()) return false;
+      if (!messagesYMap || !roomsYMap || !roomId || !text.trim()) return false;
 
       try {
-        // 1. Write user message (visible to everyone immediately via YJS)
-        await store.sendMessage(roomId, userId, userName, text.trim(), "user");
+        const now = Date.now();
+        const msg: ChatMessage = {
+          id: uid(),
+          roomId,
+          authorId: userId,
+          authorName: userName,
+          text: text.trim(),
+          timestamp: now,
+          authorType: "user",
+        };
+        messagesYMap.set(msg.id, msg);
 
-        // 2. If LLM room — fire query and write AI response
+        const room = roomsYMap.get(roomId) as ChatRoom | undefined;
+        if (room) {
+          roomsYMap.set(roomId, { ...room, updatedAt: now });
+        }
+
         if (room?.type === "llm" && room.llmQueryName) {
           setIsLlmLoading(true);
           try {
             const aiText = await invokeLlmQuery(room.llmQueryName, text.trim(), roomId);
             const botName = llmBotNameRef.current || "AI Assistant";
-            await store.sendMessage(roomId, LLM_BOT_AUTHOR_ID, botName, aiText, "assistant");
+            const aiMsg: ChatMessage = {
+              id: uid(),
+              roomId,
+              authorId: LLM_BOT_AUTHOR_ID,
+              authorName: botName,
+              text: aiText,
+              timestamp: Date.now(),
+              authorType: "assistant",
+            };
+            messagesYMap.set(aiMsg.id, aiMsg);
           } catch (e: any) {
             const botName = llmBotNameRef.current || "AI Assistant";
-            await store.sendMessage(
+            const errMsg: ChatMessage = {
+              id: uid(),
               roomId,
-              LLM_BOT_AUTHOR_ID,
-              botName,
-              `Sorry, I encountered an error: ${e?.message || "unknown"}`,
-              "assistant",
-            );
+              authorId: LLM_BOT_AUTHOR_ID,
+              authorName: botName,
+              text: `Sorry, I encountered an error: ${e?.message || "unknown"}`,
+              timestamp: Date.now(),
+              authorType: "assistant",
+            };
+            messagesYMap.set(errMsg.id, errMsg);
           } finally {
             setIsLlmLoading(false);
           }
@@ -316,25 +309,19 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
         return false;
       }
     },
-    [userId, userName, invokeLlmQuery],
+    [messagesYMap, roomsYMap, userId, userName, invokeLlmQuery],
   );
 
-  const switchRoom = useCallback(async (roomId: string) => {
-    const store = storeRef.current;
-    if (!store) return;
-    const room = await store.getRoom(roomId);
-    if (!room) return;
-    activeRoomIdRef.current = room.id;
-    currentRoomRef.current = room;
-    setCurrentRoom(room);
-    const [msgs, members] = await Promise.all([
-      store.getMessages(room.id),
-      store.getRoomMembers(room.id),
-    ]);
-    setMessages(msgs);
-    setCurrentRoomMembers(members);
-    setIsLlmLoading(false);
-  }, []);
+  const switchRoom = useCallback(
+    (roomId: string) => {
+      if (!roomsRecord) return;
+      const room = roomsRecord[roomId];
+      if (!room) return;
+      setActiveRoomId(roomId);
+      setIsLlmLoading(false);
+    },
+    [roomsRecord],
+  );
 
   const createRoom = useCallback(
     async (
@@ -343,85 +330,172 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
       description?: string,
       llmQueryName?: string,
     ): Promise<ChatRoom | null> => {
-      const store = storeRef.current;
-      if (!store) return null;
-      try {
-        return await store.createRoom(name, type, userId, userName, description, llmQueryName);
-      } catch {
-        return null;
-      }
+      if (!roomsYMap || !membersYMap) return null;
+      const roomId = uid();
+      const now = Date.now();
+      const room: ChatRoom = {
+        id: roomId,
+        name,
+        description: description || "",
+        type,
+        llmQueryName: type === "llm" ? (llmQueryName ?? "") : undefined,
+        creatorId: userId,
+        createdAt: now,
+        updatedAt: now,
+      };
+      roomsYMap.set(roomId, room);
+      membersYMap.set(`${roomId}::${userId}`, {
+        roomId,
+        userId,
+        userName,
+        joinedAt: now,
+      } as RoomMember);
+      return room;
     },
-    [userId, userName],
+    [roomsYMap, membersYMap, userId, userName],
   );
 
   const joinRoom = useCallback(
-    async (roomId: string): Promise<boolean> => {
-      const store = storeRef.current;
-      if (!store) return false;
-      try {
-        const ok = await store.joinRoom(roomId, userId, userName);
-        if (ok) await switchRoom(roomId);
-        return ok;
-      } catch {
-        return false;
-      }
+    (roomId: string): boolean => {
+      if (!membersYMap) return false;
+      const key = `${roomId}::${userId}`;
+      if ((membersRecord ?? {})[key]) return true;
+      membersYMap.set(key, {
+        roomId,
+        userId,
+        userName,
+        joinedAt: Date.now(),
+      } as RoomMember);
+      setActiveRoomId(roomId);
+      return true;
     },
-    [userId, userName, switchRoom],
+    [membersYMap, membersRecord, userId, userName],
   );
 
   const leaveRoom = useCallback(
-    async (roomId: string): Promise<boolean> => {
-      const store = storeRef.current;
-      if (!store) return false;
-      try {
-        const ok = await store.leaveRoom(roomId, userId);
-        if (ok && activeRoomIdRef.current === roomId) {
-          const rooms = await store.getUserRooms(userId);
-          if (rooms.length > 0) {
-            await switchRoom(rooms[0].id);
-          } else {
-            activeRoomIdRef.current = null;
-            currentRoomRef.current = null;
-            setCurrentRoom(null);
-            setMessages([]);
-            setCurrentRoomMembers([]);
-            setIsLlmLoading(false);
-          }
+    (roomId: string): boolean => {
+      if (!membersYMap) return false;
+      membersYMap.delete(`${roomId}::${userId}`);
+      if (activeRoomIdRef.current === roomId) {
+        const remaining = userRooms.filter((r) => r.id !== roomId);
+        if (remaining.length > 0) {
+          setActiveRoomId(remaining[0].id);
+        } else {
+          setActiveRoomId(null);
+          setIsLlmLoading(false);
         }
-        return ok;
-      } catch {
-        return false;
       }
+      return true;
     },
-    [userId, switchRoom],
+    [membersYMap, userId, userRooms],
   );
 
   const searchRooms = useCallback(
     async (query: string): Promise<ChatRoom[]> => {
-      const store = storeRef.current;
-      if (!store || !query.trim()) return [];
-      try {
-        return await store.getSearchableRooms(userId, query.trim());
-      } catch {
-        return [];
+      if (!roomsRecord || !membersRecord || !query.trim()) return [];
+      const memberRoomIds = new Set<string>();
+      for (const member of Object.values(membersRecord)) {
+        if (member.userId === userId) memberRoomIds.add(member.roomId);
       }
+      const lq = query.toLowerCase();
+      return Object.values(roomsRecord)
+        .filter((r) => {
+          if (r.type === "private") return false;
+          if (memberRoomIds.has(r.id)) return false;
+          return (
+            r.name.toLowerCase().includes(lq) ||
+            r.description.toLowerCase().includes(lq)
+          );
+        })
+        .sort((a, b) => b.updatedAt - a.updatedAt);
     },
-    [userId],
+    [roomsRecord, membersRecord, userId],
+  );
+
+  const sendPrivateInvite = useCallback(
+    async (toUserId: string, toUserName?: string): Promise<boolean> => {
+      if (!invitesYMap || !membersRecord) return false;
+      const room = activeRoomIdRef.current
+        ? roomsRecord?.[activeRoomIdRef.current]
+        : null;
+      const targetId = toUserId.trim();
+      if (!room || room.type !== "private" || !targetId) return false;
+      if (targetId === userId) return false;
+
+      if (membersRecord[`${room.id}::${targetId}`]) return false;
+
+      if (invitesRecord) {
+        for (const inv of Object.values(invitesRecord)) {
+          if (inv.roomId === room.id && inv.toUserId === targetId && inv.status === "pending") {
+            return true;
+          }
+        }
+      }
+
+      const invite: RoomInvite = {
+        id: uid(),
+        roomId: room.id,
+        fromUserId: userId,
+        fromUserName: userName,
+        toUserId: targetId,
+        toUserName: toUserName?.trim() || undefined,
+        status: "pending",
+        createdAt: Date.now(),
+      };
+      invitesYMap.set(invite.id, invite);
+      return true;
+    },
+    [invitesYMap, invitesRecord, membersRecord, roomsRecord, userId, userName],
+  );
+
+  const acceptInvite = useCallback(
+    (inviteId: string): boolean => {
+      if (!invitesYMap || !membersYMap || !invitesRecord) return false;
+      const current = invitesRecord[inviteId];
+      if (!current || current.toUserId !== userId || current.status !== "pending") return false;
+      if (!roomsRecord?.[current.roomId]) return false;
+
+      membersYMap.set(`${current.roomId}::${userId}`, {
+        roomId: current.roomId,
+        userId,
+        userName,
+        joinedAt: Date.now(),
+      } as RoomMember);
+      invitesYMap.set(inviteId, {
+        ...current,
+        status: "accepted",
+        respondedAt: Date.now(),
+      } as RoomInvite);
+      setActiveRoomId(current.roomId);
+      return true;
+    },
+    [invitesYMap, membersYMap, invitesRecord, roomsRecord, userId, userName],
+  );
+
+  const declineInvite = useCallback(
+    (inviteId: string): boolean => {
+      if (!invitesYMap || !invitesRecord) return false;
+      const current = invitesRecord[inviteId];
+      if (!current || current.toUserId !== userId || current.status !== "pending") return false;
+      invitesYMap.set(inviteId, {
+        ...current,
+        status: "declined",
+        respondedAt: Date.now(),
+      } as RoomInvite);
+      return true;
+    },
+    [invitesYMap, invitesRecord, userId],
   );
 
   const startTyping = useCallback(() => {
-    const store = storeRef.current;
     const roomId = activeRoomIdRef.current;
-    if (!store || !roomId) return;
-    store.startTyping(roomId, userId, userName);
-  }, [userId, userName]);
+    if (!roomId) return;
+    updateMyPresence({ typing: { userId, userName, roomId } });
+  }, [updateMyPresence, userId, userName]);
 
   const stopTyping = useCallback(() => {
-    const store = storeRef.current;
-    const roomId = activeRoomIdRef.current;
-    if (!store || !roomId) return;
-    store.stopTyping(roomId, userId);
-  }, [userId]);
+    updateMyPresence({ typing: null });
+  }, [updateMyPresence]);
 
   return {
     ready,
@@ -433,12 +507,16 @@ export function useChatStore(config: UseChatStoreConfig): UseChatStoreReturn {
     userRooms,
     currentRoomMembers,
     typingUsers,
+    pendingInvites,
     sendMessage,
     switchRoom,
     createRoom,
     joinRoom,
     leaveRoom,
     searchRooms,
+    sendPrivateInvite,
+    acceptInvite,
+    declineInvite,
     startTyping,
     stopTyping,
   };
