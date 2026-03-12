@@ -1,23 +1,17 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
-import type { ChatRoom } from "../store";
 import { InputBarContainer, StyledTextArea } from "../styles";
 
 export interface InputBarProps {
-  ready: boolean;
-  currentRoom: ChatRoom | null;
-  onSend: (text: string) => Promise<boolean>;
+  onSend: (text: string) => void;
   onStartTyping: () => void;
   onStopTyping: () => void;
-  onMessageSentEvent: () => void;
-  isLlmLoading?: boolean;
-  isLlmRoom?: boolean;
+  onDraftChange: (text: string) => void;
 }
 
 export const InputBar = React.memo((props: InputBarProps) => {
-  const { ready, currentRoom, onSend, onStartTyping, onStopTyping, onMessageSentEvent, isLlmLoading, isLlmRoom } = props;
-  const isDisabled = !ready || !currentRoom || !!isLlmLoading;
+  const { onSend, onStartTyping, onStopTyping, onDraftChange } = props;
   const [draft, setDraft] = useState("");
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -37,15 +31,13 @@ export const InputBar = React.memo((props: InputBarProps) => {
     }
   }, [onStopTyping, clearTypingTimeout]);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(() => {
     if (!draft.trim()) return;
     handleStopTyping();
-    const ok = await onSend(draft);
-    if (ok) {
-      setDraft("");
-      onMessageSentEvent();
-    }
-  }, [draft, onSend, onMessageSentEvent, handleStopTyping]);
+    onSend(draft.trim());
+    setDraft("");
+    onDraftChange("");
+  }, [draft, onSend, handleStopTyping, onDraftChange]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -61,6 +53,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value;
       setDraft(value);
+      onDraftChange(value);
 
       if (!value.trim()) {
         handleStopTyping();
@@ -77,7 +70,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         handleStopTyping();
       }, 2000);
     },
-    [onStartTyping, handleStopTyping, clearTypingTimeout],
+    [onStartTyping, handleStopTyping, clearTypingTimeout, onDraftChange],
   );
 
   return (
@@ -86,16 +79,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         value={draft}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        placeholder={
-          isLlmLoading
-            ? "AI is responding..."
-            : ready
-            ? isLlmRoom
-              ? "Ask the AI..."
-              : "Type a message..."
-            : "Connecting..."
-        }
-        disabled={isDisabled}
+        placeholder="Type a message..."
         rows={1}
       />
       <Button
@@ -103,8 +87,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         shape="circle"
         icon={<SendOutlined />}
         onClick={handleSend}
-        disabled={!draft.trim() || isDisabled}
-        loading={isLlmLoading}
+        disabled={!draft.trim()}
       />
     </InputBarContainer>
   );

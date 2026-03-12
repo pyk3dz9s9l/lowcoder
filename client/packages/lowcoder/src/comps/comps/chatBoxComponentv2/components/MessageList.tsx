@@ -3,7 +3,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Tooltip } from "antd";
 import { CopyOutlined, CheckOutlined, RobotOutlined } from "@ant-design/icons";
-import type { ChatMessage, TypingUser } from "../store";
 import { LLM_BOT_AUTHOR_ID } from "../store";
 import {
   MessagesArea,
@@ -18,134 +17,166 @@ import {
   AiBadge,
   AiBubble,
   AiCopyButton,
-  LlmLoadingBubble,
 } from "../styles";
 
-// ── Copy helper ──────────────────────────────────────────────────────────────
+// ── AI message bubble with copy button ───────────────────────────────────────
 
-const AiMessageBubble = React.memo(({ msg }: { msg: ChatMessage }) => {
-  const [copied, setCopied] = useState(false);
+const AiMessageBubble = React.memo(
+  ({ text, authorName, timestamp }: { text: string; authorName: string; timestamp: number }) => {
+    const [copied, setCopied] = useState(false);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(msg.text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    });
-  }, [msg.text]);
+    const handleCopy = useCallback(() => {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      });
+    }, [text]);
 
-  return (
-    <AiBubbleWrapper>
-      <AiBadge>
-        <RobotOutlined style={{ fontSize: 9 }} />
-        {msg.authorName}
-      </AiBadge>
-
-      <div style={{ position: "relative" }}>
-        <AiBubble>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
-        </AiBubble>
-
-        <Tooltip title={copied ? "Copied!" : "Copy"} placement="right">
-          <AiCopyButton className="ai-copy-btn" onClick={handleCopy} aria-label="Copy AI response">
-            {copied ? <CheckOutlined style={{ fontSize: 11, color: "#52c41a" }} /> : <CopyOutlined style={{ fontSize: 11 }} />}
-          </AiCopyButton>
-        </Tooltip>
-      </div>
-
-      <BubbleTime $own={false}>
-        {new Date(msg.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </BubbleTime>
-    </AiBubbleWrapper>
-  );
-});
+    return (
+      <AiBubbleWrapper>
+        <AiBadge>
+          <RobotOutlined style={{ fontSize: 9 }} />
+          {authorName}
+        </AiBadge>
+        <div style={{ position: "relative" }}>
+          <AiBubble>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+          </AiBubble>
+          <Tooltip title={copied ? "Copied!" : "Copy"} placement="right">
+            <AiCopyButton
+              className="ai-copy-btn"
+              onClick={handleCopy}
+              aria-label="Copy AI response"
+            >
+              {copied ? (
+                <CheckOutlined style={{ fontSize: 11, color: "#52c41a" }} />
+              ) : (
+                <CopyOutlined style={{ fontSize: 11 }} />
+              )}
+            </AiCopyButton>
+          </Tooltip>
+        </div>
+        {timestamp > 0 && (
+          <BubbleTime $own={false}>
+            {new Date(timestamp).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </BubbleTime>
+        )}
+      </AiBubbleWrapper>
+    );
+  },
+);
 
 AiMessageBubble.displayName = "AiMessageBubble";
+
+// ── Helpers to read message fields flexibly ───────────────────────────────────
+
+function readField(msg: any, ...keys: string[]): string {
+  for (const k of keys) {
+    if (msg[k] != null && msg[k] !== "") return String(msg[k]);
+  }
+  return "";
+}
+
+function readTimestamp(msg: any): number {
+  const raw =
+    msg.timestamp ?? msg.createdAt ?? msg.created_at ?? msg.time ?? 0;
+  if (typeof raw === "number") return raw;
+  const parsed = Date.parse(raw);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
 
 // ── Main component ───────────────────────────────────────────────────────────
 
 export interface MessageListProps {
-  messages: ChatMessage[];
-  typingUsers: TypingUser[];
+  messages: any[];
+  typingUsers: any[];
   currentUserId: string;
-  ready: boolean;
-  isLlmRoom?: boolean;
-  isLlmLoading?: boolean;
-  llmBotName?: string;
 }
 
 export const MessageList = React.memo((props: MessageListProps) => {
-  const { messages, typingUsers, currentUserId, ready, isLlmRoom, isLlmLoading, llmBotName } = props;
-
+  const { messages, typingUsers, currentUserId } = props;
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom whenever messages change or LLM starts/stops loading
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, isLlmLoading]);
+  }, [messages.length]);
 
   return (
     <MessagesArea>
       {messages.length === 0 ? (
         <EmptyChat>
-          <div style={{ fontSize: 24 }}>{isLlmRoom ? "🤖" : "💬"}</div>
-          <div>{isLlmRoom ? `Chat with ${llmBotName || "AI Assistant"}` : "No messages yet"}</div>
-          <div style={{ fontSize: 12 }}>
-            {ready
-              ? isLlmRoom
-                ? "Ask anything — the AI will respond to everyone."
-                : "Start the conversation!"
-              : "Connecting..."}
-          </div>
+          <div style={{ fontSize: 24 }}>💬</div>
+          <div>No messages yet</div>
+          <div style={{ fontSize: 12 }}>Start the conversation!</div>
         </EmptyChat>
       ) : (
-        messages.map((msg) => {
-          const isAssistant = msg.authorType === "assistant" || msg.authorId === LLM_BOT_AUTHOR_ID;
-          const isOwn = !isAssistant && msg.authorId === currentUserId;
+        messages.map((msg, idx) => {
+          const id = readField(msg, "id", "_id") || `msg_${idx}`;
+          const text = readField(msg, "text", "message", "content");
+          const authorId = readField(
+            msg,
+            "authorId",
+            "userId",
+            "author_id",
+            "sender",
+          );
+          const authorName =
+            readField(
+              msg,
+              "authorName",
+              "userName",
+              "author_name",
+              "senderName",
+            ) || authorId;
+          const timestamp = readTimestamp(msg);
+          const authorType = msg.authorType || msg.role || "";
+
+          const isAssistant =
+            authorType === "assistant" ||
+            authorId === LLM_BOT_AUTHOR_ID;
+          const isOwn = !isAssistant && authorId === currentUserId;
 
           if (isAssistant) {
-            return <AiMessageBubble key={msg.id} msg={msg} />;
+            return (
+              <AiMessageBubble
+                key={id}
+                text={text}
+                authorName={authorName}
+                timestamp={timestamp}
+              />
+            );
           }
 
           return (
-            <div key={msg.id}>
-              <BubbleMeta $own={isOwn}>{msg.authorName}</BubbleMeta>
-              <Bubble $own={isOwn}>{msg.text}</Bubble>
-              <BubbleTime $own={isOwn}>
-                {new Date(msg.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </BubbleTime>
+            <div key={id}>
+              <BubbleMeta $own={isOwn}>{authorName}</BubbleMeta>
+              <Bubble $own={isOwn}>{text}</Bubble>
+              {timestamp > 0 && (
+                <BubbleTime $own={isOwn}>
+                  {new Date(timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </BubbleTime>
+              )}
             </div>
           );
         })
       )}
 
-      {/* LLM thinking indicator */}
-      {isLlmLoading && (
-        <div>
-          <AiBadge style={{ marginBottom: 4 }}>
-            <RobotOutlined style={{ fontSize: 9 }} />
-            {llmBotName || "AI Assistant"}
-          </AiBadge>
-          <LlmLoadingBubble>
-            <span /><span /><span />
-          </LlmLoadingBubble>
-        </div>
-      )}
-
-      {/* Human typing indicator — hidden in LLM rooms since AI is always "typing" */}
-      {!isLlmLoading && typingUsers.length > 0 && (
+      {typingUsers.length > 0 && (
         <TypingIndicatorWrapper>
           <TypingDots>
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </TypingDots>
           <TypingLabel>
             {typingUsers.length === 1
-              ? `${typingUsers[0].userName} is typing...`
+              ? `${typingUsers[0].userName || typingUsers[0].userId || "Someone"} is typing...`
               : `${typingUsers.length} people are typing...`}
           </TypingLabel>
         </TypingIndicatorWrapper>

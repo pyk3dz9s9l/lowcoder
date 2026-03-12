@@ -976,22 +976,22 @@ export var uiCompMap: Registry = {
   },
 
   chatControllerV2: {
-    name: "Chat Controller V2",
-    enName: "Chat Controller V2",
-    description: "Headless chat controller — exposes state, methods & events so you can build custom chat UIs with built-in components",
+    name: "Chat Signal Controller",
+    enName: "Chat Signal Controller",
+    description: "Signal server for real-time chat — broadcasts message activity, typing indicators, and online presence via Pluv/Yjs. Pair with Chat Box V2 and your own data queries.",
     categories: ["collaboration"],
     icon: CommentCompIcon,
-    keywords: "chatbox,chat,controller,headless,rooms,messaging,v2",
+    keywords: "chatbox,chat,controller,signal,realtime,presence,typing,pluv,yjs",
     comp: ChatControllerV2Comp,
   },
 
   chatBoxV: {
     name: "Chat Box V2",
     enName: "Chat Box V2",
-    description: "Chat Box with rooms, messaging, and local persistence",
+    description: "Chat UI component — displays messages from any data source, fires send events, shows typing indicators from Chat Signal Controller",
     categories: ["collaboration"],
     icon: CommentCompIcon,
-    keywords: "chatbox,chat,conversation,rooms,messaging,v2",
+    keywords: "chatbox,chat,conversation,messaging,v2",
     comp: ChatBoxV2Comp,
     layoutInfo: {
       w: 12,

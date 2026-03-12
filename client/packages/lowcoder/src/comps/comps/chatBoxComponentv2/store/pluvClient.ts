@@ -4,25 +4,16 @@ import { createBundle } from "@pluv/react";
 import { z } from "zod";
 
 /**
- * Module-level config object updated by the component before connecting.
- * This allows dynamic auth without recreating the client.
- *
- * IMPORTANT: set pluvConfig.publicKey (from the component's pluvPublicKey prop)
- * BEFORE PluvRoomProvider mounts so the pluv client has the key at connection time.
+ * Module-level config updated by ChatControllerV2 before connecting.
+ * Allows dynamic auth without recreating the client.
  */
 export const pluvConfig = {
   userId: "",
   userName: "",
   authUrl: "/api/auth/pluv",
-  /** Populated from the component's "Public Key" property-panel field. */
   publicKey: "",
 };
 
-/**
- * Returns the public key at call-time (lazy) so the component can set
- * pluvConfig.publicKey before pluv opens its first WebSocket connection.
- * Falls back to build-time env vars / globalThis for non-component usages.
- */
 function resolvePluvPublicKey(): string {
   return (
     pluvConfig.publicKey ||
@@ -47,19 +38,13 @@ const client = createClient({
   }) as any,
   publicKey: resolvePluvPublicKey as any,
   initialStorage: yjs.doc((t: any) => ({
-    rooms: t.map("rooms", []),
-    members: t.map("members", []),
-    invites: t.map("invites", []),
-    messages: t.map("messages", []),
+    messageActivity: t.map("messageActivity", []),
   })),
   presence: z.object({
-    typing: z
-      .object({
-        userId: z.string(),
-        userName: z.string(),
-        roomId: z.string(),
-      })
-      .nullable(),
+    userId: z.string(),
+    userName: z.string(),
+    currentRoomId: z.string().nullable(),
+    typing: z.boolean(),
   }),
 } as any);
 
