@@ -1,5 +1,7 @@
 export type {
   ChatMessage,
+  ChatRoom,
+  PendingRoomInvite,
   TypingUser,
   OnlineUser,
   MessageBroadcast,

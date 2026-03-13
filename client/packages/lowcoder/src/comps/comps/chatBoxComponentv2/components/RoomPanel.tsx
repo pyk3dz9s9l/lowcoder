@@ -8,9 +8,9 @@ import {
   LogoutOutlined,
   RobotOutlined,
   MailOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
-import type { ChatRoom } from "../store";
-import type { PendingRoomInvite } from "../useChatStore";
+import type { ChatRoom, PendingRoomInvite } from "../store";
 import {
   RoomPanelContainer,
   RoomPanelHeader,
@@ -35,6 +35,7 @@ export interface RoomPanelProps {
   onAcceptInvite: (inviteId: string) => void;
   onDeclineInvite: (inviteId: string) => void;
   onCreateModalOpen: () => void;
+  onInviteModalOpen?: () => void;
 }
 
 export const RoomPanel = React.memo((props: RoomPanelProps) => {
@@ -53,6 +54,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     onAcceptInvite,
     onDeclineInvite,
     onCreateModalOpen,
+    onInviteModalOpen,
   } = props;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,20 +92,111 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
 
   const roomListItems = isSearchMode ? searchResults : rooms;
 
+  // Group rooms by type for display
+  const publicRooms = roomListItems.filter((r) => r.type === "public");
+  const privateRooms = roomListItems.filter((r) => r.type === "private");
+  const llmRooms = roomListItems.filter((r) => r.type === "llm");
+
+  const renderRoomItem = (room: ChatRoom) => {
+    const isActive = currentRoomId === room.id;
+    const isSearch = isSearchMode;
+
+    return (
+      <RoomItemStyled
+        key={room.id}
+        $active={isActive}
+        onClick={() => {
+          if (isSearch) {
+            handleJoinAndClear(room.id);
+          } else if (!isActive) {
+            onSwitchRoom(room.id);
+          }
+        }}
+        title={isSearch ? `Join "${room.name}"` : room.name}
+      >
+        {room.type === "llm" ? (
+          <RobotOutlined
+            style={{
+              fontSize: 12,
+              flexShrink: 0,
+              color: isActive ? "#fff" : "#c084fc",
+            }}
+          />
+        ) : room.type === "public" ? (
+          <GlobalOutlined style={{ fontSize: 12, flexShrink: 0 }} />
+        ) : (
+          <LockOutlined style={{ fontSize: 12, flexShrink: 0 }} />
+        )}
+        <span
+          style={{
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {room.name}
+        </span>
+        {room.type === "llm" && !isSearch && (
+          <LlmRoomBadge
+            style={
+              isActive
+                ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
+                : undefined
+            }
+          >
+            AI
+          </LlmRoomBadge>
+        )}
+        {isSearch && <SearchResultBadge>Join</SearchResultBadge>}
+        {isActive && !isSearch && (
+          <Popconfirm
+            title={`Leave "${room.name}"?`}
+            onConfirm={(e) => {
+              e?.stopPropagation();
+              onLeaveRoom(room.id);
+            }}
+            onCancel={(e) => e?.stopPropagation()}
+            okText="Leave"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
+          >
+            <LogoutOutlined
+              onClick={(e) => e.stopPropagation()}
+              style={{ fontSize: 12, opacity: 0.7 }}
+            />
+          </Popconfirm>
+        )}
+      </RoomItemStyled>
+    );
+  };
+
   return (
     <RoomPanelContainer $width={width}>
       <RoomPanelHeader>
         <span>Rooms</span>
-        {allowRoomCreation && (
-          <Tooltip title="Create room">
-            <Button
-              type="text"
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={onCreateModalOpen}
-            />
-          </Tooltip>
-        )}
+        <div style={{ display: "flex", gap: 2 }}>
+          {onInviteModalOpen && (
+            <Tooltip title="Invite user to room">
+              <Button
+                type="text"
+                size="small"
+                icon={<UserAddOutlined />}
+                onClick={onInviteModalOpen}
+              />
+            </Tooltip>
+          )}
+          {allowRoomCreation && (
+            <Tooltip title="Create room">
+              <Button
+                type="text"
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={onCreateModalOpen}
+              />
+            </Tooltip>
+          )}
+        </div>
       </RoomPanelHeader>
 
       {allowRoomSearch && (
@@ -136,9 +229,20 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
         </div>
       )}
 
+      {/* Pending invites section */}
       {!isSearchMode && pendingInvites.length > 0 && (
         <div style={{ padding: "8px 8px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#666", marginBottom: 6, fontWeight: 600 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              color: "#666",
+              marginBottom: 6,
+              fontWeight: 600,
+            }}
+          >
             <MailOutlined />
             Pending Invites ({pendingInvites.length})
           </div>
@@ -153,7 +257,14 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 background: "#fff",
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#333", marginBottom: 2 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#333",
+                  marginBottom: 2,
+                }}
+              >
                 <LockOutlined style={{ marginRight: 6, color: "#fa8c16" }} />
                 {invite.roomName}
               </div>
@@ -168,10 +279,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 >
                   Accept
                 </Button>
-                <Button
-                  size="small"
-                  onClick={() => onDeclineInvite(invite.id)}
-                >
+                <Button size="small" onClick={() => onDeclineInvite(invite.id)}>
                   Decline
                 </Button>
               </div>
@@ -182,75 +290,66 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
 
       <RoomListContainer>
         {roomListItems.length === 0 && !isSearchMode && ready && (
-          <div style={{ textAlign: "center", color: "#999", fontSize: 12, padding: 16 }}>
-            No rooms yet. Create or search for one.
+          <div
+            style={{
+              textAlign: "center",
+              color: "#999",
+              fontSize: 12,
+              padding: 16,
+            }}
+          >
+            No rooms yet.
+            {allowRoomCreation ? " Create one!" : ""}
           </div>
         )}
 
-        {roomListItems.map((room) => {
-          const isActive = currentRoomId === room.id;
-          const isSearch = isSearchMode;
-
-          return (
-            <RoomItemStyled
-              key={room.id}
-              $active={isActive}
-              onClick={() => {
-                if (isSearch) {
-                  handleJoinAndClear(room.id);
-                } else if (!isActive) {
-                  onSwitchRoom(room.id);
-                }
-              }}
-              title={isSearch ? `Join "${room.name}"` : room.name}
-            >
-              {room.type === "llm" ? (
-                <RobotOutlined style={{ fontSize: 12, flexShrink: 0, color: isActive ? "#fff" : "#c084fc" }} />
-              ) : room.type === "public" ? (
-                <GlobalOutlined style={{ fontSize: 12, flexShrink: 0 }} />
-              ) : (
-                <LockOutlined style={{ fontSize: 12, flexShrink: 0 }} />
+        {/* Render grouped when not in search mode */}
+        {isSearchMode
+          ? roomListItems.map(renderRoomItem)
+          : (
+            <>
+              {llmRooms.length > 0 && (
+                <>
+                  <RoomSectionLabel label="AI Rooms" />
+                  {llmRooms.map(renderRoomItem)}
+                </>
               )}
-              <span
-                style={{
-                  flex: 1,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {room.name}
-              </span>
-              {room.type === "llm" && !isSearch && (
-                <LlmRoomBadge style={isActive ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : undefined}>
-                  AI
-                </LlmRoomBadge>
+              {publicRooms.length > 0 && (
+                <>
+                  <RoomSectionLabel label="Public" />
+                  {publicRooms.map(renderRoomItem)}
+                </>
               )}
-              {isSearch && <SearchResultBadge>Join</SearchResultBadge>}
-              {isActive && !isSearch && (
-                <Popconfirm
-                  title={`Leave "${room.name}"?`}
-                  onConfirm={(e) => {
-                    e?.stopPropagation();
-                    onLeaveRoom(room.id);
-                  }}
-                  onCancel={(e) => e?.stopPropagation()}
-                  okText="Leave"
-                  cancelText="Cancel"
-                  okButtonProps={{ danger: true }}
-                >
-                  <LogoutOutlined
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ fontSize: 12, opacity: 0.7 }}
-                  />
-                </Popconfirm>
+              {privateRooms.length > 0 && (
+                <>
+                  <RoomSectionLabel label="Private" />
+                  {privateRooms.map(renderRoomItem)}
+                </>
               )}
-            </RoomItemStyled>
-          );
-        })}
+            </>
+          )}
       </RoomListContainer>
     </RoomPanelContainer>
   );
 });
 
 RoomPanel.displayName = "RoomPanel";
+
+// ── Section label ─────────────────────────────────────────────────────────────
+
+const RoomSectionLabel = React.memo(({ label }: { label: string }) => (
+  <div
+    style={{
+      fontSize: 10,
+      fontWeight: 600,
+      color: "#aaa",
+      letterSpacing: "0.6px",
+      textTransform: "uppercase",
+      padding: "8px 10px 4px",
+    }}
+  >
+    {label}
+  </div>
+));
+
+RoomSectionLabel.displayName = "RoomSectionLabel";

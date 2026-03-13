@@ -145,7 +145,7 @@ export type UICompType =
   | "chat" //Added By Kamal Qureshi
   | "chatBox" //Added By Kamal Qureshi
   | "chatController"
-  | "chatControllerV2"
+  | "chatControllerSignal"
   | "chatBoxV"
   | "autocomplete" //Added By Mousheng
   | "colorPicker" //Added By Mousheng

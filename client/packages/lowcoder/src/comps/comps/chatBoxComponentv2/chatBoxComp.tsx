@@ -42,22 +42,82 @@ const ChatEvents = [
     description:
       "Triggered when the user stops typing. Wire this to chatController.stopTyping().",
   },
+  {
+    label: "Room Switch",
+    value: "roomSwitch",
+    description:
+      "User clicked a room they are already a member of. Read chatBox.pendingRoomId, then call chatController.switchRoom({{chatBox1.pendingRoomId}}).",
+  },
+  {
+    label: "Room Join",
+    value: "roomJoin",
+    description:
+      "User wants to join a room from search results. Read chatBox.pendingRoomId, then call chatController.joinRoom({{chatBox1.pendingRoomId}}).",
+  },
+  {
+    label: "Room Leave",
+    value: "roomLeave",
+    description:
+      "User clicked leave on a room. Read chatBox.pendingRoomId, then call chatController.leaveRoom({{chatBox1.pendingRoomId}}).",
+  },
+  {
+    label: "Room Create",
+    value: "roomCreate",
+    description:
+      "User submitted the create-room form. Read chatBox.newRoomName, newRoomType, newRoomDescription, newRoomLlmQuery, then call chatController.createRoom(...).",
+  },
+  {
+    label: "Invite Send",
+    value: "inviteSend",
+    description:
+      "User sent a room invite. Read chatBox.inviteTargetUserId, then call chatController.sendInvite(currentRoomId, {{chatBox1.inviteTargetUserId}}).",
+  },
+  {
+    label: "Invite Accept",
+    value: "inviteAccept",
+    description:
+      "User accepted a pending invite. Read chatBox.pendingInviteId, then call chatController.acceptInvite({{chatBox1.pendingInviteId}}).",
+  },
+  {
+    label: "Invite Decline",
+    value: "inviteDecline",
+    description:
+      "User declined a pending invite. Read chatBox.pendingInviteId, then call chatController.declineInvite({{chatBox1.pendingInviteId}}).",
+  },
 ] as const;
 
 // ─── Children map ────────────────────────────────────────────────────────────
 
 const childrenMap = {
+  // ── Chat content ─────────────────────────────────────────────────
   chatTitle: stringExposingStateControl("chatTitle", "Chat"),
   showHeader: withDefault(BoolControl, true),
-
   messages: jsonArrayControl([]),
   currentUserId: withDefault(StringControl, "user_1"),
   currentUserName: withDefault(StringControl, "User"),
   typingUsers: jsonArrayControl([]),
-
   lastSentMessageText: stringExposingStateControl("lastSentMessageText", ""),
   messageText: stringExposingStateControl("messageText", ""),
 
+  // ── Rooms panel ──────────────────────────────────────────────────
+  rooms: jsonArrayControl([]),
+  currentRoomId: withDefault(StringControl, ""),
+  pendingInvites: jsonArrayControl([]),
+  showRoomsPanel: withDefault(BoolControl, true),
+  roomsPanelWidth: withDefault(StringControl, "240px"),
+  allowRoomCreation: withDefault(BoolControl, true),
+  allowRoomSearch: withDefault(BoolControl, true),
+
+  // ── Exposed state written on user interactions ────────────────────
+  pendingRoomId: stringExposingStateControl("pendingRoomId", ""),
+  newRoomName: stringExposingStateControl("newRoomName", ""),
+  newRoomType: stringExposingStateControl("newRoomType", "public"),
+  newRoomDescription: stringExposingStateControl("newRoomDescription", ""),
+  newRoomLlmQuery: stringExposingStateControl("newRoomLlmQuery", ""),
+  inviteTargetUserId: stringExposingStateControl("inviteTargetUserId", ""),
+  pendingInviteId: stringExposingStateControl("pendingInviteId", ""),
+
+  // ── Style / layout ────────────────────────────────────────────────
   autoHeight: AutoHeightControl,
   onEvent: eventHandlerControl(ChatEvents),
   style: styleControl(TextStyle, "style"),
@@ -91,6 +151,31 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           label: "Current User Name",
           tooltip: "The current user's display name",
         })}
+      </Section>
+
+      <Section name="Rooms Panel">
+        {children.showRoomsPanel.propertyView({ label: "Show Rooms Panel" })}
+        {children.roomsPanelWidth.propertyView({
+          label: "Panel Width",
+          tooltip: "Width of the rooms sidebar, e.g. 240px or 30%",
+        })}
+        {children.rooms.propertyView({
+          label: "Rooms",
+          tooltip:
+            "Bind to {{ chatController1.userRooms }} — the list of rooms visible to the current user.",
+        })}
+        {children.currentRoomId.propertyView({
+          label: "Current Room ID",
+          tooltip:
+            "Bind to {{ chatController1.currentRoomId }} to highlight the active room.",
+        })}
+        {children.pendingInvites.propertyView({
+          label: "Pending Invites",
+          tooltip:
+            "Bind to {{ chatController1.pendingInvites }} to show invite notifications.",
+        })}
+        {children.allowRoomCreation.propertyView({ label: "Allow Room Creation" })}
+        {children.allowRoomSearch.propertyView({ label: "Allow Room Search" })}
       </Section>
 
       <Section name="Real-time">
@@ -148,6 +233,46 @@ let ChatBoxV2Tmp = (function () {
         style={props.style}
         animationStyle={props.animationStyle}
         onEvent={props.onEvent}
+        // Rooms panel
+        rooms={props.rooms}
+        currentRoomId={props.currentRoomId}
+        pendingInvites={props.pendingInvites}
+        showRoomsPanel={props.showRoomsPanel}
+        roomsPanelWidth={props.roomsPanelWidth}
+        allowRoomCreation={props.allowRoomCreation}
+        allowRoomSearch={props.allowRoomSearch}
+        // Callbacks that set state then fire events
+        onRoomSwitch={(roomId) => {
+          props.pendingRoomId.onChange(roomId);
+          props.onEvent("roomSwitch");
+        }}
+        onRoomJoin={(roomId) => {
+          props.pendingRoomId.onChange(roomId);
+          props.onEvent("roomJoin");
+        }}
+        onRoomLeave={(roomId) => {
+          props.pendingRoomId.onChange(roomId);
+          props.onEvent("roomLeave");
+        }}
+        onRoomCreate={(name, type, description, llmQueryName) => {
+          props.newRoomName.onChange(name);
+          props.newRoomType.onChange(type);
+          props.newRoomDescription.onChange(description || "");
+          props.newRoomLlmQuery.onChange(llmQueryName || "");
+          props.onEvent("roomCreate");
+        }}
+        onInviteSend={(toUserId) => {
+          props.inviteTargetUserId.onChange(toUserId);
+          props.onEvent("inviteSend");
+        }}
+        onInviteAccept={(inviteId) => {
+          props.pendingInviteId.onChange(inviteId);
+          props.onEvent("inviteAccept");
+        }}
+        onInviteDecline={(inviteId) => {
+          props.pendingInviteId.onChange(inviteId);
+          props.onEvent("inviteDecline");
+        }}
       />
     );
   })
@@ -170,5 +295,27 @@ export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
     "Text of the last message sent by the user — use in your save query",
   ),
   new NameConfig("messageText", "Current text in the message input"),
+  new NameConfig(
+    "pendingRoomId",
+    "Room ID the user wants to switch to, join, or leave — read in roomSwitch/roomJoin/roomLeave events",
+  ),
+  new NameConfig("newRoomName", "Name entered in the create-room form"),
+  new NameConfig(
+    "newRoomType",
+    "Type selected in the create-room form: public | private | llm",
+  ),
+  new NameConfig("newRoomDescription", "Description entered in the create-room form"),
+  new NameConfig(
+    "newRoomLlmQuery",
+    "Query name entered for LLM rooms in the create-room form",
+  ),
+  new NameConfig(
+    "inviteTargetUserId",
+    "User ID entered in the invite form — read in inviteSend event",
+  ),
+  new NameConfig(
+    "pendingInviteId",
+    "Invite ID the user accepted or declined — read in inviteAccept/inviteDecline events",
+  ),
   NameConfigHidden,
 ]);

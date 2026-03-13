@@ -196,7 +196,7 @@ import { ContainerComp as FloatTextContainerComp } from "./comps/containerComp/t
 import { ChatComp } from "./comps/chatComp";
 import { ChatBoxComp } from "./comps/chatBoxComponent";
 import { ChatControllerComp } from "./comps/chatBoxComponent/chatControllerComp";
-import { ChatControllerV2Comp } from "./hooks/chatControllerV2Comp";
+import { ChatControllerSignal } from "./hooks/chatControllerV2Comp";
 import { ChatBoxV2Comp } from "./comps/chatBoxComponentv2";
 
 type Registry = {
@@ -975,14 +975,14 @@ export var uiCompMap: Registry = {
     isContainer: true,
   },
 
-  chatControllerV2: {
+  chatControllerSignal: {
     name: "Chat Signal Controller",
     enName: "Chat Signal Controller",
     description: "Signal server for real-time chat — broadcasts message activity, typing indicators, and online presence via Pluv/Yjs. Pair with Chat Box V2 and your own data queries.",
     categories: ["collaboration"],
     icon: CommentCompIcon,
     keywords: "chatbox,chat,controller,signal,realtime,presence,typing,pluv,yjs",
-    comp: ChatControllerV2Comp,
+    comp: ChatControllerSignal,
   },
 
   chatBoxV: {

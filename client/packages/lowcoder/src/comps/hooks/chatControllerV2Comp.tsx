@@ -47,6 +47,11 @@ const ChatControllerEvents = [
     description: "A user went offline",
   },
   {
+    label: "Room Switched",
+    value: "roomSwitched",
+    description: "Active room changed. Read currentRoomId.",
+  },
+  {
     label: "Connected",
     value: "connected",
     description: "Connected to the signal server",
@@ -109,7 +114,12 @@ const SignalController = React.memo(
     const others = useOthers();
     const [messageActivity, messageActivityYMap] = useStorage("messageActivity");
 
+    const compRef = useRef(comp);
+    compRef.current = comp;
+
     const triggerEvent = comp.children.onEvent.getView();
+    const triggerEventRef = useRef(triggerEvent);
+    triggerEventRef.current = triggerEvent;
 
     const prevRef = useRef<{
       ready: boolean;
@@ -132,13 +142,13 @@ const SignalController = React.memo(
     }, [connection.state]);
 
     useEffect(() => {
-      comp.children.ready.dispatchChangeValueAction(ready);
-      comp.children.connectionStatus.dispatchChangeValueAction(connectionLabel);
+      compRef.current.children.ready.dispatchChangeValueAction(ready);
+      compRef.current.children.connectionStatus.dispatchChangeValueAction(connectionLabel);
       if (ready && !prevRef.current.ready) {
-        triggerEvent("connected");
+        triggerEventRef.current("connected");
       }
       if (!ready && prevRef.current.ready) {
-        triggerEvent("disconnected");
+        triggerEventRef.current("disconnected");
       }
       prevRef.current.ready = ready;
     }, [ready, connectionLabel]);
@@ -155,14 +165,14 @@ const SignalController = React.memo(
     }, [others]);
 
     useEffect(() => {
-      comp.children.onlineUsers.dispatchChangeValueAction(
+      compRef.current.children.onlineUsers.dispatchChangeValueAction(
         onlineUsers as unknown as JSONObject[],
       );
       if (prevRef.current.initialized) {
         if (onlineUsers.length > prevRef.current.onlineCount) {
-          triggerEvent("userJoined");
+          triggerEventRef.current("userJoined");
         } else if (onlineUsers.length < prevRef.current.onlineCount) {
-          triggerEvent("userLeft");
+          triggerEventRef.current("userLeft");
         }
       }
       prevRef.current.onlineCount = onlineUsers.length;
@@ -189,7 +199,7 @@ const SignalController = React.memo(
     }, [others, currentRoomId, userId]);
 
     useEffect(() => {
-      comp.children.typingUsers.dispatchChangeValueAction(
+      compRef.current.children.typingUsers.dispatchChangeValueAction(
         typingUsers as unknown as JSONObject[],
       );
     }, [typingUsers]);
@@ -205,16 +215,17 @@ const SignalController = React.memo(
         if (activity.counter > prevCounter) {
           prevRef.current.lastBroadcastCounter[roomId] = activity.counter;
           if (activity.authorId !== userId) {
-            comp.children.lastMessageNotification.dispatchChangeValueAction(
+            compRef.current.children.lastMessageNotification.dispatchChangeValueAction(
               activity as unknown as JSONObject,
             );
-            triggerEvent("newMessageBroadcast");
+            triggerEventRef.current("newMessageBroadcast");
           }
         }
       }
     }, [messageActivity, userId]);
 
     // ── Actions for method invocation ─────────────────────────────────
+
     const broadcastNewMessage = useCallback(
       (roomId: string, messageId?: string) => {
         if (!messageActivityYMap) return;
@@ -258,28 +269,43 @@ const SignalController = React.memo(
 
     const switchRoom = useCallback(
       (roomId: string) => {
-        comp.children.currentRoomId.dispatchChangeValueAction(roomId);
+        compRef.current.children.currentRoomId.dispatchChangeValueAction(roomId);
         setMyPresence({
           userId,
           userName,
           currentRoomId: roomId,
           typing: false,
         } as any);
+        triggerEventRef.current("roomSwitched");
       },
-      [setMyPresence, userId, userName, comp],
+      [setMyPresence, userId, userName],
     );
 
+    // ── Proxy ref for stable callbacks ────────────────────────────────
+    const actionsRef = useRef<SignalActions>({
+      broadcastNewMessage,
+      startTyping,
+      stopTyping,
+      switchRoom,
+    });
+    actionsRef.current = {
+      broadcastNewMessage,
+      startTyping,
+      stopTyping,
+      switchRoom,
+    };
+
     useEffect(() => {
-      const actions: SignalActions = {
-        broadcastNewMessage,
-        startTyping,
-        stopTyping,
-        switchRoom,
+      const proxy: SignalActions = {
+        broadcastNewMessage: (...args) => actionsRef.current.broadcastNewMessage(...args),
+        startTyping: (...args) => actionsRef.current.startTyping(...args),
+        stopTyping: () => actionsRef.current.stopTyping(),
+        switchRoom: (...args) => actionsRef.current.switchRoom(...args),
       };
-      comp.children._signalActions.dispatchChangeValueAction(
-        actions as unknown as JSONObject,
+      compRef.current.children._signalActions.dispatchChangeValueAction(
+        proxy as unknown as JSONObject,
       );
-    }, [broadcastNewMessage, startTyping, stopTyping, switchRoom]);
+    }, []);
 
     // ── Set initial presence ──────────────────────────────────────────
     useEffect(() => {
@@ -289,7 +315,7 @@ const SignalController = React.memo(
         currentRoomId: null,
         typing: false,
       } as any);
-    }, [userId, userName]);
+    }, [setMyPresence, userId, userName]);
 
     return null;
   },
@@ -299,7 +325,7 @@ SignalController.displayName = "SignalController";
 
 // ─── View function (wraps PluvRoomProvider) ──────────────────────────────────
 
-const ChatControllerV2Base = withViewFn(
+const ChatControllerSignalBase = withViewFn(
   simpleMultiComp(childrenMap),
   (comp) => {
     const userId = comp.children.userId.getView().value;
@@ -347,8 +373,8 @@ const ChatControllerV2Base = withViewFn(
 
 // ─── Property panel ─────────────────────────────────────────────────────────
 
-const ChatControllerV2WithProps = withPropertyViewFn(
-  ChatControllerV2Base,
+const ChatControllerSignalWithProps = withPropertyViewFn(
+  ChatControllerSignalBase,
   (comp) => (
     <>
       <Section name={sectionNames.basic}>
@@ -387,11 +413,8 @@ const ChatControllerV2WithProps = withPropertyViewFn(
 
 // ─── Expose state properties ────────────────────────────────────────────────
 
-let ChatControllerV2Comp = withExposingConfigs(ChatControllerV2WithProps, [
-  new NameConfig(
-    "ready",
-    "Whether the signal server is connected and ready",
-  ),
+let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
+  new NameConfig("ready", "Whether the signal server is connected and ready"),
   new NameConfig("error", "Error message if connection failed"),
   new NameConfig(
     "connectionStatus",
@@ -417,7 +440,7 @@ let ChatControllerV2Comp = withExposingConfigs(ChatControllerV2WithProps, [
 
 // ─── Expose methods ─────────────────────────────────────────────────────────
 
-ChatControllerV2Comp = withMethodExposing(ChatControllerV2Comp, [
+ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "broadcastNewMessage",
@@ -497,4 +520,4 @@ ChatControllerV2Comp = withMethodExposing(ChatControllerV2Comp, [
   },
 ]);
 
-export { ChatControllerV2Comp };
+export { ChatControllerSignal };
