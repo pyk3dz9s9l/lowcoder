@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button, Input, Tooltip, Popconfirm } from "antd";
 import {
   PlusOutlined,
@@ -9,8 +9,9 @@ import {
   RobotOutlined,
   MailOutlined,
   UserAddOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
-import type { ChatRoom } from "../store";
+import type { ChatRoom, OnlineUser } from "../store";
 import {
   RoomPanelContainer,
   RoomPanelHeader,
@@ -18,6 +19,12 @@ import {
   RoomItemStyled,
   SearchResultBadge,
   LlmRoomBadge,
+  OnlinePresenceSection,
+  OnlinePresenceLabel,
+  OnlineUserItem,
+  OnlineAvatar,
+  OnlineDot,
+  OnlineUserName,
 } from "../styles";
 import { useChatBox } from "../ChatBoxContext";
 
@@ -31,16 +38,32 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
   const {
     rooms,
     currentRoomId,
+    currentUserId,
+    currentUserName,
     allowRoomCreation,
     allowRoomSearch,
     roomsPanelWidth,
     pendingInvites,
+    onlineUsers,
     onRoomSwitch,
     onRoomJoin,
     onRoomLeave,
     onInviteAccept,
     onInviteDecline,
   } = useChatBox();
+
+  // Users in the current room (from Pluv presence), plus self
+  const roomOnlineUsers = useMemo<OnlineUser[]>(() => {
+    const peers = onlineUsers.filter(
+      (u) => u.currentRoomId === currentRoomId && u.userId !== currentUserId,
+    );
+    const self: OnlineUser = {
+      userId: currentUserId,
+      userName: currentUserName,
+      currentRoomId,
+    };
+    return currentRoomId ? [self, ...peers] : peers;
+  }, [onlineUsers, currentRoomId, currentUserId, currentUserName]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ChatRoom[]>([]);
@@ -308,11 +331,47 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             </>
           )}
       </RoomListContainer>
+
+      {/* ── Online Presence ─────────────────────────────────────── */}
+      {currentRoomId && roomOnlineUsers.length > 0 && (
+        <OnlinePresenceSection>
+          <OnlinePresenceLabel>
+            <TeamOutlined />
+            Online — {roomOnlineUsers.length}
+          </OnlinePresenceLabel>
+          {roomOnlineUsers.map((user) => (
+            <OnlineUserItem key={user.userId}>
+              <OnlineAvatar $color={avatarColor(user.userId)}>
+                {(user.userName || user.userId).slice(0, 1).toUpperCase()}
+                <OnlineDot />
+              </OnlineAvatar>
+              <OnlineUserName title={user.userName}>
+                {user.userId === currentUserId ? `${user.userName} (You)` : user.userName}
+              </OnlineUserName>
+            </OnlineUserItem>
+          ))}
+        </OnlinePresenceSection>
+      )}
     </RoomPanelContainer>
   );
 });
 
 RoomPanel.displayName = "RoomPanel";
+
+// ── Avatar color helper ───────────────────────────────────────────────────────
+
+const AVATAR_PALETTE = [
+  "#1890ff", "#52c41a", "#fa8c16", "#722ed1",
+  "#eb2f96", "#13c2c2", "#faad14", "#f5222d",
+];
+
+function avatarColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
 
 // ── Section label ─────────────────────────────────────────────────────────────
 

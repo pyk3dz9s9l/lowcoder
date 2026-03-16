@@ -105,6 +105,7 @@ const childrenMap = {
   rooms: jsonArrayControl([]),
   currentRoomId: withDefault(StringControl, ""),
   pendingInvites: jsonArrayControl([]),
+  onlineUsers: jsonArrayControl([]),
   showRoomsPanel: withDefault(BoolControl, true),
   roomsPanelWidth: withDefault(StringControl, "240px"),
   allowRoomCreation: withDefault(BoolControl, true),
@@ -186,6 +187,11 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           tooltip:
             "Array of users currently typing. Bind to {{ chatController1.typingUsers }}",
         })}
+        {children.onlineUsers.propertyView({
+          label: "Online Users",
+          tooltip:
+            "Array of online users with presence. Bind to {{ chatController1.onlineUsers }}. Shape: [{ userId, userName, currentRoomId }]",
+        })}
       </Section>
 
       <Section name="Display">
@@ -225,6 +231,7 @@ let ChatBoxV2Tmp = (function () {
     const messages = Array.isArray(props.messages) ? props.messages : [];
     const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
+    const onlineUsers = Array.isArray(props.onlineUsers) ? props.onlineUsers : [];
     const pendingInvites = (Array.isArray(props.pendingInvites)
       ? props.pendingInvites
       : []) as unknown as PendingRoomInvite[];
@@ -238,6 +245,7 @@ let ChatBoxV2Tmp = (function () {
       currentUserId: props.currentUserId,
       currentUserName: props.currentUserName,
       typingUsers,
+      onlineUsers: onlineUsers as any,
       pendingInvites,
 
       chatTitle: props.chatTitle,

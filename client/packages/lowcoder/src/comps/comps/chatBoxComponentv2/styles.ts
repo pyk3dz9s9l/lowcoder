@@ -346,3 +346,83 @@ export const LlmRoomBadge = styled.span`
   padding: 1px 5px;
   flex-shrink: 0;
 `;
+
+// ── Online Presence styles ──────────────────────────────────────────────────
+
+export const OnlinePresenceSection = styled.div`
+  border-top: 1px solid #eee;
+  padding: 8px;
+  flex-shrink: 0;
+`;
+
+export const OnlinePresenceLabel = styled.div`
+  font-size: 10px;
+  font-weight: 600;
+  color: #aaa;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+export const OnlineUserItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 2px;
+  font-size: 12px;
+  color: #444;
+  overflow: hidden;
+`;
+
+export const OnlineAvatar = styled.div<{ $color: string }>`
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: ${(p) => p.$color};
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+`;
+
+export const OnlineDot = styled.span`
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #52c41a;
+  border: 1.5px solid #fafbfc;
+`;
+
+export const OnlineUserName = styled.span`
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const OnlineCountBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #52c41a;
+  font-weight: 500;
+`;
+
+export const OnlineCountDot = styled.span`
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #52c41a;
+  display: inline-block;
+`;

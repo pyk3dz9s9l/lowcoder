@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ChatRoom, PendingRoomInvite } from "./store";
+import type { ChatRoom, OnlineUser, PendingRoomInvite } from "./store";
 
 type ChatEventName =
   | "messageSent"
@@ -27,6 +27,7 @@ export interface ChatBoxContextValue {
   currentUserId: string;
   currentUserName: string;
   typingUsers: any[];
+  onlineUsers: OnlineUser[];
   pendingInvites: PendingRoomInvite[];
 
   // Exposed state

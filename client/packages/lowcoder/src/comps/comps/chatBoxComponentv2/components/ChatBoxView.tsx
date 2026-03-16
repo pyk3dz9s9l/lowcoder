@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Wrapper,
   ChatPanelContainer,
   ChatHeaderBar,
+  OnlineCountBadge,
+  OnlineCountDot,
 } from "../styles";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
@@ -20,6 +22,14 @@ export const ChatBoxView = React.memo(() => {
   const headerTitle = ctx.currentRoom
     ? ctx.currentRoom.name
     : ctx.chatTitle.value;
+
+  // Count users online in the current room (peers only, not counting self)
+  const roomOnlineCount = useMemo(() => {
+    if (!ctx.currentRoomId) return 0;
+    return ctx.onlineUsers.filter(
+      (u) => u.currentRoomId === ctx.currentRoomId && u.userId !== ctx.currentUserId,
+    ).length + 1; // +1 for self
+  }, [ctx.onlineUsers, ctx.currentRoomId, ctx.currentUserId]);
 
   return (
     <Wrapper $style={ctx.style} $anim={ctx.animationStyle}>
@@ -39,13 +49,21 @@ export const ChatBoxView = React.memo(() => {
       <ChatPanelContainer>
         {ctx.showHeader && (
           <ChatHeaderBar>
-            <div style={{ fontWeight: 600, fontSize: 16 }}>
-              {headerTitle}
-            </div>
-            {ctx.currentRoom?.description && (
-              <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-                {ctx.currentRoom.description}
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 16 }}>
+                {headerTitle}
               </div>
+              {ctx.currentRoom?.description && (
+                <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+                  {ctx.currentRoom.description}
+                </div>
+              )}
+            </div>
+            {ctx.currentRoomId && roomOnlineCount > 0 && (
+              <OnlineCountBadge>
+                <OnlineCountDot />
+                {roomOnlineCount} online
+              </OnlineCountBadge>
             )}
           </ChatHeaderBar>
         )}
