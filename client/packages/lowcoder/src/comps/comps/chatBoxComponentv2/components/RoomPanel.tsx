@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { Button, Input, Tooltip, Popconfirm } from "antd";
 import {
   PlusOutlined,
@@ -10,7 +10,7 @@ import {
   MailOutlined,
   UserAddOutlined,
 } from "@ant-design/icons";
-import type { ChatRoom, PendingRoomInvite } from "../store";
+import type { ChatRoom } from "../store";
 import {
   RoomPanelContainer,
   RoomPanelHeader,
@@ -19,80 +19,60 @@ import {
   SearchResultBadge,
   LlmRoomBadge,
 } from "../styles";
+import { useChatBox } from "../ChatBoxContext";
 
 export interface RoomPanelProps {
-  width: string;
-  rooms: ChatRoom[];
-  currentRoomId: string | undefined;
-  ready: boolean;
-  allowRoomCreation: boolean;
-  allowRoomSearch: boolean;
-  onSwitchRoom: (roomId: string) => void;
-  onJoinRoom: (roomId: string) => void;
-  onLeaveRoom: (roomId: string) => void;
-  onSearchRooms: (query: string) => Promise<ChatRoom[]>;
-  pendingInvites: PendingRoomInvite[];
-  onAcceptInvite: (inviteId: string) => void;
-  onDeclineInvite: (inviteId: string) => void;
   onCreateModalOpen: () => void;
   onInviteModalOpen?: () => void;
 }
 
 export const RoomPanel = React.memo((props: RoomPanelProps) => {
+  const { onCreateModalOpen, onInviteModalOpen } = props;
   const {
-    width,
     rooms,
     currentRoomId,
-    ready,
     allowRoomCreation,
     allowRoomSearch,
-    onSwitchRoom,
-    onJoinRoom,
-    onLeaveRoom,
-    onSearchRooms,
+    roomsPanelWidth,
     pendingInvites,
-    onAcceptInvite,
-    onDeclineInvite,
-    onCreateModalOpen,
-    onInviteModalOpen,
-  } = props;
+    onRoomSwitch,
+    onRoomJoin,
+    onRoomLeave,
+    onInviteAccept,
+    onInviteDecline,
+  } = useChatBox();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ChatRoom[]>([]);
   const [isSearchMode, setIsSearchMode] = useState(false);
 
-  const handleSearch = useCallback(
-    async (q: string) => {
-      setSearchQuery(q);
-      if (!q.trim()) {
-        setIsSearchMode(false);
-        setSearchResults([]);
-        return;
-      }
-      setIsSearchMode(true);
-      const results = await onSearchRooms(q);
-      setSearchResults(results);
-    },
-    [onSearchRooms],
-  );
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setIsSearchMode(false);
+      setSearchResults([]);
+      return;
+    }
+    setIsSearchMode(true);
+    const lower = q.toLowerCase();
+    setSearchResults(
+      rooms.filter((r) => r.type === "public" && r.name.toLowerCase().includes(lower)),
+    );
+  };
 
-  const clearSearch = useCallback(() => {
+  const clearSearch = () => {
     setSearchQuery("");
     setIsSearchMode(false);
     setSearchResults([]);
-  }, []);
+  };
 
-  const handleJoinAndClear = useCallback(
-    (roomId: string) => {
-      onJoinRoom(roomId);
-      clearSearch();
-    },
-    [onJoinRoom, clearSearch],
-  );
+  const handleJoinAndClear = (roomId: string) => {
+    onRoomJoin(roomId);
+    clearSearch();
+  };
 
   const roomListItems = isSearchMode ? searchResults : rooms;
 
-  // Group rooms by type for display
   const publicRooms = roomListItems.filter((r) => r.type === "public");
   const privateRooms = roomListItems.filter((r) => r.type === "private");
   const llmRooms = roomListItems.filter((r) => r.type === "llm");
@@ -109,7 +89,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
           if (isSearch) {
             handleJoinAndClear(room.id);
           } else if (!isActive) {
-            onSwitchRoom(room.id);
+            onRoomSwitch(room.id);
           }
         }}
         title={isSearch ? `Join "${room.name}"` : room.name}
@@ -154,7 +134,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             title={`Leave "${room.name}"?`}
             onConfirm={(e) => {
               e?.stopPropagation();
-              onLeaveRoom(room.id);
+              onRoomLeave(room.id);
             }}
             onCancel={(e) => e?.stopPropagation()}
             okText="Leave"
@@ -172,7 +152,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
   };
 
   return (
-    <RoomPanelContainer $width={width}>
+    <RoomPanelContainer $width={roomsPanelWidth}>
       <RoomPanelHeader>
         <span>Rooms</span>
         <div style={{ display: "flex", gap: 2 }}>
@@ -275,11 +255,11 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 <Button
                   type="primary"
                   size="small"
-                  onClick={() => onAcceptInvite(invite.id)}
+                  onClick={() => onInviteAccept(invite.id)}
                 >
                   Accept
                 </Button>
-                <Button size="small" onClick={() => onDeclineInvite(invite.id)}>
+                <Button size="small" onClick={() => onInviteDecline(invite.id)}>
                   Decline
                 </Button>
               </div>
@@ -289,7 +269,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
       )}
 
       <RoomListContainer>
-        {roomListItems.length === 0 && !isSearchMode && ready && (
+        {roomListItems.length === 0 && !isSearchMode && (
           <div
             style={{
               textAlign: "center",
@@ -303,7 +283,6 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
           </div>
         )}
 
-        {/* Render grouped when not in search mode */}
         {isSearchMode
           ? roomListItems.map(renderRoomItem)
           : (

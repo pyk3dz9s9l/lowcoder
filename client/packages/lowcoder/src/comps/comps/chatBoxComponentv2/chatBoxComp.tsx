@@ -20,6 +20,8 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
 
 import { ChatBoxView } from "./components/ChatBoxView";
+import { ChatBoxContext } from "./ChatBoxContext";
+import type { ChatRoom, PendingRoomInvite } from "./store";
 
 // ─── Events ──────────────────────────────────────────────────────────────────
 
@@ -220,60 +222,80 @@ ChatBoxPropertyView.displayName = "ChatBoxV2PropertyView";
 
 let ChatBoxV2Tmp = (function () {
   return new UICompBuilder(childrenMap, (props) => {
+    const messages = Array.isArray(props.messages) ? props.messages : [];
+    const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
+    const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
+    const pendingInvites = (Array.isArray(props.pendingInvites)
+      ? props.pendingInvites
+      : []) as unknown as PendingRoomInvite[];
+    const currentRoom = rooms.find((r) => r.id === props.currentRoomId) ?? null;
+
+    const contextValue = {
+      messages,
+      rooms,
+      currentRoomId: props.currentRoomId,
+      currentRoom,
+      currentUserId: props.currentUserId,
+      currentUserName: props.currentUserName,
+      typingUsers,
+      pendingInvites,
+
+      chatTitle: props.chatTitle,
+      messageText: props.messageText,
+      lastSentMessageText: props.lastSentMessageText,
+
+      showHeader: props.showHeader,
+      showRoomsPanel: props.showRoomsPanel,
+      roomsPanelWidth: props.roomsPanelWidth,
+      allowRoomCreation: props.allowRoomCreation,
+      allowRoomSearch: props.allowRoomSearch,
+      style: props.style,
+      animationStyle: props.animationStyle,
+
+      onEvent: props.onEvent,
+
+      onRoomSwitch: (roomId: string) => {
+        props.pendingRoomId.onChange(roomId);
+        props.onEvent("roomSwitch");
+      },
+      onRoomJoin: (roomId: string) => {
+        props.pendingRoomId.onChange(roomId);
+        props.onEvent("roomJoin");
+      },
+      onRoomLeave: (roomId: string) => {
+        props.pendingRoomId.onChange(roomId);
+        props.onEvent("roomLeave");
+      },
+      onRoomCreate: (
+        name: string,
+        type: "public" | "private" | "llm",
+        description?: string,
+        llmQueryName?: string,
+      ) => {
+        props.newRoomName.onChange(name);
+        props.newRoomType.onChange(type);
+        props.newRoomDescription.onChange(description || "");
+        props.newRoomLlmQuery.onChange(llmQueryName || "");
+        props.onEvent("roomCreate");
+      },
+      onInviteSend: (toUserId: string) => {
+        props.inviteTargetUserId.onChange(toUserId);
+        props.onEvent("inviteSend");
+      },
+      onInviteAccept: (inviteId: string) => {
+        props.pendingInviteId.onChange(inviteId);
+        props.onEvent("inviteAccept");
+      },
+      onInviteDecline: (inviteId: string) => {
+        props.pendingInviteId.onChange(inviteId);
+        props.onEvent("inviteDecline");
+      },
+    };
+
     return (
-      <ChatBoxView
-        chatTitle={props.chatTitle}
-        showHeader={props.showHeader}
-        messages={props.messages}
-        currentUserId={props.currentUserId}
-        currentUserName={props.currentUserName}
-        typingUsers={props.typingUsers}
-        lastSentMessageText={props.lastSentMessageText}
-        messageText={props.messageText}
-        style={props.style}
-        animationStyle={props.animationStyle}
-        onEvent={props.onEvent}
-        // Rooms panel
-        rooms={props.rooms}
-        currentRoomId={props.currentRoomId}
-        pendingInvites={props.pendingInvites}
-        showRoomsPanel={props.showRoomsPanel}
-        roomsPanelWidth={props.roomsPanelWidth}
-        allowRoomCreation={props.allowRoomCreation}
-        allowRoomSearch={props.allowRoomSearch}
-        // Callbacks that set state then fire events
-        onRoomSwitch={(roomId) => {
-          props.pendingRoomId.onChange(roomId);
-          props.onEvent("roomSwitch");
-        }}
-        onRoomJoin={(roomId) => {
-          props.pendingRoomId.onChange(roomId);
-          props.onEvent("roomJoin");
-        }}
-        onRoomLeave={(roomId) => {
-          props.pendingRoomId.onChange(roomId);
-          props.onEvent("roomLeave");
-        }}
-        onRoomCreate={(name, type, description, llmQueryName) => {
-          props.newRoomName.onChange(name);
-          props.newRoomType.onChange(type);
-          props.newRoomDescription.onChange(description || "");
-          props.newRoomLlmQuery.onChange(llmQueryName || "");
-          props.onEvent("roomCreate");
-        }}
-        onInviteSend={(toUserId) => {
-          props.inviteTargetUserId.onChange(toUserId);
-          props.onEvent("inviteSend");
-        }}
-        onInviteAccept={(inviteId) => {
-          props.pendingInviteId.onChange(inviteId);
-          props.onEvent("inviteAccept");
-        }}
-        onInviteDecline={(inviteId) => {
-          props.pendingInviteId.onChange(inviteId);
-          props.onEvent("inviteDecline");
-        }}
-      />
+      <ChatBoxContext.Provider value={contextValue}>
+        <ChatBoxView />
+      </ChatBoxContext.Provider>
     );
   })
     .setPropertyViewFn((children) => (
