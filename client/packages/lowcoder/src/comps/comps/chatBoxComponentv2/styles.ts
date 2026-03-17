@@ -91,11 +91,16 @@ export const MessagesArea = styled.div`
   gap: 8px;
 `;
 
-export const Bubble = styled.div<{ $own: boolean }>`
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 16px;
+export const MessageWrapper = styled.div<{ $own: boolean }>`
+  display: flex;
+  flex-direction: column;
   align-self: ${(p) => (p.$own ? "flex-end" : "flex-start")};
+  max-width: 70%;
+`;
+
+export const Bubble = styled.div<{ $own: boolean }>`
+  padding: 10px 14px;
+  border-radius: ${(p) => (p.$own ? "16px 16px 4px 16px" : "16px 16px 16px 4px")};
   background: ${(p) => (p.$own ? "#1890ff" : "#f0f0f0")};
   color: ${(p) => (p.$own ? "#fff" : "#333")};
   font-size: 14px;

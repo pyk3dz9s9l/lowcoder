@@ -10,7 +10,6 @@ import {
 import { NameConfig, withExposingConfigs } from "../generators/withExposing";
 import { withMethodExposing } from "../generators/withMethodExposing";
 import { stringExposingStateControl } from "comps/controls/codeStateControl";
-import { StringControl } from "comps/controls/codeControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { JSONObject } from "../../util/jsonTypes";
 import {
@@ -19,10 +18,9 @@ import {
   useMyPresence,
   useOthers,
   useConnection,
-  pluvConfig,
-  uid,
 } from "../comps/chatBoxComponentv2/store";
 import type {
+  AiThinkingState,
   MessageBroadcast,
   OnlineUser,
   TypingUser,
@@ -66,6 +64,16 @@ const ChatControllerEvents = [
     value: "error",
     description: "A connection error occurred",
   },
+  {
+    label: "AI Thinking Started",
+    value: "aiThinkingStarted",
+    description: "The AI assistant started generating a response in a room",
+  },
+  {
+    label: "AI Thinking Stopped",
+    value: "aiThinkingStopped",
+    description: "The AI assistant finished (or was cancelled) in a room",
+  },
 ] as const;
 
 // ─── Children map ───────────────────────────────────────────────────────────
@@ -74,8 +82,6 @@ const childrenMap = {
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   userId: stringExposingStateControl("userId", "user_1"),
   userName: stringExposingStateControl("userName", "User"),
-  pluvPublicKey: withDefault(StringControl, ""),
-  pluvAuthUrl: withDefault(StringControl, "/api/auth/pluv"),
 
   onEvent: eventHandlerControl(ChatControllerEvents),
 
@@ -86,6 +92,7 @@ const childrenMap = {
   typingUsers: stateComp<JSONObject[]>([]),
   currentRoomId: stateComp<string | null>(null),
   lastMessageNotification: stateComp<JSONObject | null>(null),
+  aiThinkingRooms: stateComp<JSONObject>({}),
 
   _signalActions: stateComp<JSONObject>({}),
 };
@@ -97,6 +104,7 @@ interface SignalActions {
   startTyping: (roomId?: string) => void;
   stopTyping: () => void;
   switchRoom: (roomId: string) => void;
+  setAiThinking: (roomId: string, isThinking: boolean) => void;
 }
 
 // ─── Inner component that uses Pluv hooks inside PluvRoomProvider ────────────
@@ -113,6 +121,7 @@ const SignalController = React.memo(
     const [, setMyPresence] = useMyPresence();
     const others = useOthers();
     const [messageActivity, messageActivityYMap] = useStorage("messageActivity");
+    const [aiActivity, aiActivityYMap] = useStorage("aiActivity");
 
     const compRef = useRef(comp);
     compRef.current = comp;
@@ -126,11 +135,13 @@ const SignalController = React.memo(
       onlineCount: number;
       lastBroadcastCounter: Record<string, number>;
       initialized: boolean;
+      aiThinkingRooms: Record<string, boolean>;
     }>({
       ready: false,
       onlineCount: 0,
       lastBroadcastCounter: {},
       initialized: false,
+      aiThinkingRooms: {},
     });
 
     // ── Connection state ──────────────────────────────────────────────
@@ -224,6 +235,28 @@ const SignalController = React.memo(
       }
     }, [messageActivity, userId]);
 
+    // ── Watch AI activity (thinking state per room) ───────────────
+    useEffect(() => {
+      if (!aiActivity) return;
+      const activityRecord = aiActivity as Record<string, AiThinkingState>;
+      const nextThinking: Record<string, boolean> = {};
+
+      for (const [roomId, state] of Object.entries(activityRecord)) {
+        nextThinking[roomId] = state.isThinking;
+        const prev = prevRef.current.aiThinkingRooms[roomId] ?? false;
+        if (state.isThinking && !prev) {
+          triggerEventRef.current("aiThinkingStarted");
+        } else if (!state.isThinking && prev) {
+          triggerEventRef.current("aiThinkingStopped");
+        }
+      }
+
+      prevRef.current.aiThinkingRooms = nextThinking;
+      compRef.current.children.aiThinkingRooms.dispatchChangeValueAction(
+        nextThinking as unknown as JSONObject,
+      );
+    }, [aiActivity]);
+
     // ── Actions for method invocation ─────────────────────────────────
 
     const broadcastNewMessage = useCallback(
@@ -234,7 +267,7 @@ const SignalController = React.memo(
           | undefined;
         const broadcast: MessageBroadcast = {
           roomId,
-          messageId: messageId || uid(),
+          messageId: messageId || crypto.randomUUID(),
           authorId: userId,
           authorName: userName,
           timestamp: Date.now(),
@@ -281,18 +314,33 @@ const SignalController = React.memo(
       [setMyPresence, userId, userName],
     );
 
+    const setAiThinking = useCallback(
+      (roomId: string, isThinking: boolean) => {
+        if (!aiActivityYMap) return;
+        const state: AiThinkingState = {
+          roomId,
+          isThinking,
+          timestamp: Date.now(),
+        };
+        aiActivityYMap.set(roomId, state);
+      },
+      [aiActivityYMap],
+    );
+
     // ── Proxy ref for stable callbacks ────────────────────────────────
     const actionsRef = useRef<SignalActions>({
       broadcastNewMessage,
       startTyping,
       stopTyping,
       switchRoom,
+      setAiThinking,
     });
     actionsRef.current = {
       broadcastNewMessage,
       startTyping,
       stopTyping,
       switchRoom,
+      setAiThinking,
     };
 
     useEffect(() => {
@@ -301,6 +349,7 @@ const SignalController = React.memo(
         startTyping: (...args) => actionsRef.current.startTyping(...args),
         stopTyping: () => actionsRef.current.stopTyping(),
         switchRoom: (...args) => actionsRef.current.switchRoom(...args),
+        setAiThinking: (...args) => actionsRef.current.setAiThinking(...args),
       };
       compRef.current.children._signalActions.dispatchChangeValueAction(
         proxy as unknown as JSONObject,
@@ -331,19 +380,13 @@ const ChatControllerSignalBase = withViewFn(
     const userId = comp.children.userId.getView().value;
     const userName = comp.children.userName.getView().value;
     const applicationId = comp.children.applicationId.getView().value;
-    const pluvPublicKey = comp.children.pluvPublicKey.getView();
-    const pluvAuthUrl = comp.children.pluvAuthUrl.getView();
-
-    pluvConfig.userId = userId || "user_1";
-    pluvConfig.userName = userName || "User";
-    pluvConfig.authUrl = pluvAuthUrl || "/api/auth/pluv";
-    pluvConfig.publicKey = pluvPublicKey || "";
 
     const roomName = `signal_${applicationId || "lowcoder_app"}`;
 
     return (
       <PluvRoomProvider
         room={roomName}
+        metadata={{ userId: userId || "user_1", userName: userName || "User" } as any}
         initialPresence={
           {
             userId: userId || "user_1",
@@ -354,6 +397,7 @@ const ChatControllerSignalBase = withViewFn(
         }
         initialStorage={(t: any) => ({
           messageActivity: t.map("messageActivity", []),
+          aiActivity: t.map("aiActivity", []),
         })}
         onAuthorizationFail={(error: Error) => {
           console.error("[ChatControllerV2] Auth failed:", error);
@@ -392,18 +436,6 @@ const ChatControllerSignalWithProps = withPropertyViewFn(
           tooltip: "Current user's display name",
         })}
       </Section>
-      <Section name="Pluv.io Connection">
-        {comp.children.pluvPublicKey.propertyView({
-          label: "Public Key",
-          tooltip:
-            "Pluv.io publishable key (pk_...). Can also be set via VITE_PLUV_PUBLIC_KEY env var.",
-        })}
-        {comp.children.pluvAuthUrl.propertyView({
-          label: "Auth URL",
-          tooltip:
-            "Pluv auth endpoint URL for token exchange (e.g. /api/auth/pluv or http://localhost:3006/api/auth/pluv)",
-        })}
-      </Section>
       <Section name={sectionNames.interaction}>
         {comp.children.onEvent.getPropertyView()}
       </Section>
@@ -436,6 +468,10 @@ let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
   new NameConfig("userId", "Current user ID"),
   new NameConfig("userName", "Current user name"),
   new NameConfig("applicationId", "Application scope ID"),
+  new NameConfig(
+    "aiThinkingRooms",
+    "Map of roomId → boolean indicating which rooms have an AI currently thinking. E.g. { 'room_123': true }",
+  ),
 ]);
 
 // ─── Expose methods ─────────────────────────────────────────────────────────
@@ -499,6 +535,24 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
       const actions = comp.children._signalActions.getView() as unknown as SignalActions;
       if (actions?.switchRoom) {
         actions.switchRoom(values?.[0] as string);
+      }
+    },
+  },
+  {
+    method: {
+      name: "setAiThinking",
+      description:
+        "Broadcast to all room members that the AI assistant is thinking (or has finished). All users in the room will see the thinking indicator.",
+      params: [
+        { name: "roomId", type: "string" },
+        { name: "isThinking", type: "string" },
+      ],
+    },
+    execute: (comp, values) => {
+      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      if (actions?.setAiThinking) {
+        const isThinking = values?.[1] === true || values?.[1] === "true";
+        actions.setAiThinking(values?.[0] as string, isThinking);
       }
     },
   },

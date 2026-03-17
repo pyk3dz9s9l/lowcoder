@@ -6,6 +6,7 @@ import { CopyOutlined, CheckOutlined, RobotOutlined } from "@ant-design/icons";
 import { LLM_BOT_AUTHOR_ID } from "../store";
 import {
   MessagesArea,
+  MessageWrapper,
   Bubble,
   BubbleMeta,
   BubbleTime,
@@ -17,6 +18,7 @@ import {
   AiBadge,
   AiBubble,
   AiCopyButton,
+  LlmLoadingBubble,
 } from "../styles";
 
 // ── AI message bubble with copy button ───────────────────────────────────────
@@ -94,18 +96,24 @@ export interface MessageListProps {
   messages: any[];
   typingUsers: any[];
   currentUserId: string;
+  isAiThinking?: boolean;
 }
 
 export const MessageList = React.memo((props: MessageListProps) => {
-  const { messages, typingUsers, currentUserId } = props;
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { messages, typingUsers, currentUserId, isAiThinking = false } = props;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages.length, isAiThinking]);
 
   return (
-    <MessagesArea>
+    <MessagesArea ref={containerRef}>
       {messages.length === 0 ? (
         <EmptyChat>
           <div style={{ fontSize: 24 }}>💬</div>
@@ -151,7 +159,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
           }
 
           return (
-            <div key={id}>
+            <MessageWrapper key={id} $own={isOwn}>
               <BubbleMeta $own={isOwn}>{authorName}</BubbleMeta>
               <Bubble $own={isOwn}>{text}</Bubble>
               {timestamp > 0 && (
@@ -162,9 +170,24 @@ export const MessageList = React.memo((props: MessageListProps) => {
                   })}
                 </BubbleTime>
               )}
-            </div>
+            </MessageWrapper>
           );
         })
+      )}
+
+      {/* AI thinking animation — shown to all users when the LLM is generating */}
+      {isAiThinking && (
+        <AiBubbleWrapper>
+          <AiBadge>
+            <RobotOutlined style={{ fontSize: 9 }} />
+            AI is thinking…
+          </AiBadge>
+          <LlmLoadingBubble>
+            <span />
+            <span />
+            <span />
+          </LlmLoadingBubble>
+        </AiBubbleWrapper>
       )}
 
       {typingUsers.length > 0 && (
@@ -182,7 +205,6 @@ export const MessageList = React.memo((props: MessageListProps) => {
         </TypingIndicatorWrapper>
       )}
 
-      <div ref={bottomRef} />
     </MessagesArea>
   );
 });

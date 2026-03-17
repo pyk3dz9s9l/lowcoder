@@ -98,6 +98,7 @@ const childrenMap = {
   currentUserId: withDefault(StringControl, "user_1"),
   currentUserName: withDefault(StringControl, "User"),
   typingUsers: jsonArrayControl([]),
+  isAiThinking: withDefault(BoolControl, false),
   lastSentMessageText: stringExposingStateControl("lastSentMessageText", ""),
   messageText: stringExposingStateControl("messageText", ""),
 
@@ -187,6 +188,11 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           tooltip:
             "Array of users currently typing. Bind to {{ chatController1.typingUsers }}",
         })}
+        {children.isAiThinking.propertyView({
+          label: "AI Is Thinking",
+          tooltip:
+            "Show the AI thinking animation to all users in this room. Bind to {{ chatController1.aiThinkingRooms[chatBox1.currentRoomId] }}",
+        })}
         {children.onlineUsers.propertyView({
           label: "Online Users",
           tooltip:
@@ -232,6 +238,7 @@ let ChatBoxV2Tmp = (function () {
     const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
     const onlineUsers = Array.isArray(props.onlineUsers) ? props.onlineUsers : [];
+    const isAiThinking = Boolean(props.isAiThinking);
     const pendingInvites = (Array.isArray(props.pendingInvites)
       ? props.pendingInvites
       : []) as unknown as PendingRoomInvite[];
@@ -246,6 +253,7 @@ let ChatBoxV2Tmp = (function () {
       currentUserName: props.currentUserName,
       typingUsers,
       onlineUsers: onlineUsers as any,
+      isAiThinking,
       pendingInvites,
 
       chatTitle: props.chatTitle,
@@ -325,6 +333,7 @@ export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
     "Text of the last message sent by the user — use in your save query",
   ),
   new NameConfig("messageText", "Current text in the message input"),
+  new NameConfig("currentRoomId", "Currently active room ID — for AI thinking or room-scoped queries"),
   new NameConfig(
     "pendingRoomId",
     "Room ID the user wants to switch to, join, or leave — read in roomSwitch/roomJoin/roomLeave events",

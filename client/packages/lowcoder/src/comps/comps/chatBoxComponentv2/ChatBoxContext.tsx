@@ -29,6 +29,7 @@ export interface ChatBoxContextValue {
   typingUsers: any[];
   onlineUsers: OnlineUser[];
   pendingInvites: PendingRoomInvite[];
+  isAiThinking: boolean;
 
   // Exposed state
   chatTitle: ExposedState;

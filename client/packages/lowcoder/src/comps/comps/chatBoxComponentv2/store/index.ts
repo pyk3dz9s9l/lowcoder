@@ -1,4 +1,5 @@
 export type {
+  AiThinkingState,
   ChatMessage,
   ChatRoom,
   PendingRoomInvite,
@@ -19,5 +20,4 @@ export {
   useRoom,
   useConnection,
   useDoc,
-  pluvConfig,
 } from "./pluvClient";

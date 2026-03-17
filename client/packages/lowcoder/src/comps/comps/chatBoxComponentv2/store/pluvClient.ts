@@ -3,42 +3,41 @@ import { yjs } from "@pluv/crdt-yjs";
 import { createBundle } from "@pluv/react";
 import { z } from "zod";
 
-/**
- * Module-level config updated by ChatControllerV2 before connecting.
- * Allows dynamic auth without recreating the client.
- */
-export const pluvConfig = {
-  userId: "",
-  userName: "",
-  authUrl: "/api/auth/pluv",
-  publicKey: "",
-};
+// Resolve the pluv.io publishable key from the environment.
+// This is set at build time via VITE_PLUV_PUBLIC_KEY, or injected at runtime
+// via globalThis.__PLUV_PUBLIC_KEY__ (e.g. from a server-rendered template).
+const PLUV_PUBLIC_KEY: string =
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PLUV_PUBLIC_KEY) ||
+  (typeof globalThis !== "undefined" && (globalThis as any).__PLUV_PUBLIC_KEY__) ||
+  "";
 
-function resolvePluvPublicKey(): string {
-  return (
-    pluvConfig.publicKey ||
-    (typeof globalThis !== "undefined"
-      ? (globalThis as any).__PLUV_PUBLIC_KEY__
-      : "") ||
-    (typeof import.meta !== "undefined"
-      ? (import.meta as any).env?.VITE_PLUV_PUBLIC_KEY
-      : "") ||
-    ""
-  );
-}
+// Auth server URL. Defaults to a relative path so the Vite dev proxy and
+// production reverse-proxy both work without extra configuration.
+const PLUV_AUTH_URL: string =
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_PLUV_AUTH_URL) ||
+  "/api/auth/pluv";
 
+// `metadata` is PLUV's built-in mechanism for passing per-connection data
+// (like the current user) into the authEndpoint at the moment a room is
+// entered. It is provided as a prop on <PluvRoomProvider metadata={...} />,
+// so there is no need for any global mutable config object.
 const client = createClient({
-  authEndpoint: (({ room }: { room: string }) => {
+  metadata: z.object({
+    userId: z.string(),
+    userName: z.string(),
+  }),
+  publicKey: PLUV_PUBLIC_KEY,
+  authEndpoint: ({ room, metadata }: { room: string; metadata: { userId: string; userName: string } }) => {
     const params = new URLSearchParams({
       room,
-      userId: pluvConfig.userId,
-      userName: pluvConfig.userName,
+      userId: metadata.userId,
+      userName: metadata.userName,
     });
-    return `${pluvConfig.authUrl}?${params}`;
-  }) as any,
-  publicKey: resolvePluvPublicKey as any,
+    return `${PLUV_AUTH_URL}?${params}`;
+  },
   initialStorage: yjs.doc((t: any) => ({
     messageActivity: t.map("messageActivity", []),
+    aiActivity: t.map("aiActivity", []),
   })),
   presence: z.object({
     userId: z.string(),

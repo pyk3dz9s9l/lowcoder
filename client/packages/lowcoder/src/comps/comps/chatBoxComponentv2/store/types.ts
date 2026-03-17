@@ -50,6 +50,12 @@ export interface MessageBroadcast {
   counter: number;
 }
 
+export interface AiThinkingState {
+  roomId: string;
+  isThinking: boolean;
+  timestamp: number;
+}
+
 export const LLM_BOT_AUTHOR_ID = "__llm_bot__";
 
 export function uid(): string {

@@ -72,6 +72,7 @@ export const ChatBoxView = React.memo(() => {
           messages={ctx.messages}
           typingUsers={ctx.typingUsers}
           currentUserId={ctx.currentUserId}
+          isAiThinking={ctx.isAiThinking}
         />
 
         <InputBar
