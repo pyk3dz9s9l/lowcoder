@@ -12,6 +12,7 @@ import { withMethodExposing } from "../generators/withMethodExposing";
 import { stringExposingStateControl } from "comps/controls/codeStateControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { JSONObject } from "../../util/jsonTypes";
+import { isEmpty, omit, isEqual } from "lodash";
 import {
   PluvRoomProvider,
   useStorage,
@@ -21,7 +22,6 @@ import {
 } from "../comps/chatBoxComponentv2/store";
 import type {
   AiThinkingState,
-  MessageBroadcast,
   OnlineUser,
   TypingUser,
 } from "../comps/chatBoxComponentv2/store";
@@ -29,11 +29,6 @@ import type {
 // ─── Event definitions ──────────────────────────────────────────────────────
 
 const ChatControllerEvents = [
-  {
-    label: "New Message Broadcast",
-    value: "newMessageBroadcast",
-    description: "A peer broadcast that a new message was saved — reload your data query to fetch it",
-  },
   {
     label: "User Joined",
     value: "userJoined",
@@ -74,6 +69,18 @@ const ChatControllerEvents = [
     value: "aiThinkingStopped",
     description: "The AI assistant finished (or was cancelled) in a room",
   },
+  {
+    label: "Shared State Changed",
+    value: "sharedStateChanged",
+    description:
+      "The app-level shared state was updated by any user. Read chatController.sharedState to get the current state.",
+  },
+  {
+    label: "Room Data Changed",
+    value: "roomDataChanged",
+    description:
+      "Room-scoped shared data was updated by any user. Read chatController.roomData to get the current data.",
+  },
 ] as const;
 
 // ─── Children map ───────────────────────────────────────────────────────────
@@ -91,8 +98,9 @@ const childrenMap = {
   onlineUsers: stateComp<JSONObject[]>([]),
   typingUsers: stateComp<JSONObject[]>([]),
   currentRoomId: stateComp<string | null>(null),
-  lastMessageNotification: stateComp<JSONObject | null>(null),
   aiThinkingRooms: stateComp<JSONObject>({}),
+  sharedState: stateComp<JSONObject>({}),
+  roomData: stateComp<JSONObject>({}),
 
   _signalActions: stateComp<JSONObject>({}),
 };
@@ -100,11 +108,14 @@ const childrenMap = {
 // ─── Signal actions interface ────────────────────────────────────────────────
 
 interface SignalActions {
-  broadcastNewMessage: (roomId: string, messageId?: string) => void;
   startTyping: (roomId?: string) => void;
   stopTyping: () => void;
   switchRoom: (roomId: string) => void;
   setAiThinking: (roomId: string, isThinking: boolean) => void;
+  setSharedState: (key: string, value: any) => void;
+  deleteSharedState: (key: string) => void;
+  setRoomData: (roomId: string, key: string, value: any) => void;
+  deleteRoomData: (roomId: string, key?: string) => void;
 }
 
 // ─── Inner component that uses Pluv hooks inside PluvRoomProvider ────────────
@@ -120,8 +131,9 @@ const SignalController = React.memo(
     const connection = useConnection();
     const [, setMyPresence] = useMyPresence();
     const others = useOthers();
-    const [messageActivity, messageActivityYMap] = useStorage("messageActivity");
     const [aiActivity, aiActivityYMap] = useStorage("aiActivity");
+    const [sharedStateData, sharedStateYMap] = useStorage("sharedState");
+    const [roomDataData, roomDataYMap] = useStorage("roomData");
 
     const compRef = useRef(comp);
     compRef.current = comp;
@@ -133,15 +145,17 @@ const SignalController = React.memo(
     const prevRef = useRef<{
       ready: boolean;
       onlineCount: number;
-      lastBroadcastCounter: Record<string, number>;
       initialized: boolean;
       aiThinkingRooms: Record<string, boolean>;
+      sharedState: JSONObject | null;
+      roomData: JSONObject | null;
     }>({
       ready: false,
       onlineCount: 0,
-      lastBroadcastCounter: {},
       initialized: false,
       aiThinkingRooms: {},
+      sharedState: null,
+      roomData: null,
     });
 
     // ── Connection state ──────────────────────────────────────────────
@@ -215,26 +229,6 @@ const SignalController = React.memo(
       );
     }, [typingUsers]);
 
-    // ── Watch message activity for broadcasts from other users ────────
-    useEffect(() => {
-      if (!messageActivity) return;
-      const activityRecord = messageActivity as Record<string, MessageBroadcast>;
-
-      for (const [roomId, activity] of Object.entries(activityRecord)) {
-        const prevCounter =
-          prevRef.current.lastBroadcastCounter[roomId] || 0;
-        if (activity.counter > prevCounter) {
-          prevRef.current.lastBroadcastCounter[roomId] = activity.counter;
-          if (activity.authorId !== userId) {
-            compRef.current.children.lastMessageNotification.dispatchChangeValueAction(
-              activity as unknown as JSONObject,
-            );
-            triggerEventRef.current("newMessageBroadcast");
-          }
-        }
-      }
-    }, [messageActivity, userId]);
-
     // ── Watch AI activity (thinking state per room) ───────────────
     useEffect(() => {
       if (!aiActivity) return;
@@ -257,27 +251,31 @@ const SignalController = React.memo(
       );
     }, [aiActivity]);
 
-    // ── Actions for method invocation ─────────────────────────────────
+    // ── Watch shared state ──────────────────────────────────────────
+    useEffect(() => {
+      if (!sharedStateData) return;
+      const next = sharedStateData as unknown as JSONObject;
+      if (isEqual(next, prevRef.current.sharedState)) return;
+      prevRef.current.sharedState = next;
+      compRef.current.children.sharedState.dispatchChangeValueAction(next);
+      if (prevRef.current.initialized) {
+        triggerEventRef.current("sharedStateChanged");
+      }
+    }, [sharedStateData]);
 
-    const broadcastNewMessage = useCallback(
-      (roomId: string, messageId?: string) => {
-        if (!messageActivityYMap) return;
-        const existing = messageActivityYMap.get(roomId) as
-          | MessageBroadcast
-          | undefined;
-        const broadcast: MessageBroadcast = {
-          roomId,
-          messageId: messageId || crypto.randomUUID(),
-          authorId: userId,
-          authorName: userName,
-          timestamp: Date.now(),
-          counter: (existing?.counter || 0) + 1,
-        };
-        messageActivityYMap.set(roomId, broadcast);
-        prevRef.current.lastBroadcastCounter[roomId] = broadcast.counter;
-      },
-      [messageActivityYMap, userId, userName],
-    );
+    // ── Watch room data ──────────────────────────────────────────────
+    useEffect(() => {
+      if (!roomDataData) return;
+      const next = roomDataData as unknown as JSONObject;
+      if (isEqual(next, prevRef.current.roomData)) return;
+      prevRef.current.roomData = next;
+      compRef.current.children.roomData.dispatchChangeValueAction(next);
+      if (prevRef.current.initialized) {
+        triggerEventRef.current("roomDataChanged");
+      }
+    }, [roomDataData]);
+
+    // ── Actions for method invocation ─────────────────────────────────
 
     const startTyping = useCallback(
       (roomId?: string) => {
@@ -327,29 +325,83 @@ const SignalController = React.memo(
       [aiActivityYMap],
     );
 
+    // ── Shared state actions ─────────────────────────────────────────
+    const setSharedState = useCallback(
+      (key: string, value: any) => {
+        if (!sharedStateYMap) return;
+        sharedStateYMap.set(key, value);
+      },
+      [sharedStateYMap],
+    );
+
+    const deleteSharedState = useCallback(
+      (key: string) => {
+        if (!sharedStateYMap) return;
+        sharedStateYMap.delete(key);
+      },
+      [sharedStateYMap],
+    );
+
+    // ── Room data actions ────────────────────────────────────────────
+    const setRoomData = useCallback(
+      (roomId: string, key: string, value: any) => {
+        if (!roomDataYMap) return;
+        const existing = (roomDataYMap.get(roomId) as Record<string, any>) || {};
+        roomDataYMap.set(roomId, { ...existing, [key]: value });
+      },
+      [roomDataYMap],
+    );
+
+    const deleteRoomData = useCallback(
+      (roomId: string, key?: string) => {
+        if (!roomDataYMap) return;
+        if (key) {
+          const existing = (roomDataYMap.get(roomId) as Record<string, any>) || {};
+          const remaining = omit(existing, key);
+          if (isEmpty(remaining)) {
+            roomDataYMap.delete(roomId);
+          } else {
+            roomDataYMap.set(roomId, remaining);
+          }
+        } else {
+          roomDataYMap.delete(roomId);
+        }
+      },
+      [roomDataYMap],
+    );
+
     // ── Proxy ref for stable callbacks ────────────────────────────────
     const actionsRef = useRef<SignalActions>({
-      broadcastNewMessage,
       startTyping,
       stopTyping,
       switchRoom,
       setAiThinking,
+      setSharedState,
+      deleteSharedState,
+      setRoomData,
+      deleteRoomData,
     });
     actionsRef.current = {
-      broadcastNewMessage,
       startTyping,
       stopTyping,
       switchRoom,
       setAiThinking,
+      setSharedState,
+      deleteSharedState,
+      setRoomData,
+      deleteRoomData,
     };
 
     useEffect(() => {
       const proxy: SignalActions = {
-        broadcastNewMessage: (...args) => actionsRef.current.broadcastNewMessage(...args),
         startTyping: (...args) => actionsRef.current.startTyping(...args),
         stopTyping: () => actionsRef.current.stopTyping(),
         switchRoom: (...args) => actionsRef.current.switchRoom(...args),
         setAiThinking: (...args) => actionsRef.current.setAiThinking(...args),
+        setSharedState: (...args) => actionsRef.current.setSharedState(...args),
+        deleteSharedState: (...args) => actionsRef.current.deleteSharedState(...args),
+        setRoomData: (...args) => actionsRef.current.setRoomData(...args),
+        deleteRoomData: (...args) => actionsRef.current.deleteRoomData(...args),
       };
       compRef.current.children._signalActions.dispatchChangeValueAction(
         proxy as unknown as JSONObject,
@@ -396,8 +448,9 @@ const ChatControllerSignalBase = withViewFn(
           } as any
         }
         initialStorage={(t: any) => ({
-          messageActivity: t.map("messageActivity", []),
           aiActivity: t.map("aiActivity", []),
+          sharedState: t.map("sharedState", []),
+          roomData: t.map("roomData", []),
         })}
         onAuthorizationFail={(error: Error) => {
           console.error("[ChatControllerV2] Auth failed:", error);
@@ -461,10 +514,6 @@ let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
     "Array of users currently typing: [{ userId, userName, roomId }]",
   ),
   new NameConfig("currentRoomId", "Currently active room/channel ID"),
-  new NameConfig(
-    "lastMessageNotification",
-    "Last message broadcast received from a peer: { roomId, messageId, authorId, authorName, timestamp }",
-  ),
   new NameConfig("userId", "Current user ID"),
   new NameConfig("userName", "Current user name"),
   new NameConfig("applicationId", "Application scope ID"),
@@ -472,31 +521,19 @@ let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
     "aiThinkingRooms",
     "Map of roomId → boolean indicating which rooms have an AI currently thinking. E.g. { 'room_123': true }",
   ),
+  new NameConfig(
+    "sharedState",
+    "App-level shared state (JSON) that auto-syncs across all connected users. Write with setSharedState(key, value).",
+  ),
+  new NameConfig(
+    "roomData",
+    "Room-scoped shared data (JSON) that auto-syncs. Structure: { roomId: { key: value } }. Not visible as chat messages. Write with setRoomData(roomId, key, value).",
+  ),
 ]);
 
 // ─── Expose methods ─────────────────────────────────────────────────────────
 
 ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
-  {
-    method: {
-      name: "broadcastNewMessage",
-      description:
-        "Broadcast to all peers that a new message was saved. Other users' onNewMessageBroadcast event fires so they can reload their data query.",
-      params: [
-        { name: "roomId", type: "string" },
-        { name: "messageId", type: "string" },
-      ],
-    },
-    execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
-      if (actions?.broadcastNewMessage) {
-        actions.broadcastNewMessage(
-          values?.[0] as string,
-          values?.[1] as string | undefined,
-        );
-      }
-    },
-  },
   {
     method: {
       name: "startTyping",
@@ -553,6 +590,78 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
       if (actions?.setAiThinking) {
         const isThinking = values?.[1] === true || values?.[1] === "true";
         actions.setAiThinking(values?.[0] as string, isThinking);
+      }
+    },
+  },
+  {
+    method: {
+      name: "setSharedState",
+      description:
+        "Set a key-value pair in the app-level shared state. Auto-syncs to all connected users instantly via CRDT.",
+      params: [
+        { name: "key", type: "string" },
+        { name: "value", type: "JSONValue" },
+      ],
+    },
+    execute: (comp, values) => {
+      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      if (actions?.setSharedState) {
+        actions.setSharedState(values?.[0] as string, values?.[1]);
+      }
+    },
+  },
+  {
+    method: {
+      name: "deleteSharedState",
+      description: "Delete a key from the app-level shared state.",
+      params: [{ name: "key", type: "string" }],
+    },
+    execute: (comp, values) => {
+      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      if (actions?.deleteSharedState) {
+        actions.deleteSharedState(values?.[0] as string);
+      }
+    },
+  },
+  {
+    method: {
+      name: "setRoomData",
+      description:
+        "Set a key-value pair in a room's shared data. Auto-syncs to all connected users. Not visible as a chat message — use for real-time JSON data exchange within a room/channel.",
+      params: [
+        { name: "roomId", type: "string" },
+        { name: "key", type: "string" },
+        { name: "value", type: "JSONValue" },
+      ],
+    },
+    execute: (comp, values) => {
+      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      if (actions?.setRoomData) {
+        actions.setRoomData(
+          values?.[0] as string,
+          values?.[1] as string,
+          values?.[2],
+        );
+      }
+    },
+  },
+  {
+    method: {
+      name: "deleteRoomData",
+      description:
+        "Delete a key from a room's shared data. If no key is provided, deletes all data for the room.",
+      params: [
+        { name: "roomId", type: "string" },
+        { name: "key", type: "string" },
+      ],
+    },
+    execute: (comp, values) => {
+      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      if (actions?.deleteRoomData) {
+        actions.deleteRoomData(
+          values?.[0] as string,
+          values?.[1] as string | undefined,
+        );
       }
     },
   },

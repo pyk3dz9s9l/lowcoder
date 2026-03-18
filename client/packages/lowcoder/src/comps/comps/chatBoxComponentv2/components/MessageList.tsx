@@ -3,6 +3,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Tooltip } from "antd";
 import { CopyOutlined, CheckOutlined, RobotOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
+import { parseMessageTimestamp, formatChatTime } from "util/dateTimeUtils";
 import { LLM_BOT_AUTHOR_ID } from "../store";
 import {
   MessagesArea,
@@ -21,10 +23,17 @@ import {
   LlmLoadingBubble,
 } from "../styles";
 
+function readField(msg: any, ...keys: string[]): string {
+  for (const k of keys) {
+    if (msg[k] != null && msg[k] !== "") return String(msg[k]);
+  }
+  return "";
+}
+
 // ── AI message bubble with copy button ───────────────────────────────────────
 
 const AiMessageBubble = React.memo(
-  ({ text, authorName, timestamp }: { text: string; authorName: string; timestamp: number }) => {
+  ({ text, authorName, ts }: { text: string; authorName: string; ts: dayjs.Dayjs | null }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(() => {
@@ -58,12 +67,9 @@ const AiMessageBubble = React.memo(
             </AiCopyButton>
           </Tooltip>
         </div>
-        {timestamp > 0 && (
+        {ts && (
           <BubbleTime $own={false}>
-            {new Date(timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            {formatChatTime(ts)}
           </BubbleTime>
         )}
       </AiBubbleWrapper>
@@ -72,23 +78,6 @@ const AiMessageBubble = React.memo(
 );
 
 AiMessageBubble.displayName = "AiMessageBubble";
-
-// ── Helpers to read message fields flexibly ───────────────────────────────────
-
-function readField(msg: any, ...keys: string[]): string {
-  for (const k of keys) {
-    if (msg[k] != null && msg[k] !== "") return String(msg[k]);
-  }
-  return "";
-}
-
-function readTimestamp(msg: any): number {
-  const raw =
-    msg.timestamp ?? msg.createdAt ?? msg.created_at ?? msg.time ?? 0;
-  if (typeof raw === "number") return raw;
-  const parsed = Date.parse(raw);
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -139,7 +128,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
               "author_name",
               "senderName",
             ) || authorId;
-          const timestamp = readTimestamp(msg);
+          const ts = parseMessageTimestamp(msg);
           const authorType = msg.authorType || msg.role || "";
 
           const isAssistant =
@@ -153,7 +142,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
                 key={id}
                 text={text}
                 authorName={authorName}
-                timestamp={timestamp}
+                ts={ts}
               />
             );
           }
@@ -162,12 +151,9 @@ export const MessageList = React.memo((props: MessageListProps) => {
             <MessageWrapper key={id} $own={isOwn}>
               <BubbleMeta $own={isOwn}>{authorName}</BubbleMeta>
               <Bubble $own={isOwn}>{text}</Bubble>
-              {timestamp > 0 && (
+              {ts && (
                 <BubbleTime $own={isOwn}>
-                  {new Date(timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatChatTime(ts)}
                 </BubbleTime>
               )}
             </MessageWrapper>

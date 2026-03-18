@@ -41,15 +41,6 @@ export interface OnlineUser {
   currentRoomId: string | null;
 }
 
-export interface MessageBroadcast {
-  roomId: string;
-  messageId: string;
-  authorId: string;
-  authorName: string;
-  timestamp: number;
-  counter: number;
-}
-
 export interface AiThinkingState {
   roomId: string;
   isThinking: boolean;

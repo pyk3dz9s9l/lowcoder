@@ -36,8 +36,9 @@ const client = createClient({
     return `${PLUV_AUTH_URL}?${params}`;
   },
   initialStorage: yjs.doc((t: any) => ({
-    messageActivity: t.map("messageActivity", []),
     aiActivity: t.map("aiActivity", []),
+    sharedState: t.map("sharedState", []),
+    roomData: t.map("roomData", []),
   })),
   presence: z.object({
     userId: z.string(),
