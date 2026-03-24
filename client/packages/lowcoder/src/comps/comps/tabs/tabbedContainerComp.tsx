@@ -31,7 +31,6 @@ import { trans } from "i18n";
 import { BoolCodeControl, NumberControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
 import { EditorContext } from "comps/editorState";
-import { checkIsMobile } from "util/commonUtils";
 import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 import { BoolControl } from "comps/controls/boolControl";
 import { PositionControl,dropdownControl } from "comps/controls/dropdownControl";
@@ -150,14 +149,14 @@ const StyledTabs = styled(Tabs)<{
   $style: TabContainerStyleType;
   $headerStyle: ContainerHeaderStyleType;
   $bodyStyle: TabBodyStyleType;
-  $isMobile?: boolean;
   $showHeader?: boolean;
-  $animationStyle:AnimationStyleType;
+  $animationStyle: AnimationStyleType;
   $isDestroyPane?: boolean;
+  $placement?: string;
 }>`
   &.ant-tabs {
     height: 100%;
-    ${props=>props.$animationStyle}
+    ${props => props.$animationStyle}
   }
 
   .ant-tabs-content-animated {
@@ -170,20 +169,16 @@ const StyledTabs = styled(Tabs)<{
 
   .ant-tabs-nav {
     display: ${(props) => (props.$showHeader ? "block" : "none")};
-    padding: 0 ${(props) => (props.$isMobile ? 16 : 24)}px;
     margin: 0px;
   }
 
   .ant-tabs-tab + .ant-tabs-tab {
-    margin: 0 0 0 20px;
+    ${(props) => (props.$placement === "left" || props.$placement === "right") 
+      ? `margin: 20px 0 0 0;` 
+      : `margin: 0 0 0 20px;`}
   }
 
-  .ant-tabs-nav-operations {
-    margin-right: -24px;
-  }
-
-  ${(props) =>
-    props.$style && getStyle(props.$style, props.$headerStyle, props.$bodyStyle)}
+  ${(props) => props.$style && getStyle(props.$style, props.$headerStyle, props.$bodyStyle)}
 
   /* Conditional styling for all modes except Destroy Inactive Pane */
   ${(props) => !props.$isDestroyPane && `
@@ -207,7 +202,6 @@ const ContainerInTab = (props: ContainerBaseProps) => {
 type TabPaneContentProps = {
   autoHeight: boolean;
   showVerticalScrollbar: boolean;
-  paddingWidth: number;
   horizontalGridCells: number;
   bodyBackground: string;
   layoutView: any;
@@ -219,7 +213,6 @@ type TabPaneContentProps = {
 const TabPaneContent: React.FC<TabPaneContentProps> = ({
   autoHeight,
   showVerticalScrollbar,
-  paddingWidth,
   horizontalGridCells,
   bodyBackground,
   layoutView,
@@ -243,7 +236,7 @@ const TabPaneContent: React.FC<TabPaneContentProps> = ({
           positionParams={positionParamsView}
           dispatch={dispatch}
           autoHeight={autoHeight}
-          containerPadding={[paddingWidth, 0]}
+          containerPadding={[0, 0]}
         />
       </ScrollBar>
     </BackgroundColorContext.Provider>
@@ -272,11 +265,7 @@ const TabbedContainer = (props: TabbedContainerProps) => {
     }
   }, [activeKey, props.selectedTabKey.value]);
 
-  const editorState = useContext(EditorContext);
-  const maxWidth = editorState.getAppSettings().maxWidth;
-  const isMobile = checkIsMobile(maxWidth);
   const showHeader = props.showHeader.valueOf();
-  const paddingWidth = isMobile ? 8 : 0;
 
   const tabItems = visibleTabs.map((tab) => {
     const id = String(tab.id);
@@ -302,7 +291,6 @@ const TabbedContainer = (props: TabbedContainerProps) => {
         <TabPaneContent
           autoHeight={props.autoHeight}
           showVerticalScrollbar={props.showVerticalScrollbar}
-          paddingWidth={paddingWidth}
           horizontalGridCells={horizontalGridCells}
           bodyBackground={bodyStyle.background}
           layoutView={containerChildren.layout.getView()}
@@ -327,6 +315,7 @@ const TabbedContainer = (props: TabbedContainerProps) => {
           $bodyStyle={bodyStyle}
           $showHeader={showHeader}
           $isDestroyPane={tabBehavior === "destroy"}
+          $placement={props.placement}
           onChange={(key) => {
             if (key !== props.selectedTabKey.value) {
               props.selectedTabKey.onChange(key);
@@ -334,7 +323,6 @@ const TabbedContainer = (props: TabbedContainerProps) => {
             }
           }}
           animated
-          $isMobile={isMobile}
           items={tabItems}
           tabBarGutter={props.tabsGutter}
           centered={props.tabsCentered}
