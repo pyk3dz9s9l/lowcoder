@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
+import type { ChatBoxV2InputStyleType } from "comps/controls/styleControlConstants";
 import { InputBarContainer, StyledTextArea } from "../styles";
 
 export interface InputBarProps {
@@ -8,10 +9,11 @@ export interface InputBarProps {
   onStartTyping: () => void;
   onStopTyping: () => void;
   onDraftChange: (text: string) => void;
+  inputStyle?: ChatBoxV2InputStyleType;
 }
 
 export const InputBar = React.memo((props: InputBarProps) => {
-  const { onSend, onStartTyping, onStopTyping, onDraftChange } = props;
+  const { onSend, onStartTyping, onStopTyping, onDraftChange, inputStyle } = props;
   const [draft, setDraft] = useState("");
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -73,9 +75,16 @@ export const InputBar = React.memo((props: InputBarProps) => {
     [onStartTyping, handleStopTyping, clearTypingTimeout, onDraftChange],
   );
 
+  const sendBtnStyle: React.CSSProperties = inputStyle ? {
+    backgroundColor: inputStyle.sendButtonBackground,
+    borderColor: inputStyle.sendButtonBackground,
+    color: inputStyle.sendButtonIcon,
+  } : {};
+
   return (
-    <InputBarContainer>
+    <InputBarContainer $inputStyle={inputStyle}>
       <StyledTextArea
+        $inputStyle={inputStyle}
         value={draft}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
@@ -88,6 +97,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         icon={<SendOutlined />}
         onClick={handleSend}
         disabled={!draft.trim()}
+        style={sendBtnStyle}
       />
     </InputBarContainer>
   );

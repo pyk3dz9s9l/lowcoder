@@ -1,32 +1,46 @@
 import styled from "styled-components";
-import type { TextStyleType, AnimationStyleType } from "comps/controls/styleControlConstants";
+import type {
+  ChatBoxV2ContainerStyleType,
+  ChatBoxV2SidebarStyleType,
+  ChatBoxV2HeaderStyleType,
+  ChatBoxV2MessageStyleType,
+  ChatBoxV2InputStyleType,
+  AnimationStyleType,
+} from "comps/controls/styleControlConstants";
 
-export const Wrapper = styled.div<{ $style: TextStyleType; $anim: AnimationStyleType }>`
+export const Wrapper = styled.div<{ $style: ChatBoxV2ContainerStyleType; $anim: AnimationStyleType }>`
   height: 100%;
   display: flex;
   overflow: hidden;
   border-radius: ${(p) => p.$style.radius || "8px"};
-  border: ${(p) => p.$style.borderWidth || "1px"} solid ${(p) => p.$style.border || "#e0e0e0"};
+  border: ${(p) => p.$style.borderWidth || "1px"} ${(p) => p.$style.borderStyle || "solid"} ${(p) => p.$style.border || "#e0e0e0"};
   background: ${(p) => p.$style.background || "#fff"};
-  font-family: ${(p) => p.$style.fontFamily || "inherit"};
+  margin: ${(p) => p.$style.margin || "0"};
+  padding: ${(p) => p.$style.padding || "0"};
   ${(p) => p.$anim}
 `;
 
-export const RoomPanelContainer = styled.div<{ $width: string }>`
+export const RoomPanelContainer = styled.div<{
+  $width: string;
+  $sidebarStyle?: ChatBoxV2SidebarStyleType;
+}>`
   width: ${(p) => p.$width};
   min-width: 160px;
-  border-right: 1px solid #eee;
+  border-right: 1px solid ${(p) => p.$sidebarStyle?.sidebarBorder || "#eee"};
   display: flex;
   flex-direction: column;
-  background: #fafbfc;
+  background: ${(p) => p.$sidebarStyle?.sidebarBackground || "#fafbfc"};
+  color: ${(p) => p.$sidebarStyle?.sidebarText || "inherit"};
+  border-radius: ${(p) => p.$sidebarStyle?.sidebarRadius || "0"};
 `;
 
-export const RoomPanelHeader = styled.div`
+export const RoomPanelHeader = styled.div<{ $sidebarStyle?: ChatBoxV2SidebarStyleType }>`
   padding: 12px;
   font-weight: 600;
   font-size: 13px;
-  color: #555;
-  border-bottom: 1px solid #eee;
+  color: ${(p) => p.$sidebarStyle?.sidebarText || "#555"};
+  background: ${(p) => p.$sidebarStyle?.sidebarHeaderBackground || "transparent"};
+  border-bottom: 1px solid ${(p) => p.$sidebarStyle?.sidebarBorder || "#eee"};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -38,8 +52,11 @@ export const RoomListContainer = styled.div`
   padding: 8px;
 `;
 
-export const RoomItemStyled = styled.div<{ $active: boolean }>`
-  padding: 8px 10px;
+export const RoomItemStyled = styled.div<{
+  $active: boolean;
+  $sidebarStyle?: ChatBoxV2SidebarStyleType;
+}>`
+  padding: ${(p) => p.$sidebarStyle?.sidebarItemPadding || "8px 10px"};
   margin-bottom: 4px;
   border-radius: 6px;
   cursor: pointer;
@@ -48,12 +65,24 @@ export const RoomItemStyled = styled.div<{ $active: boolean }>`
   display: flex;
   align-items: center;
   gap: 6px;
-  background: ${(p) => (p.$active ? "#1890ff" : "#fff")};
-  color: ${(p) => (p.$active ? "#fff" : "#333")};
-  border: 1px solid ${(p) => (p.$active ? "#1890ff" : "#f0f0f0")};
+  background: ${(p) =>
+    p.$active
+      ? p.$sidebarStyle?.sidebarActiveItemBackground || "#1890ff"
+      : "#fff"};
+  color: ${(p) =>
+    p.$active
+      ? p.$sidebarStyle?.sidebarActiveItemText || "#fff"
+      : p.$sidebarStyle?.sidebarText || "#333"};
+  border: 1px solid ${(p) =>
+    p.$active
+      ? p.$sidebarStyle?.sidebarActiveItemBackground || "#1890ff"
+      : "#f0f0f0"};
 
   &:hover {
-    background: ${(p) => (p.$active ? "#1890ff" : "#f5f5f5")};
+    background: ${(p) =>
+      p.$active
+        ? p.$sidebarStyle?.sidebarActiveItemBackground || "#1890ff"
+        : "#f5f5f5"};
   }
 `;
 
@@ -74,21 +103,24 @@ export const ChatPanelContainer = styled.div`
   min-width: 0;
 `;
 
-export const ChatHeaderBar = styled.div`
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxV2HeaderStyleType }>`
+  padding: ${(p) => p.$headerStyle?.headerPadding || "12px 16px"};
+  border-bottom: 1px solid ${(p) => p.$headerStyle?.headerBorder || "#eee"};
+  background: ${(p) => p.$headerStyle?.headerBackground || "transparent"};
+  color: ${(p) => p.$headerStyle?.headerText || "inherit"};
   display: flex;
   justify-content: space-between;
   align-items: center;
 `;
 
-export const MessagesArea = styled.div`
+export const MessagesArea = styled.div<{ $messageStyle?: ChatBoxV2MessageStyleType }>`
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: ${(p) => p.$messageStyle?.messageAreaBackground || "transparent"};
 `;
 
 export const MessageWrapper = styled.div<{ $own: boolean }>`
@@ -98,42 +130,66 @@ export const MessageWrapper = styled.div<{ $own: boolean }>`
   max-width: 70%;
 `;
 
-export const Bubble = styled.div<{ $own: boolean }>`
-  padding: 10px 14px;
-  border-radius: ${(p) => (p.$own ? "16px 16px 4px 16px" : "16px 16px 16px 4px")};
-  background: ${(p) => (p.$own ? "#1890ff" : "#f0f0f0")};
-  color: ${(p) => (p.$own ? "#fff" : "#333")};
+export const Bubble = styled.div<{
+  $own: boolean;
+  $messageStyle?: ChatBoxV2MessageStyleType;
+}>`
+  padding: ${(p) => p.$messageStyle?.messageBubblePadding || "10px 14px"};
+  border-radius: ${(p) => {
+    const r = p.$messageStyle?.messageBubbleRadius;
+    if (r && r !== "0") return r;
+    return p.$own ? "16px 16px 4px 16px" : "16px 16px 16px 4px";
+  }};
+  background: ${(p) =>
+    p.$own
+      ? p.$messageStyle?.ownMessageBackground || "#1890ff"
+      : p.$messageStyle?.otherMessageBackground || "#f0f0f0"};
+  color: ${(p) =>
+    p.$own
+      ? p.$messageStyle?.ownMessageText || "#fff"
+      : p.$messageStyle?.otherMessageText || "#333"};
   font-size: 14px;
   word-break: break-word;
 `;
 
-export const BubbleMeta = styled.div<{ $own: boolean }>`
+export const BubbleMeta = styled.div<{
+  $own: boolean;
+  $messageStyle?: ChatBoxV2MessageStyleType;
+}>`
   font-size: 11px;
-  opacity: 0.7;
+  color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
+  opacity: ${(p) => (p.$messageStyle?.messageMetaText ? 1 : 0.7)};
   margin-bottom: 2px;
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
 
-export const BubbleTime = styled.div<{ $own: boolean }>`
+export const BubbleTime = styled.div<{
+  $own: boolean;
+  $messageStyle?: ChatBoxV2MessageStyleType;
+}>`
   font-size: 10px;
-  opacity: 0.6;
+  color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
+  opacity: ${(p) => (p.$messageStyle?.messageMetaText ? 0.8 : 0.6)};
   margin-top: 4px;
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
 
-export const InputBarContainer = styled.div`
+export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxV2InputStyleType }>`
   padding: 12px 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid ${(p) => p.$inputStyle?.inputAreaBorder || "#eee"};
+  background: ${(p) => p.$inputStyle?.inputAreaBackground || "transparent"};
   display: flex;
   gap: 8px;
   align-items: flex-end;
 `;
 
-export const StyledTextArea = styled.textarea`
+export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxV2InputStyleType }>`
   flex: 1;
-  padding: 8px 14px;
-  border: 1px solid #d9d9d9;
-  border-radius: 18px;
+  padding: ${(p) => p.$inputStyle?.inputPadding || "8px 14px"};
+  border: 1px solid ${(p) => p.$inputStyle?.inputBorder || "#d9d9d9"};
+  border-radius: ${(p) => p.$inputStyle?.inputRadius || "18px"};
+  background: ${(p) => p.$inputStyle?.inputBackground || "#fff"};
+  color: ${(p) => p.$inputStyle?.inputText || "inherit"};
   resize: none;
   min-height: 36px;
   max-height: 96px;
@@ -142,7 +198,7 @@ export const StyledTextArea = styled.textarea`
   font-family: inherit;
   line-height: 1.4;
   &:focus {
-    border-color: #1890ff;
+    border-color: ${(p) => p.$inputStyle?.sendButtonBackground || "#1890ff"};
   }
 `;
 
@@ -253,7 +309,6 @@ export const AiBubble = styled.div`
   line-height: 1.6;
   word-break: break-word;
 
-  /* Markdown styles inside the AI bubble */
   p { margin: 0 0 8px; }
   p:last-child { margin-bottom: 0; }
   pre {
@@ -313,7 +368,6 @@ export const AiCopyButton = styled.button`
   }
 `;
 
-/** Animated "thinking" bubble shown while the LLM query is in-flight. */
 export const LlmLoadingBubble = styled.div`
   align-self: flex-start;
   background: #faf5ff;
@@ -341,7 +395,6 @@ export const LlmLoadingBubble = styled.div`
   }
 `;
 
-/** Icon shown inside room list items for LLM rooms. */
 export const LlmRoomBadge = styled.span`
   font-size: 10px;
   font-weight: 600;

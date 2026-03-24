@@ -1,5 +1,13 @@
 import { createContext, useContext } from "react";
 import type { ChatRoom, OnlineUser, PendingRoomInvite } from "./store";
+import type {
+  ChatBoxV2ContainerStyleType,
+  ChatBoxV2SidebarStyleType,
+  ChatBoxV2HeaderStyleType,
+  ChatBoxV2MessageStyleType,
+  ChatBoxV2InputStyleType,
+  AnimationStyleType,
+} from "comps/controls/styleControlConstants";
 
 type ChatEventName =
   | "messageSent"
@@ -42,8 +50,12 @@ export interface ChatBoxContextValue {
   roomsPanelWidth: string;
   allowRoomCreation: boolean;
   allowRoomSearch: boolean;
-  style: any;
-  animationStyle: any;
+  style: ChatBoxV2ContainerStyleType;
+  animationStyle: AnimationStyleType;
+  sidebarStyle: ChatBoxV2SidebarStyleType;
+  headerStyle: ChatBoxV2HeaderStyleType;
+  messageStyle: ChatBoxV2MessageStyleType;
+  inputStyle: ChatBoxV2InputStyleType;
 
   // Events
   onEvent: (event: ChatEventName) => any;

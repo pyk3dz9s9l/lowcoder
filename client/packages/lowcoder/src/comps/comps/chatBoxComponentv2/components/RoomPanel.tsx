@@ -45,6 +45,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     roomsPanelWidth,
     pendingInvites,
     onlineUsers,
+    sidebarStyle,
     onRoomSwitch,
     onRoomJoin,
     onRoomLeave,
@@ -108,6 +109,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
       <RoomItemStyled
         key={room.id}
         $active={isActive}
+        $sidebarStyle={sidebarStyle}
         onClick={() => {
           if (isSearch) {
             handleJoinAndClear(room.id);
@@ -175,8 +177,8 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
   };
 
   return (
-    <RoomPanelContainer $width={roomsPanelWidth}>
-      <RoomPanelHeader>
+    <RoomPanelContainer $width={roomsPanelWidth} $sidebarStyle={sidebarStyle}>
+      <RoomPanelHeader $sidebarStyle={sidebarStyle}>
         <span>Rooms</span>
         <div style={{ display: "flex", gap: 2 }}>
           {onInviteModalOpen && (

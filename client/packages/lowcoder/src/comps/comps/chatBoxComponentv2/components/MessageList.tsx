@@ -6,6 +6,7 @@ import { CopyOutlined, CheckOutlined, RobotOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { parseMessageTimestamp, formatChatTime } from "util/dateTimeUtils";
 import { LLM_BOT_AUTHOR_ID } from "../store";
+import type { ChatBoxV2MessageStyleType } from "comps/controls/styleControlConstants";
 import {
   MessagesArea,
   MessageWrapper,
@@ -86,10 +87,11 @@ export interface MessageListProps {
   typingUsers: any[];
   currentUserId: string;
   isAiThinking?: boolean;
+  messageStyle?: ChatBoxV2MessageStyleType;
 }
 
 export const MessageList = React.memo((props: MessageListProps) => {
-  const { messages, typingUsers, currentUserId, isAiThinking = false } = props;
+  const { messages, typingUsers, currentUserId, isAiThinking = false, messageStyle } = props;
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
   }, [messages.length, isAiThinking]);
 
   return (
-    <MessagesArea ref={containerRef}>
+    <MessagesArea ref={containerRef} $messageStyle={messageStyle}>
       {messages.length === 0 ? (
         <EmptyChat>
           <div style={{ fontSize: 24 }}>💬</div>
@@ -149,10 +151,10 @@ export const MessageList = React.memo((props: MessageListProps) => {
 
           return (
             <MessageWrapper key={id} $own={isOwn}>
-              <BubbleMeta $own={isOwn}>{authorName}</BubbleMeta>
-              <Bubble $own={isOwn}>{text}</Bubble>
+              <BubbleMeta $own={isOwn} $messageStyle={messageStyle}>{authorName}</BubbleMeta>
+              <Bubble $own={isOwn} $messageStyle={messageStyle}>{text}</Bubble>
               {ts && (
-                <BubbleTime $own={isOwn}>
+                <BubbleTime $own={isOwn} $messageStyle={messageStyle}>
                   {formatChatTime(ts)}
                 </BubbleTime>
               )}
@@ -161,7 +163,6 @@ export const MessageList = React.memo((props: MessageListProps) => {
         })
       )}
 
-      {/* AI thinking animation — shown to all users when the LLM is generating */}
       {isAiThinking && (
         <AiBubbleWrapper>
           <AiBadge>

@@ -14,7 +14,11 @@ import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
 import {
   AnimationStyle,
-  TextStyle,
+  ChatBoxV2ContainerStyle,
+  ChatBoxV2SidebarStyle,
+  ChatBoxV2HeaderStyle,
+  ChatBoxV2MessageStyle,
+  ChatBoxV2InputStyle,
 } from "comps/controls/styleControlConstants";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
@@ -124,8 +128,12 @@ const childrenMap = {
   // ── Style / layout ────────────────────────────────────────────────
   autoHeight: AutoHeightControl,
   onEvent: eventHandlerControl(ChatEvents),
-  style: styleControl(TextStyle, "style"),
+  style: styleControl(ChatBoxV2ContainerStyle, "style"),
   animationStyle: styleControl(AnimationStyle, "animationStyle"),
+  sidebarStyle: styleControl(ChatBoxV2SidebarStyle, "sidebarStyle"),
+  headerStyle: styleControl(ChatBoxV2HeaderStyle, "headerStyle"),
+  messageStyle: styleControl(ChatBoxV2MessageStyle, "messageStyle"),
+  inputStyle: styleControl(ChatBoxV2InputStyle, "inputStyle"),
 };
 
 // ─── Property panel ──────────────────────────────────────────────────────────
@@ -219,6 +227,18 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
           </Section>
+          <Section name="Sidebar Style">
+            {children.sidebarStyle.getPropertyView()}
+          </Section>
+          <Section name="Header Style">
+            {children.headerStyle.getPropertyView()}
+          </Section>
+          <Section name="Message Style">
+            {children.messageStyle.getPropertyView()}
+          </Section>
+          <Section name="Input Style">
+            {children.inputStyle.getPropertyView()}
+          </Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>
             {children.animationStyle.getPropertyView()}
           </Section>
@@ -239,6 +259,8 @@ let ChatBoxV2Tmp = (function () {
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
     const onlineUsers = Array.isArray(props.onlineUsers) ? props.onlineUsers : [];
     const isAiThinking = Boolean(props.isAiThinking);
+    // DEBUG: Log onlineUsers to verify data flow from ChatController
+    console.log("[ChatBox] onlineUsers prop:", onlineUsers.length, onlineUsers.map((u: any) => u.userId));
     const pendingInvites = (Array.isArray(props.pendingInvites)
       ? props.pendingInvites
       : []) as unknown as PendingRoomInvite[];
@@ -267,6 +289,10 @@ let ChatBoxV2Tmp = (function () {
       allowRoomSearch: props.allowRoomSearch,
       style: props.style,
       animationStyle: props.animationStyle,
+      sidebarStyle: props.sidebarStyle,
+      headerStyle: props.headerStyle,
+      messageStyle: props.messageStyle,
+      inputStyle: props.inputStyle,
 
       onEvent: props.onEvent,
 

@@ -180,13 +180,16 @@ const SignalController = React.memo(
 
     // ── Online users ──────────────────────────────────────────────────
     const onlineUsers = useMemo<OnlineUser[]>(() => {
-      return others
+      const users = others
         .filter((o: any) => o.presence != null)
         .map((o: any) => ({
           userId: o.presence.userId as string,
           userName: o.presence.userName as string,
           currentRoomId: (o.presence.currentRoomId as string) || null,
         }));
+      // DEBUG: Remove after fixing presence sync issue
+      console.log("[ChatController] others count:", others.length, "onlineUsers:", users.length, "users:", users.map(u => u.userId));
+      return users;
     }, [others]);
 
     useEffect(() => {
@@ -408,15 +411,21 @@ const SignalController = React.memo(
       );
     }, []);
 
-    // ── Set initial presence ──────────────────────────────────────────
+    // ── Set / restore presence on connect, reconnect, or peer changes ────
+    // Announces presence when:
+    // 1. Connection becomes ready (initial connect or reconnect)
+    // 2. Peer count changes (new user joins or leaves) — re-announces to
+    //    ensure peers that were still syncing receive our presence
     useEffect(() => {
+      if (!ready) return;
+      const roomId = compRef.current.children.currentRoomId.getView() as string | null;
       setMyPresence({
         userId,
         userName,
-        currentRoomId: null,
+        currentRoomId: roomId,
         typing: false,
       } as any);
-    }, [setMyPresence, userId, userName]);
+    }, [ready, others.length, setMyPresence, userId, userName]);
 
     return null;
   },

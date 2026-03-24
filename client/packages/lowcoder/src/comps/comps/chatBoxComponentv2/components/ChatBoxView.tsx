@@ -23,12 +23,11 @@ export const ChatBoxView = React.memo(() => {
     ? ctx.currentRoom.name
     : ctx.chatTitle.value;
 
-  // Count users online in the current room (peers only, not counting self)
   const roomOnlineCount = useMemo(() => {
     if (!ctx.currentRoomId) return 0;
     return ctx.onlineUsers.filter(
       (u) => u.currentRoomId === ctx.currentRoomId && u.userId !== ctx.currentUserId,
-    ).length + 1; // +1 for self
+    ).length + 1;
   }, [ctx.onlineUsers, ctx.currentRoomId, ctx.currentUserId]);
 
   return (
@@ -48,7 +47,7 @@ export const ChatBoxView = React.memo(() => {
       {/* ── Chat area ───────────────────────────────────────────── */}
       <ChatPanelContainer>
         {ctx.showHeader && (
-          <ChatHeaderBar>
+          <ChatHeaderBar $headerStyle={ctx.headerStyle}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 16 }}>
                 {headerTitle}
@@ -73,6 +72,7 @@ export const ChatBoxView = React.memo(() => {
           typingUsers={ctx.typingUsers}
           currentUserId={ctx.currentUserId}
           isAiThinking={ctx.isAiThinking}
+          messageStyle={ctx.messageStyle}
         />
 
         <InputBar
@@ -83,6 +83,7 @@ export const ChatBoxView = React.memo(() => {
           onStartTyping={() => ctx.onEvent("startTyping")}
           onStopTyping={() => ctx.onEvent("stopTyping")}
           onDraftChange={(text) => ctx.messageText.onChange(text)}
+          inputStyle={ctx.inputStyle}
         />
       </ChatPanelContainer>
 
