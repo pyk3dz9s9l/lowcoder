@@ -31,7 +31,7 @@ export const RoomPanelContainer = styled.div<{
   flex-direction: column;
   background: ${(p) => p.$sidebarStyle?.sidebarBackground || "#fafbfc"};
   color: ${(p) => p.$sidebarStyle?.sidebarText || "inherit"};
-  border-radius: ${(p) => p.$sidebarStyle?.sidebarRadius || "0"};
+  border-radius: ${(p) => p.$sidebarStyle?.radius || "0"};
 `;
 
 export const RoomPanelHeader = styled.div<{ $sidebarStyle?: ChatBoxV2SidebarStyleType }>`
@@ -56,7 +56,7 @@ export const RoomItemStyled = styled.div<{
   $active: boolean;
   $sidebarStyle?: ChatBoxV2SidebarStyleType;
 }>`
-  padding: ${(p) => p.$sidebarStyle?.sidebarItemPadding || "8px 10px"};
+  padding: ${(p) => p.$sidebarStyle?.padding || "8px 10px"};
   margin-bottom: 4px;
   border-radius: 6px;
   cursor: pointer;
@@ -104,7 +104,7 @@ export const ChatPanelContainer = styled.div`
 `;
 
 export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxV2HeaderStyleType }>`
-  padding: ${(p) => p.$headerStyle?.headerPadding || "12px 16px"};
+  padding: ${(p) => p.$headerStyle?.padding || "12px 16px"};
   border-bottom: 1px solid ${(p) => p.$headerStyle?.headerBorder || "#eee"};
   background: ${(p) => p.$headerStyle?.headerBackground || "transparent"};
   color: ${(p) => p.$headerStyle?.headerText || "inherit"};
@@ -134,9 +134,9 @@ export const Bubble = styled.div<{
   $own: boolean;
   $messageStyle?: ChatBoxV2MessageStyleType;
 }>`
-  padding: ${(p) => p.$messageStyle?.messageBubblePadding || "10px 14px"};
+  padding: ${(p) => p.$messageStyle?.padding || "10px 14px"};
   border-radius: ${(p) => {
-    const r = p.$messageStyle?.messageBubbleRadius;
+    const r = p.$messageStyle?.radius;
     if (r && r !== "0") return r;
     return p.$own ? "16px 16px 4px 16px" : "16px 16px 16px 4px";
   }};
@@ -185,9 +185,9 @@ export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxV2InputStyleT
 
 export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxV2InputStyleType }>`
   flex: 1;
-  padding: ${(p) => p.$inputStyle?.inputPadding || "8px 14px"};
+  padding: ${(p) => p.$inputStyle?.padding || "8px 14px"};
   border: 1px solid ${(p) => p.$inputStyle?.inputBorder || "#d9d9d9"};
-  border-radius: ${(p) => p.$inputStyle?.inputRadius || "18px"};
+  border-radius: ${(p) => p.$inputStyle?.radius || "18px"};
   background: ${(p) => p.$inputStyle?.inputBackground || "#fff"};
   color: ${(p) => p.$inputStyle?.inputText || "inherit"};
   resize: none;

@@ -3,7 +3,6 @@ import { Section, sectionNames } from "lowcoder-design";
 import {
   simpleMultiComp,
   stateComp,
-  withDefault,
   withPropertyViewFn,
   withViewFn,
 } from "../generators";
@@ -12,7 +11,7 @@ import { withMethodExposing } from "../generators/withMethodExposing";
 import { stringExposingStateControl } from "comps/controls/codeStateControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { JSONObject } from "../../util/jsonTypes";
-import { isEmpty, omit, isEqual } from "lodash";
+import { isEmpty, omit } from "lodash";
 import {
   PluvRoomProvider,
   useStorage,
@@ -147,15 +146,11 @@ const SignalController = React.memo(
       onlineCount: number;
       initialized: boolean;
       aiThinkingRooms: Record<string, boolean>;
-      sharedState: JSONObject | null;
-      roomData: JSONObject | null;
     }>({
       ready: false,
       onlineCount: 0,
       initialized: false,
       aiThinkingRooms: {},
-      sharedState: null,
-      roomData: null,
     });
 
     // ── Connection state ──────────────────────────────────────────────
@@ -180,16 +175,13 @@ const SignalController = React.memo(
 
     // ── Online users ──────────────────────────────────────────────────
     const onlineUsers = useMemo<OnlineUser[]>(() => {
-      const users = others
+      return others
         .filter((o: any) => o.presence != null)
         .map((o: any) => ({
           userId: o.presence.userId as string,
           userName: o.presence.userName as string,
           currentRoomId: (o.presence.currentRoomId as string) || null,
         }));
-      // DEBUG: Remove after fixing presence sync issue
-      console.log("[ChatController] others count:", others.length, "onlineUsers:", users.length, "users:", users.map(u => u.userId));
-      return users;
     }, [others]);
 
     useEffect(() => {
@@ -257,10 +249,9 @@ const SignalController = React.memo(
     // ── Watch shared state ──────────────────────────────────────────
     useEffect(() => {
       if (!sharedStateData) return;
-      const next = sharedStateData as unknown as JSONObject;
-      if (isEqual(next, prevRef.current.sharedState)) return;
-      prevRef.current.sharedState = next;
-      compRef.current.children.sharedState.dispatchChangeValueAction(next);
+      compRef.current.children.sharedState.dispatchChangeValueAction(
+        sharedStateData as unknown as JSONObject,
+      );
       if (prevRef.current.initialized) {
         triggerEventRef.current("sharedStateChanged");
       }
@@ -269,10 +260,9 @@ const SignalController = React.memo(
     // ── Watch room data ──────────────────────────────────────────────
     useEffect(() => {
       if (!roomDataData) return;
-      const next = roomDataData as unknown as JSONObject;
-      if (isEqual(next, prevRef.current.roomData)) return;
-      prevRef.current.roomData = next;
-      compRef.current.children.roomData.dispatchChangeValueAction(next);
+      compRef.current.children.roomData.dispatchChangeValueAction(
+        roomDataData as unknown as JSONObject,
+      );
       if (prevRef.current.initialized) {
         triggerEventRef.current("roomDataChanged");
       }

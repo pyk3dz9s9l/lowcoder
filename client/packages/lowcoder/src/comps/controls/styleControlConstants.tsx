@@ -2700,12 +2700,12 @@ export const ChatBoxV2SidebarStyle = [
     transformer: contrastText,
   },
   {
-    name: "sidebarItemPadding",
+    name: "padding",
     label: trans("style.chatV2SidebarItemPadding"),
     padding: "padding",
   },
   {
-    name: "sidebarRadius",
+    name: "radius",
     label: trans("style.chatV2SidebarRadius"),
     radius: "radius",
   },
@@ -2730,7 +2730,7 @@ export const ChatBoxV2HeaderStyle = [
     color: "#eeeeee",
   },
   {
-    name: "headerPadding",
+    name: "padding",
     label: trans("style.chatV2HeaderPadding"),
     padding: "padding",
   },
@@ -2769,12 +2769,12 @@ export const ChatBoxV2MessageStyle = [
     transformer: contrastText,
   },
   {
-    name: "messageBubblePadding",
+    name: "padding",
     label: trans("style.chatV2MessageBubblePadding"),
     padding: "padding",
   },
   {
-    name: "messageBubbleRadius",
+    name: "radius",
     label: trans("style.chatV2MessageBubbleRadius"),
     radius: "radius",
   },
@@ -2804,12 +2804,12 @@ export const ChatBoxV2InputStyle = [
     color: "#d9d9d9",
   },
   {
-    name: "inputRadius",
+    name: "radius",
     label: trans("style.chatV2InputRadius"),
     radius: "radius",
   },
   {
-    name: "inputPadding",
+    name: "padding",
     label: trans("style.chatV2InputPadding"),
     padding: "padding",
   },
