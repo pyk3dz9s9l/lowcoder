@@ -259,8 +259,6 @@ let ChatBoxV2Tmp = (function () {
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
     const onlineUsers = Array.isArray(props.onlineUsers) ? props.onlineUsers : [];
     const isAiThinking = Boolean(props.isAiThinking);
-    // DEBUG: Log onlineUsers to verify data flow from ChatController
-    console.log("[ChatBox] onlineUsers prop:", onlineUsers.length, onlineUsers.map((u: any) => u.userId));
     const pendingInvites = (Array.isArray(props.pendingInvites)
       ? props.pendingInvites
       : []) as unknown as PendingRoomInvite[];

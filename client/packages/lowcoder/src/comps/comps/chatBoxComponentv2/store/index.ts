@@ -10,13 +10,9 @@ export type {
 export { uid, LLM_BOT_AUTHOR_ID } from "./types";
 
 export {
-  PluvRoomProvider,
+  HocuspocusRoomProvider,
   useStorage,
-  useTransact,
   useMyPresence,
-  useMyself,
   useOthers,
-  useRoom,
   useConnection,
-  useDoc,
-} from "./pluvClient";
+} from "./hocuspocusClient";

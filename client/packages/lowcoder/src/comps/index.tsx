@@ -978,10 +978,10 @@ export var uiCompMap: Registry = {
   chatControllerSignal: {
     name: "Chat Signal Controller",
     enName: "Chat Signal Controller",
-    description: "Signal server for real-time chat — broadcasts message activity, typing indicators, and online presence via Pluv/Yjs. Pair with Chat Box V2 and your own data queries.",
+    description: "Signal server for real-time chat — broadcasts message activity, typing indicators, and online presence via Hocuspocus/Yjs. Pair with Chat Box V2 and your own data queries.",
     categories: ["collaboration"],
     icon: CommentCompIcon,
-    keywords: "chatbox,chat,controller,signal,realtime,presence,typing,pluv,yjs",
+    keywords: "chatbox,chat,controller,signal,realtime,presence,typing,hocuspocus,yjs",
     comp: ChatControllerSignal,
   },
 

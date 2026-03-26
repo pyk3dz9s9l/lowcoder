@@ -13,7 +13,7 @@ import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { JSONObject } from "../../util/jsonTypes";
 import { isEmpty, omit } from "lodash";
 import {
-  PluvRoomProvider,
+  HocuspocusRoomProvider,
   useStorage,
   useMyPresence,
   useOthers,
@@ -117,7 +117,7 @@ interface SignalActions {
   deleteRoomData: (roomId: string, key?: string) => void;
 }
 
-// ─── Inner component that uses Pluv hooks inside PluvRoomProvider ────────────
+// ─── Inner component that uses Hocuspocus hooks ─────────────────────────────
 
 interface SignalControllerProps {
   comp: any;
@@ -144,12 +144,18 @@ const SignalController = React.memo(
     const prevRef = useRef<{
       ready: boolean;
       onlineCount: number;
-      initialized: boolean;
+      onlineInitialized: boolean;
+      sharedStateInitialized: boolean;
+      roomDataInitialized: boolean;
+      aiThinkingInitialized: boolean;
       aiThinkingRooms: Record<string, boolean>;
     }>({
       ready: false,
       onlineCount: 0,
-      initialized: false,
+      onlineInitialized: false,
+      sharedStateInitialized: false,
+      roomDataInitialized: false,
+      aiThinkingInitialized: false,
       aiThinkingRooms: {},
     });
 
@@ -164,6 +170,9 @@ const SignalController = React.memo(
     useEffect(() => {
       compRef.current.children.ready.dispatchChangeValueAction(ready);
       compRef.current.children.connectionStatus.dispatchChangeValueAction(connectionLabel);
+      if (ready) {
+        compRef.current.children.error.dispatchChangeValueAction(null);
+      }
       if (ready && !prevRef.current.ready) {
         triggerEventRef.current("connected");
       }
@@ -188,7 +197,7 @@ const SignalController = React.memo(
       compRef.current.children.onlineUsers.dispatchChangeValueAction(
         onlineUsers as unknown as JSONObject[],
       );
-      if (prevRef.current.initialized) {
+      if (prevRef.current.onlineInitialized) {
         if (onlineUsers.length > prevRef.current.onlineCount) {
           triggerEventRef.current("userJoined");
         } else if (onlineUsers.length < prevRef.current.onlineCount) {
@@ -196,7 +205,7 @@ const SignalController = React.memo(
         }
       }
       prevRef.current.onlineCount = onlineUsers.length;
-      prevRef.current.initialized = true;
+      prevRef.current.onlineInitialized = true;
     }, [onlineUsers]);
 
     // ── Typing users ──────────────────────────────────────────────────
@@ -232,6 +241,10 @@ const SignalController = React.memo(
 
       for (const [roomId, state] of Object.entries(activityRecord)) {
         nextThinking[roomId] = state.isThinking;
+        if (!prevRef.current.aiThinkingInitialized) {
+          continue;
+        }
+
         const prev = prevRef.current.aiThinkingRooms[roomId] ?? false;
         if (state.isThinking && !prev) {
           triggerEventRef.current("aiThinkingStarted");
@@ -240,7 +253,16 @@ const SignalController = React.memo(
         }
       }
 
+      if (prevRef.current.aiThinkingInitialized) {
+        for (const [roomId, wasThinking] of Object.entries(prevRef.current.aiThinkingRooms)) {
+          if (wasThinking && !(roomId in nextThinking)) {
+            triggerEventRef.current("aiThinkingStopped");
+          }
+        }
+      }
+
       prevRef.current.aiThinkingRooms = nextThinking;
+      prevRef.current.aiThinkingInitialized = true;
       compRef.current.children.aiThinkingRooms.dispatchChangeValueAction(
         nextThinking as unknown as JSONObject,
       );
@@ -252,9 +274,10 @@ const SignalController = React.memo(
       compRef.current.children.sharedState.dispatchChangeValueAction(
         sharedStateData as unknown as JSONObject,
       );
-      if (prevRef.current.initialized) {
+      if (prevRef.current.sharedStateInitialized) {
         triggerEventRef.current("sharedStateChanged");
       }
+      prevRef.current.sharedStateInitialized = true;
     }, [sharedStateData]);
 
     // ── Watch room data ──────────────────────────────────────────────
@@ -263,9 +286,10 @@ const SignalController = React.memo(
       compRef.current.children.roomData.dispatchChangeValueAction(
         roomDataData as unknown as JSONObject,
       );
-      if (prevRef.current.initialized) {
+      if (prevRef.current.roomDataInitialized) {
         triggerEventRef.current("roomDataChanged");
       }
+      prevRef.current.roomDataInitialized = true;
     }, [roomDataData]);
 
     // ── Actions for method invocation ─────────────────────────────────
@@ -277,7 +301,7 @@ const SignalController = React.memo(
           userName,
           currentRoomId: roomId || currentRoomId || null,
           typing: true,
-        } as any);
+        });
       },
       [setMyPresence, userId, userName, currentRoomId],
     );
@@ -288,7 +312,7 @@ const SignalController = React.memo(
         userName,
         currentRoomId: currentRoomId,
         typing: false,
-      } as any);
+      });
     }, [setMyPresence, userId, userName, currentRoomId]);
 
     const switchRoom = useCallback(
@@ -299,7 +323,7 @@ const SignalController = React.memo(
           userName,
           currentRoomId: roomId,
           typing: false,
-        } as any);
+        });
         triggerEventRef.current("roomSwitched");
       },
       [setMyPresence, userId, userName],
@@ -401,11 +425,7 @@ const SignalController = React.memo(
       );
     }, []);
 
-    // ── Set / restore presence on connect, reconnect, or peer changes ────
-    // Announces presence when:
-    // 1. Connection becomes ready (initial connect or reconnect)
-    // 2. Peer count changes (new user joins or leaves) — re-announces to
-    //    ensure peers that were still syncing receive our presence
+    // ── Set / restore presence on connect or peer changes ────────────
     useEffect(() => {
       if (!ready) return;
       const roomId = compRef.current.children.currentRoomId.getView() as string | null;
@@ -414,7 +434,7 @@ const SignalController = React.memo(
         userName,
         currentRoomId: roomId,
         typing: false,
-      } as any);
+      });
     }, [ready, others.length, setMyPresence, userId, userName]);
 
     return null;
@@ -423,7 +443,7 @@ const SignalController = React.memo(
 
 SignalController.displayName = "SignalController";
 
-// ─── View function (wraps PluvRoomProvider) ──────────────────────────────────
+// ─── View function (wraps HocuspocusRoomProvider) ────────────────────────────
 
 const ChatControllerSignalBase = withViewFn(
   simpleMultiComp(childrenMap),
@@ -435,25 +455,19 @@ const ChatControllerSignalBase = withViewFn(
     const roomName = `signal_${applicationId || "lowcoder_app"}`;
 
     return (
-      <PluvRoomProvider
+      <HocuspocusRoomProvider
         room={roomName}
-        metadata={{ userId: userId || "user_1", userName: userName || "User" } as any}
-        initialPresence={
-          {
-            userId: userId || "user_1",
-            userName: userName || "User",
-            currentRoomId: null,
-            typing: false,
-          } as any
-        }
-        initialStorage={(t: any) => ({
-          aiActivity: t.map("aiActivity", []),
-          sharedState: t.map("sharedState", []),
-          roomData: t.map("roomData", []),
-        })}
-        onAuthorizationFail={(error: Error) => {
+        initialPresence={{
+          userId: userId || "user_1",
+          userName: userName || "User",
+          currentRoomId: null,
+          typing: false,
+        }}
+        onAuthenticationFailed={(error: any) => {
           console.error("[ChatControllerV2] Auth failed:", error);
-          comp.children.error.dispatchChangeValueAction(error.message);
+          comp.children.error.dispatchChangeValueAction(
+            error?.reason || error?.message || "Authentication failed",
+          );
           comp.children.onEvent.getView()("error");
         }}
       >
@@ -462,7 +476,7 @@ const ChatControllerSignalBase = withViewFn(
           userId={userId || "user_1"}
           userName={userName || "User"}
         />
-      </PluvRoomProvider>
+      </HocuspocusRoomProvider>
     );
   },
 );

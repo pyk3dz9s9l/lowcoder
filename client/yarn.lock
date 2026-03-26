@@ -2715,6 +2715,47 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hocuspocus/common@npm:^3.4.4":
+  version: 3.4.4
+  resolution: "@hocuspocus/common@npm:3.4.4"
+  dependencies:
+    lib0: ^0.2.87
+  checksum: 7282aa7ffb445902115ce8126e0f7b268c902e7671ee12537d01ab9359b07b58148b6ccb1e48c86b4054b03104246c2870793e9e8cbb388040b91493eb278c15
+  languageName: node
+  linkType: hard
+
+"@hocuspocus/provider@npm:^3.4.4":
+  version: 3.4.4
+  resolution: "@hocuspocus/provider@npm:3.4.4"
+  dependencies:
+    "@hocuspocus/common": ^3.4.4
+    "@lifeomic/attempt": ^3.0.2
+    lib0: ^0.2.87
+    ws: ^8.17.1
+  peerDependencies:
+    y-protocols: ^1.0.6
+    yjs: ^13.6.8
+  checksum: 76bc4e8da0a1bc5f405b6c438563b1ef92c19f6a6f9a785f531fe9925c56f4be80c37e59e41aad523a17892d84080e10cce8ab75b46ca40380ac9d6bf070f314
+  languageName: node
+  linkType: hard
+
+"@hocuspocus/server@npm:^3.4.4":
+  version: 3.4.4
+  resolution: "@hocuspocus/server@npm:3.4.4"
+  dependencies:
+    "@hocuspocus/common": ^3.4.4
+    async-lock: ^1.3.1
+    async-mutex: ^0.5.0
+    kleur: ^4.1.4
+    lib0: ^0.2.47
+    ws: ^8.5.0
+  peerDependencies:
+    y-protocols: ^1.0.6
+    yjs: ^13.6.8
+  checksum: c13ca192a1a8b16832c8370ca39b0b6c3ae216a2f039553b2dc715e8aa5eec35cbbf3d762f3bd4dc5b6277f356cc7d88d19be0f279f22239d8df94626d43241b
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.13.0":
   version: 0.13.0
   resolution: "@humanwhocodes/config-array@npm:0.13.0"
@@ -3195,6 +3236,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lifeomic/attempt@npm:^3.0.2":
+  version: 3.1.0
+  resolution: "@lifeomic/attempt@npm:3.1.0"
+  checksum: 567d98e7a8c348790aa77d26524a9f6e4ddc51673d4b586025053d57ea50f84c8848cb032bebcbb85d78f245f9ecfbac67ac7febc3bc5f0371101288a035793a
+  languageName: node
+  linkType: hard
+
 "@lottiefiles/dotlottie-react@npm:^0.13.0":
   version: 0.13.5
   resolution: "@lottiefiles/dotlottie-react@npm:0.13.5"
@@ -3354,105 +3402,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@panva/hkdf@npm:^1.2.1":
-  version: 1.2.1
-  resolution: "@panva/hkdf@npm:1.2.1"
-  checksum: a4a9d1812f88f02bc163b365524bbaa5239cc4711e5e7be1bda68dabae1c896cf1cd12520949b0925a6910733d1afcb25ab51fd3cf06f0f69aee988fffebf56e
-  languageName: node
-  linkType: hard
-
 "@pkgjs/parseargs@npm:^0.11.0":
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
   checksum: 6ad6a00fc4f2f2cfc6bff76fb1d88b8ee20bc0601e18ebb01b6d4be583733a860239a521a7fbca73b612e66705078809483549d2b18f370eb346c5155c8e4a0f
-  languageName: node
-  linkType: hard
-
-"@pluv/client@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/client@npm:4.0.1"
-  dependencies:
-    "@pluv/crdt": ^4.0.1
-    "@pluv/types": ^4.0.1
-    wonka: ^6.3.5
-  checksum: b8a56e5a19f5fd0e7f78517b1db39cf9b88add793d71b52e4c9307d3a3ff68e2e55a437d134e0877effd0d2d765b0d919878b1a42a5fecc892f0278d2eaf6ce4
-  languageName: node
-  linkType: hard
-
-"@pluv/crdt-yjs@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/crdt-yjs@npm:4.0.1"
-  dependencies:
-    "@pluv/crdt": ^4.0.1
-    "@pluv/types": ^4.0.1
-    "@types/node": ^25.0.9
-    js-base64: ^3.7.8
-    lib0: ^0.2.117
-  peerDependencies:
-    yjs: ^13.0.0
-  checksum: 286c302d5522a0f7e94e0d69fa2e9ae27029a70e6883ecc20ec2183c8e75c8096d7aa9d7706a5268426f79dc048b99737fdeab03c5700ef21923314550dbc8e5
-  languageName: node
-  linkType: hard
-
-"@pluv/crdt@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/crdt@npm:4.0.1"
-  dependencies:
-    "@pluv/types": ^4.0.1
-  checksum: 1cf7e0fbe22fa88eb42599ec35732e680a1981256684898c528ae76f4eaacee160c9ac62fe0189654f9f06a5a5c57011de32880984948800c28e434b57929a22
-  languageName: node
-  linkType: hard
-
-"@pluv/io@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/io@npm:4.0.1"
-  dependencies:
-    "@panva/hkdf": ^1.2.1
-    "@pluv/crdt": ^4.0.1
-    "@pluv/types": ^4.0.1
-    jose: ^6.1.3
-    kleur: ^4.1.5
-    wonka: ^6.3.5
-  checksum: eefba25d9340a82fc31e41b2cc72ea1d4e97e3810e7ddb3d44d524e850fcb6d21ddb682bcfc68a241208b0b19ade9b03eb9f61986b97f5eb022cbe41c30ca3e0
-  languageName: node
-  linkType: hard
-
-"@pluv/platform-pluv@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/platform-pluv@npm:4.0.1"
-  dependencies:
-    "@pluv/crdt": ^4.0.1
-    "@pluv/io": ^4.0.1
-    "@pluv/types": ^4.0.1
-    "@types/node": ^25.0.9
-    fast-json-stable-stringify: ^2.1.0
-    hono: ^4.11.4
-    zod: ^4.3.5
-  checksum: 6c6c05d07e5a01063712f479f984ad2a04531650950ddca89dd433897c0f22460fea7e8f12fd67a78edb5078afb8ca5b8da18a43f1e4005744677cd767891cd0
-  languageName: node
-  linkType: hard
-
-"@pluv/react@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/react@npm:4.0.1"
-  dependencies:
-    "@pluv/client": ^4.0.1
-    "@pluv/crdt": ^4.0.1
-    "@pluv/types": ^4.0.1
-    fast-deep-equal: ^3.1.3
-  peerDependencies:
-    "@types/react": ^18.0.0 || ^19.0.0
-    react: ^18.0.0 || ^19.0.0
-  checksum: 16109d29536448c25ef8b2847acb51f29883ac6f3c8f9f49086d582613b2c6ebeda464380af30c1ea6c1e780643e5251f16cf966f60214d88ae4dfd291367665
-  languageName: node
-  linkType: hard
-
-"@pluv/types@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@pluv/types@npm:4.0.1"
-  dependencies:
-    wonka: ^6.3.5
-  checksum: c52f30d124a236cefd4d91564e7920661fcd6e3f6ce49803d169be0bf5fb5044039deaca024854e65ced51b589d7f06a57437eb169650fa0a474734bfc7b061e
   languageName: node
   linkType: hard
 
@@ -5655,15 +5608,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^25.0.9":
-  version: 25.3.3
-  resolution: "@types/node@npm:25.3.3"
-  dependencies:
-    undici-types: ~7.18.0
-  checksum: 9186aae36f8ddb0b3630dba446e5c16e5f3e6c5e7a4708d117a394d3e3b6f41db2dd83a6127adf4567826776a732ca9e2561594667bce74bb18ea4d59ee1e06a
-  languageName: node
-  linkType: hard
-
 "@types/papaparse@npm:^5.3.5":
   version: 5.3.16
   resolution: "@types/papaparse@npm:5.3.16"
@@ -7266,6 +7210,22 @@ __metadata:
   version: 1.0.1
   resolution: "async-limiter@npm:1.0.1"
   checksum: 2b849695b465d93ad44c116220dee29a5aeb63adac16c1088983c339b0de57d76e82533e8e364a93a9f997f28bbfc6a92948cefc120652bd07f3b59f8d75cf2b
+  languageName: node
+  linkType: hard
+
+"async-lock@npm:^1.3.1":
+  version: 1.4.1
+  resolution: "async-lock@npm:1.4.1"
+  checksum: 29e70cd892932b7c202437786cedc39ff62123cb6941014739bd3cabd6106326416e9e7c21285a5d1dc042cad239a0f7ec9c44658491ee4a615fd36a21c1d10a
+  languageName: node
+  linkType: hard
+
+"async-mutex@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "async-mutex@npm:0.5.0"
+  dependencies:
+    tslib: ^2.4.0
+  checksum: be1587f4875f3bb15e34e9fcce82eac2966daef4432c8d0046e61947fb9a1b95405284601bc7ce4869319249bc07c75100880191db6af11d1498931ac2a2f9ea
   languageName: node
   linkType: hard
 
@@ -12450,13 +12410,6 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.11.4":
-  version: 4.12.3
-  resolution: "hono@npm:4.12.3"
-  checksum: ebe122249ef71d32d0ed769338d2abef2e712a4e2ea4cbe9d0c1c7148febdd67c02315b694938d0b95f68a33b4b0d02fbbed50d8573d8f0a847df6a3d0493373
-  languageName: node
-  linkType: hard
-
 "hotkeys-js@npm:^3.8.7":
   version: 3.13.10
   resolution: "hotkeys-js@npm:3.13.10"
@@ -14187,20 +14140,6 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"jose@npm:^6.1.3":
-  version: 6.1.3
-  resolution: "jose@npm:6.1.3"
-  checksum: 7f51c7e77f82b70ef88ede9fd1760298bc0ffbf143b9d94f78c08462987ae61864535c1856bc6c26d335f857c7d41f4fffcc29134212c19ea929ce34a4c790f0
-  languageName: node
-  linkType: hard
-
-"js-base64@npm:^3.7.8":
-  version: 3.7.8
-  resolution: "js-base64@npm:3.7.8"
-  checksum: 891746b0f23aea7dd466c5ef2d349b093944a25eca6093c09b2cbb99bc47a94237c63b91623bbc203306b7c72aab5112e90378544bceef3fd0eb9ab86d7af496
-  languageName: node
-  linkType: hard
-
 "js-cookie@npm:^2.2.1":
   version: 2.2.1
   resolution: "js-cookie@npm:2.2.1"
@@ -14558,7 +14497,7 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"kleur@npm:^4.0.3, kleur@npm:^4.1.5":
+"kleur@npm:^4.0.3, kleur@npm:^4.1.4":
   version: 4.1.5
   resolution: "kleur@npm:4.1.5"
   checksum: 1dc476e32741acf0b1b5b0627ffd0d722e342c1b0da14de3e8ae97821327ca08f9fb944542fb3c126d90ac5f27f9d804edbe7c585bf7d12ef495d115e0f22c12
@@ -14895,7 +14834,7 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"lib0@npm:^0.2.117, lib0@npm:^0.2.74":
+"lib0@npm:^0.2.47, lib0@npm:^0.2.74, lib0@npm:^0.2.87":
   version: 0.2.117
   resolution: "lib0@npm:0.2.117"
   dependencies:
@@ -15445,14 +15384,11 @@ coolshapes-react@lowcoder-org/coolshapes-react:
     "@fortawesome/free-regular-svg-icons": ^6.5.1
     "@fortawesome/free-solid-svg-icons": ^6.5.1
     "@fortawesome/react-fontawesome": latest
+    "@hocuspocus/provider": ^3.4.4
+    "@hocuspocus/server": ^3.4.4
     "@jsonforms/core": ^3.5.1
     "@lottiefiles/dotlottie-react": ^0.13.0
     "@manaflair/redux-batch": ^1.0.0
-    "@pluv/client": ^4.0.1
-    "@pluv/crdt-yjs": ^4.0.1
-    "@pluv/io": ^4.0.1
-    "@pluv/platform-pluv": ^4.0.1
-    "@pluv/react": ^4.0.1
     "@radix-ui/react-avatar": ^1.1.10
     "@radix-ui/react-dialog": ^1.1.14
     "@radix-ui/react-slot": ^1.2.3
@@ -22478,7 +22414,7 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.0.0, tslib@npm:^2.0.3, tslib@npm:^2.1.0, tslib@npm:^2.3.0, tslib@npm:^2.4.1, tslib@npm:^2.5.0, tslib@npm:^2.8.0":
+"tslib@npm:^2.0.0, tslib@npm:^2.0.3, tslib@npm:^2.1.0, tslib@npm:^2.3.0, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.5.0, tslib@npm:^2.8.0":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: e4aba30e632b8c8902b47587fd13345e2827fa639e7c3121074d5ee0880723282411a8838f830b55100cbe4517672f84a2472667d355b81e8af165a55dc6203a
@@ -22811,13 +22747,6 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   version: 6.21.0
   resolution: "undici-types@npm:6.21.0"
   checksum: 46331c7d6016bf85b3e8f20c159d62f5ae471aba1eb3dc52fff35a0259d58dcc7d592d4cc4f00c5f9243fa738a11cfa48bd20203040d4a9e6bc25e807fab7ab3
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~7.18.0":
-  version: 7.18.2
-  resolution: "undici-types@npm:7.18.2"
-  checksum: 23da306c8366574adec305b06a8519ab5c7d09e3f5d16c1a98709a34fae17da09ec95198f30f86c00055e02efa8bfcc843e84e8aebeb9b8d6bb3e06afccae07a
   languageName: node
   linkType: hard
 
@@ -24110,13 +24039,6 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
-"wonka@npm:^6.3.5":
-  version: 6.3.5
-  resolution: "wonka@npm:6.3.5"
-  checksum: bd9f4330664ea971ddbc762275c081d5a635bcebd1c567211d43278b925f3394ad454bb33a0ef5e8beadfaad552cdbc92c018dfb96350f3895341998efa5f521
-  languageName: node
-  linkType: hard
-
 "word-wrap@npm:^1.2.5, word-wrap@npm:~1.2.3":
   version: 1.2.5
   resolution: "word-wrap@npm:1.2.5"
@@ -24206,6 +24128,21 @@ coolshapes-react@lowcoder-org/coolshapes-react:
     utf-8-validate:
       optional: true
   checksum: e38beae19ba4d68577ec24eb34fbfab376333fedd10f99b07511a8e842e22dbc102de39adac333a18e4c58868d0703cd5f239b04b345e22402d0ed8c34ea0aa0
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.17.1, ws@npm:^8.5.0":
+  version: 8.19.0
+  resolution: "ws@npm:8.19.0"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 7a426122c373e053a65a2affbcdcdbf8f643ba0265577afd4e08595397ca244c05de81570300711e2363a9dab5aea3ae644b445bc7468b1ebbb51bfe2efb20e1
   languageName: node
   linkType: hard
 
@@ -24484,13 +24421,6 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: c9a403a62b329188a5f6bd24d5d935d2bba345f7ab8151d1baa1505b5da9f227fb139354b043711490c798e91f3df75991395e40142e6510a4b16409f302b849
-  languageName: node
-  linkType: hard
-
-"zod@npm:^4.3.5":
-  version: 4.3.6
-  resolution: "zod@npm:4.3.6"
-  checksum: 19cec761b46bae4b6e7e861ea740f3f248e50a6671825afc8a5758e27b35d6f20ccde9942422fd5cf6f8b697f18bd05ef8bb33f5f2db112ab25cc628de2fae47
   languageName: node
   linkType: hard
 
