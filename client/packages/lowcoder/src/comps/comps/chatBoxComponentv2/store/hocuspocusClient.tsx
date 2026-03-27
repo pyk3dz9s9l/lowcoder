@@ -14,33 +14,24 @@ import {
 
 // ── Environment config ───────────────────────────────────────────────────────
 
-const WS_URL: string =
-  (typeof import.meta !== "undefined" &&
-    (import.meta as any).env?.VITE_HOCUSPOCUS_URL) ||
-  (typeof globalThis !== "undefined" &&
-    (globalThis as any).__HOCUSPOCUS_URL__) ||
-  "ws://localhost:3006";
+const WS_URL = REACT_APP_HOCUSPOCUS_URL || "ws://localhost:3006";
 
-const AUTH_TOKEN: string =
-  (typeof import.meta !== "undefined" &&
-    (import.meta as any).env?.VITE_HOCUSPOCUS_SECRET) ||
-  "";
+const AUTH_TOKEN = REACT_APP_HOCUSPOCUS_SECRET || "";
 
 type ConnectionState = "connecting" | "open" | "closed";
 
-function mapWebSocketStatus(status?: string): ConnectionState {
-  if (status === WebSocketStatus.Connected) {
-    return "open";
+function mapWebSocketStatus(status?: WebSocketStatus): ConnectionState {
+  switch (status) {
+    case WebSocketStatus.Connected:
+      return "open";
+    case WebSocketStatus.Connecting:
+      return "connecting";
+    default:
+      return "closed";
   }
-
-  if (status === WebSocketStatus.Connecting) {
-    return "connecting";
-  }
-
-  return "closed";
 }
 
-// ── Context ──────────────────────────────────────────────────────────────────
+// ── Context ────────────────────────────────────────────────────────────────────
 
 interface HocuspocusContextValue {
   provider: HocuspocusProvider;
@@ -65,21 +56,19 @@ interface HocuspocusRoomProviderProps {
   /** Document/room name — all clients with the same name share state. */
   room: string;
   /** Initial presence fields to set on connect. */
-  initialPresence?: Record<string, any>;
+  initialPresence?: Record<string, unknown>;
   /** Called when auth fails. */
-  onAuthenticationFailed?: (error: any) => void;
+  onAuthenticationFailed?: (error: unknown) => void;
   children: React.ReactNode;
 }
 
-function HocuspocusRoomProviderInner({
+export function HocuspocusRoomProvider({
   room,
   initialPresence,
   onAuthenticationFailed,
   children,
 }: HocuspocusRoomProviderProps) {
-  const stableInitialPresence = useMemo(() => initialPresence ?? null, [
-    JSON.stringify(initialPresence ?? null),
-  ]);
+  const initialPresenceKey = JSON.stringify(initialPresence ?? null);
 
   const value = useMemo(() => {
     const doc = new Y.Doc();
@@ -88,7 +77,7 @@ function HocuspocusRoomProviderInner({
       name: room,
       document: doc,
       token: AUTH_TOKEN || undefined,
-      onAuthenticationFailed: (data: any) => {
+      onAuthenticationFailed: (data: unknown) => {
         console.error("[Hocuspocus] Auth failed:", data);
         onAuthenticationFailed?.(data);
       },
@@ -100,10 +89,10 @@ function HocuspocusRoomProviderInner({
   }, [room]);
 
   useEffect(() => {
-    if (stableInitialPresence) {
-      value.provider.setAwarenessField("user", stableInitialPresence);
+    if (initialPresenceKey !== "null") {
+      value.provider.setAwarenessField("user", JSON.parse(initialPresenceKey));
     }
-  }, [stableInitialPresence, value.provider]);
+  }, [initialPresenceKey, value.provider]);
 
   useEffect(() => {
     return () => {
@@ -112,39 +101,39 @@ function HocuspocusRoomProviderInner({
     };
   }, [value]);
 
-  return React.createElement(HocuspocusContext.Provider, { value }, children);
+  return (
+    <HocuspocusContext.Provider value={value}>
+      {children}
+    </HocuspocusContext.Provider>
+  );
 }
-
-export const HocuspocusRoomProvider = HocuspocusRoomProviderInner;
 
 // ── Hook: useConnection ──────────────────────────────────────────────────────
 
 export function useConnection(): { state: ConnectionState } {
   const { provider } = useHocuspocusContext();
-  const [state, setState] = useState<ConnectionState>(() =>
-    mapWebSocketStatus(provider.configuration.websocketProvider.status),
+
+  const getStatus = useCallback(
+    () => mapWebSocketStatus(provider.configuration.websocketProvider.status),
+    [provider],
   );
 
+  const [state, setState] = useState<ConnectionState>(getStatus);
+
   useEffect(() => {
-    const sync = () => {
-      setState(mapWebSocketStatus(provider.configuration.websocketProvider.status));
+    // Sync immediately when provider changes
+    setState(getStatus());
+
+    const handleStatus = ({ status }: { status: WebSocketStatus }) => {
+      setState(mapWebSocketStatus(status));
     };
 
-    const onStatus = () => {
-      sync();
-    };
-
-    sync();
-    provider.on("status", onStatus);
-    provider.on("connect", onStatus);
-    provider.on("disconnect", onStatus);
+    provider.on("status", handleStatus);
 
     return () => {
-      provider.off("status", onStatus);
-      provider.off("connect", onStatus);
-      provider.off("disconnect", onStatus);
+      provider.off("status", handleStatus);
     };
-  }, [provider]);
+  }, [provider, getStatus]);
 
   return { state };
 }
@@ -152,79 +141,87 @@ export function useConnection(): { state: ConnectionState } {
 // ── Hook: useMyPresence ──────────────────────────────────────────────────────
 
 export function useMyPresence(): [
-  Record<string, any>,
-  (fields: Record<string, any>) => void,
+  Record<string, unknown>,
+  (fields: Record<string, unknown>) => void,
 ] {
   const { provider } = useHocuspocusContext();
 
-  const [presence, setPresenceState] = useState<Record<string, any>>(
+  const getPresence = useCallback(
     () => provider.awareness?.getLocalState()?.user ?? {},
+    [provider],
   );
 
-  const setPresence = useCallback(
-    (fields: Record<string, any>) => {
+  const [presence, setPresence] = useState<Record<string, unknown>>(getPresence);
+
+  const updatePresence = useCallback(
+    (fields: Record<string, unknown>) => {
       provider.setAwarenessField("user", fields);
-      setPresenceState(fields);
+      setPresence(fields);
     },
     [provider],
   );
 
   useEffect(() => {
     const awareness = provider.awareness;
-    if (!awareness) {
-      return;
-    }
+    if (!awareness) return;
 
-    const sync = () => {
-      setPresenceState(awareness.getLocalState()?.user ?? {});
+    const handleChange = () => {
+      setPresence(getPresence());
     };
 
-    sync();
-    awareness.on("change", sync);
+    awareness.on("change", handleChange);
 
     return () => {
-      awareness.off("change", sync);
+      awareness.off("change", handleChange);
     };
-  }, [provider]);
+  }, [provider, getPresence]);
 
-  return [presence, setPresence];
+  return [presence, updatePresence];
 }
 
 // ── Hook: useOthers ──────────────────────────────────────────────────────────
 
 interface OtherUser {
   clientId: number;
-  [key: string]: any;
+  presence: Record<string, unknown>;
 }
 
 export function useOthers(): OtherUser[] {
   const { provider } = useHocuspocusContext();
-  const [others, setOthers] = useState<OtherUser[]>([]);
+
+  const getOthers = useCallback((): OtherUser[] => {
+    const awareness = provider.awareness;
+    if (!awareness) return [];
+
+    const localClientId = awareness.clientID;
+    const others: OtherUser[] = [];
+
+    awareness.getStates().forEach((state: Record<string, unknown>, clientId: number) => {
+      if (clientId === localClientId) return;
+      if (state?.user) {
+        others.push({ clientId, presence: state.user as Record<string, unknown> });
+      }
+    });
+
+    return others;
+  }, [provider]);
+
+  const [others, setOthers] = useState<OtherUser[]>(getOthers);
 
   useEffect(() => {
     const awareness = provider.awareness;
     if (!awareness) return;
 
-    const update = () => {
-      const localClientId = awareness.clientID;
-      const states: OtherUser[] = [];
-      awareness.getStates().forEach((state: Record<string, any>, clientId: number) => {
-        if (clientId === localClientId) return;
-        if (state?.user) {
-          states.push({ clientId, presence: state.user });
-        }
-      });
-      setOthers(states);
+    const handleChange = () => {
+      setOthers(getOthers());
     };
 
-    update();
-    awareness.on("change", update);
-    awareness.on("update", update);
+    awareness.on("change", handleChange);
+
     return () => {
-      awareness.off("change", update);
-      awareness.off("update", update);
+      awareness.off("change", handleChange);
     };
-  }, [provider]);
+  }, [provider, getOthers]);
 
   return others;
 }
@@ -235,28 +232,31 @@ export function useOthers(): OtherUser[] {
 
 export function useStorage(
   mapName: string,
-): [Record<string, any> | null, Y.Map<any> | null] {
+): [Record<string, unknown> | null, Y.Map<unknown> | null] {
   const { doc } = useHocuspocusContext();
 
   const yMap = useMemo(() => doc.getMap(mapName), [doc, mapName]);
 
-  const [snapshot, setSnapshot] = useState<Record<string, any> | null>(() =>
-    yMap ? Object.fromEntries(yMap.entries()) : null,
+  const getSnapshot = useCallback(
+    () => (yMap ? Object.fromEntries(yMap.entries()) : null),
+    [yMap],
   );
+
+  const [snapshot, setSnapshot] = useState<Record<string, unknown> | null>(getSnapshot);
 
   useEffect(() => {
     if (!yMap) return;
 
-    const sync = () => {
-      setSnapshot(Object.fromEntries(yMap.entries()));
+    const handleChange = () => {
+      setSnapshot(getSnapshot());
     };
 
-    sync();
-    yMap.observeDeep(sync);
+    yMap.observe(handleChange);
+
     return () => {
-      yMap.unobserveDeep(sync);
+      yMap.unobserve(handleChange);
     };
-  }, [yMap]);
+  }, [yMap, getSnapshot]);
 
   return [snapshot, yMap];
 }
