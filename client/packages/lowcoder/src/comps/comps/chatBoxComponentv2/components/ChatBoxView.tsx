@@ -13,6 +13,7 @@ import { CreateRoomModal } from "./CreateRoomModal";
 import { InviteUserModal } from "./InviteUserModal";
 import { useChatBox } from "../ChatBoxContext";
 import type { ChatRoom } from "../store";
+import { trans } from "i18n";
 
 export const ChatBoxView = React.memo(() => {
   const ctx = useChatBox();
@@ -61,7 +62,7 @@ export const ChatBoxView = React.memo(() => {
             {ctx.currentRoomId && roomOnlineCount > 0 && (
               <OnlineCountBadge>
                 <OnlineCountDot />
-                {roomOnlineCount} online
+                {trans("chatBoxV2.onlineCount", { count: roomOnlineCount })}
               </OnlineCountBadge>
             )}
           </ChatHeaderBar>

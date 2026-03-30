@@ -3,6 +3,7 @@ import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
 import type { ChatBoxV2InputStyleType } from "comps/controls/styleControlConstants";
 import { InputBarContainer, StyledTextArea } from "../styles";
+import { trans } from "i18n";
 
 export interface InputBarProps {
   onSend: (text: string) => void;
@@ -88,7 +89,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         value={draft}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        placeholder="Type a message..."
+        placeholder={trans("chatBoxV2.typeMessagePlaceholder")}
         rows={1}
       />
       <Button

@@ -22,6 +22,7 @@ import {
 } from "comps/controls/styleControlConstants";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
+import { trans } from "i18n";
 
 import { ChatBoxView } from "./components/ChatBoxView";
 import { ChatBoxContext } from "./ChatBoxContext";
@@ -31,64 +32,54 @@ import type { ChatRoom, PendingRoomInvite } from "./store";
 
 const ChatEvents = [
   {
-    label: "Message Sent",
+    label: trans("chatBoxV2.messageSent"),
     value: "messageSent",
-    description:
-      "Triggered when the user presses send. Read chatBox.lastSentMessageText to get the message content.",
+    description: trans("chatBoxV2.messageSentDesc"),
   },
   {
-    label: "Start Typing",
+    label: trans("chatBoxV2.startTyping"),
     value: "startTyping",
-    description:
-      "Triggered when the user starts typing. Wire this to chatController.startTyping().",
+    description: trans("chatBoxV2.startTypingDesc"),
   },
   {
-    label: "Stop Typing",
+    label: trans("chatBoxV2.stopTyping"),
     value: "stopTyping",
-    description:
-      "Triggered when the user stops typing. Wire this to chatController.stopTyping().",
+    description: trans("chatBoxV2.stopTypingDesc"),
   },
   {
-    label: "Room Switch",
+    label: trans("chatBoxV2.roomSwitch"),
     value: "roomSwitch",
-    description:
-      "User clicked a room they are already a member of. Read chatBox.pendingRoomId, then call chatController.switchRoom({{chatBox1.pendingRoomId}}).",
+    description: trans("chatBoxV2.roomSwitchDesc"),
   },
   {
-    label: "Room Join",
+    label: trans("chatBoxV2.roomJoin"),
     value: "roomJoin",
-    description:
-      "User wants to join a room from search results. Read chatBox.pendingRoomId, then call chatController.joinRoom({{chatBox1.pendingRoomId}}).",
+    description: trans("chatBoxV2.roomJoinDesc"),
   },
   {
-    label: "Room Leave",
+    label: trans("chatBoxV2.roomLeave"),
     value: "roomLeave",
-    description:
-      "User clicked leave on a room. Read chatBox.pendingRoomId, then call chatController.leaveRoom({{chatBox1.pendingRoomId}}).",
+    description: trans("chatBoxV2.roomLeaveDesc"),
   },
   {
-    label: "Room Create",
+    label: trans("chatBoxV2.roomCreate"),
     value: "roomCreate",
-    description:
-      "User submitted the create-room form. Read chatBox.newRoomName, newRoomType, newRoomDescription, newRoomLlmQuery, then call chatController.createRoom(...).",
+    description: trans("chatBoxV2.roomCreateDesc"),
   },
   {
-    label: "Invite Send",
+    label: trans("chatBoxV2.inviteSend"),
     value: "inviteSend",
-    description:
-      "User sent a room invite. Read chatBox.inviteTargetUserId, then call chatController.sendInvite(currentRoomId, {{chatBox1.inviteTargetUserId}}).",
+    description: trans("chatBoxV2.inviteSendDesc"),
   },
   {
-    label: "Invite Accept",
+    label: trans("chatBoxV2.inviteAccept"),
     value: "inviteAccept",
-    description:
-      "User accepted a pending invite. Read chatBox.pendingInviteId, then call chatController.acceptInvite({{chatBox1.pendingInviteId}}).",
+    description: trans("chatBoxV2.inviteAcceptDesc"),
   },
   {
-    label: "Invite Decline",
+    label: trans("chatBoxV2.inviteDecline"),
     value: "inviteDecline",
-    description:
-      "User declined a pending invite. Read chatBox.pendingInviteId, then call chatController.declineInvite({{chatBox1.pendingInviteId}}).",
+    description: trans("chatBoxV2.inviteDeclineDesc"),
   },
 ] as const;
 
@@ -96,11 +87,11 @@ const ChatEvents = [
 
 const childrenMap = {
   // ── Chat content ─────────────────────────────────────────────────
-  chatTitle: stringExposingStateControl("chatTitle", "Chat"),
+  chatTitle: stringExposingStateControl("chatTitle", trans("chatBoxV2.chatTitleDefault")),
   showHeader: withDefault(BoolControl, true),
   messages: jsonArrayControl([]),
   currentUserId: withDefault(StringControl, "user_1"),
-  currentUserName: withDefault(StringControl, "User"),
+  currentUserName: withDefault(StringControl, trans("chatBoxV2.currentUserNameDefault")),
   typingUsers: jsonArrayControl([]),
   isAiThinking: withDefault(BoolControl, false),
   lastSentMessageText: stringExposingStateControl("lastSentMessageText", ""),
@@ -146,70 +137,62 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
     <>
       <Section name={sectionNames.basic}>
         {children.chatTitle.propertyView({
-          label: "Chat Title",
-          tooltip: "Display title shown in the chat header",
+          label: trans("chatBoxV2.chatTitleLabel"),
+          tooltip: trans("chatBoxV2.chatTitleTooltip"),
         })}
         {children.messages.propertyView({
-          label: "Messages",
-          tooltip:
-            'Bind to your data query, e.g. {{ loadMessages.data }}. Expected shape: [{ id, text, authorId, authorName, timestamp }]',
+          label: trans("chatBoxV2.messagesLabel"),
+          tooltip: trans("chatBoxV2.messagesTooltip"),
         })}
         {children.currentUserId.propertyView({
-          label: "Current User ID",
-          tooltip:
-            "The current user's ID — used to distinguish own vs. other messages. Bind to {{ chatController1.userId }}",
+          label: trans("chatBoxV2.currentUserIdLabel"),
+          tooltip: trans("chatBoxV2.currentUserIdTooltip"),
         })}
         {children.currentUserName.propertyView({
-          label: "Current User Name",
-          tooltip: "The current user's display name",
+          label: trans("chatBoxV2.currentUserNameLabel"),
+          tooltip: trans("chatBoxV2.currentUserNameTooltip"),
         })}
       </Section>
 
-      <Section name="Rooms Panel">
-        {children.showRoomsPanel.propertyView({ label: "Show Rooms Panel" })}
+      <Section name={trans("chatBoxV2.roomsPanelSection")}>
+        {children.showRoomsPanel.propertyView({ label: trans("chatBoxV2.showRoomsPanelLabel") })}
         {children.roomsPanelWidth.propertyView({
-          label: "Panel Width",
-          tooltip: "Width of the rooms sidebar, e.g. 240px or 30%",
+          label: trans("chatBoxV2.panelWidthLabel"),
+          tooltip: trans("chatBoxV2.panelWidthTooltip"),
         })}
         {children.rooms.propertyView({
-          label: "Rooms",
-          tooltip:
-            "Bind to {{ chatController1.userRooms }} — the list of rooms visible to the current user.",
+          label: trans("chatBoxV2.roomsLabel"),
+          tooltip: trans("chatBoxV2.roomsTooltip"),
         })}
         {children.currentRoomId.propertyView({
-          label: "Current Room ID",
-          tooltip:
-            "Bind to {{ chatController1.currentRoomId }} to highlight the active room.",
+          label: trans("chatBoxV2.currentRoomIdLabel"),
+          tooltip: trans("chatBoxV2.currentRoomIdTooltip"),
         })}
         {children.pendingInvites.propertyView({
-          label: "Pending Invites",
-          tooltip:
-            "Bind to {{ chatController1.pendingInvites }} to show invite notifications.",
+          label: trans("chatBoxV2.pendingInvitesLabel"),
+          tooltip: trans("chatBoxV2.pendingInvitesTooltip"),
         })}
-        {children.allowRoomCreation.propertyView({ label: "Allow Room Creation" })}
-        {children.allowRoomSearch.propertyView({ label: "Allow Room Search" })}
+        {children.allowRoomCreation.propertyView({ label: trans("chatBoxV2.allowRoomCreationLabel") })}
+        {children.allowRoomSearch.propertyView({ label: trans("chatBoxV2.allowRoomSearchLabel") })}
       </Section>
 
-      <Section name="Real-time">
+      <Section name={trans("chatBoxV2.realTimeSection")}>
         {children.typingUsers.propertyView({
-          label: "Typing Users",
-          tooltip:
-            "Array of users currently typing. Bind to {{ chatController1.typingUsers }}",
+          label: trans("chatBoxV2.typingUsersLabel"),
+          tooltip: trans("chatBoxV2.typingUsersTooltip"),
         })}
         {children.isAiThinking.propertyView({
-          label: "AI Is Thinking",
-          tooltip:
-            "Show the AI thinking animation to all users in this room. Bind to {{ chatController1.aiThinkingRooms[chatBox1.currentRoomId] }}",
+          label: trans("chatBoxV2.aiIsThinkingLabel"),
+          tooltip: trans("chatBoxV2.aiIsThinkingTooltip"),
         })}
         {children.onlineUsers.propertyView({
-          label: "Online Users",
-          tooltip:
-            "Array of online users with presence. Bind to {{ chatController1.onlineUsers }}. Shape: [{ userId, userName, currentRoomId }]",
+          label: trans("chatBoxV2.onlineUsersLabel"),
+          tooltip: trans("chatBoxV2.onlineUsersTooltip"),
         })}
       </Section>
 
-      <Section name="Display">
-        {children.showHeader.propertyView({ label: "Show Header" })}
+      <Section name={trans("chatBoxV2.displaySection")}>
+        {children.showHeader.propertyView({ label: trans("chatBoxV2.showHeaderLabel") })}
       </Section>
 
       {["logic", "both"].includes(editorMode) && (
@@ -227,16 +210,16 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
           </Section>
-          <Section name="Sidebar Style">
+          <Section name={trans("chatBoxV2.sidebarStyleSection")}>
             {children.sidebarStyle.getPropertyView()}
           </Section>
-          <Section name="Header Style">
+          <Section name={trans("chatBoxV2.headerStyleSection")}>
             {children.headerStyle.getPropertyView()}
           </Section>
-          <Section name="Message Style">
+          <Section name={trans("chatBoxV2.messageStyleSection")}>
             {children.messageStyle.getPropertyView()}
           </Section>
-          <Section name="Input Style">
+          <Section name={trans("chatBoxV2.inputStyleSection")}>
             {children.inputStyle.getPropertyView()}
           </Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>
@@ -351,34 +334,34 @@ ChatBoxV2Tmp = class extends ChatBoxV2Tmp {
 };
 
 export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
-  new NameConfig("chatTitle", "Chat display title"),
+  new NameConfig("chatTitle", trans("chatBoxV2.chatTitleExposed")),
   new NameConfig(
     "lastSentMessageText",
-    "Text of the last message sent by the user — use in your save query",
+    trans("chatBoxV2.lastSentMessageTextExposed"),
   ),
-  new NameConfig("messageText", "Current text in the message input"),
-  new NameConfig("currentRoomId", "Currently active room ID — for AI thinking or room-scoped queries"),
+  new NameConfig("messageText", trans("chatBoxV2.messageTextExposed")),
+  new NameConfig("currentRoomId", trans("chatBoxV2.currentRoomIdExposed")),
   new NameConfig(
     "pendingRoomId",
-    "Room ID the user wants to switch to, join, or leave — read in roomSwitch/roomJoin/roomLeave events",
+    trans("chatBoxV2.pendingRoomIdExposed"),
   ),
-  new NameConfig("newRoomName", "Name entered in the create-room form"),
+  new NameConfig("newRoomName", trans("chatBoxV2.newRoomNameExposed")),
   new NameConfig(
     "newRoomType",
-    "Type selected in the create-room form: public | private | llm",
+    trans("chatBoxV2.newRoomTypeExposed"),
   ),
-  new NameConfig("newRoomDescription", "Description entered in the create-room form"),
+  new NameConfig("newRoomDescription", trans("chatBoxV2.newRoomDescriptionExposed")),
   new NameConfig(
     "newRoomLlmQuery",
-    "Query name entered for LLM rooms in the create-room form",
+    trans("chatBoxV2.newRoomLlmQueryExposed"),
   ),
   new NameConfig(
     "inviteTargetUserId",
-    "User ID entered in the invite form — read in inviteSend event",
+    trans("chatBoxV2.inviteTargetUserIdExposed"),
   ),
   new NameConfig(
     "pendingInviteId",
-    "Invite ID the user accepted or declined — read in inviteAccept/inviteDecline events",
+    trans("chatBoxV2.pendingInviteIdExposed"),
   ),
   NameConfigHidden,
 ]);

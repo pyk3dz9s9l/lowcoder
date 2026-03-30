@@ -12,6 +12,7 @@ import { stringExposingStateControl } from "comps/controls/codeStateControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { JSONObject } from "../../util/jsonTypes";
 import { isEmpty, omit } from "lodash";
+import { trans } from "i18n";
 import {
   HocuspocusRoomProvider,
   useStorage,
@@ -29,56 +30,54 @@ import type {
 
 const ChatControllerEvents = [
   {
-    label: "User Joined",
+    label: trans("chatControllerSignal.userJoined"),
     value: "userJoined",
-    description: "A user came online in this application",
+    description: trans("chatControllerSignal.userJoinedDesc"),
   },
   {
-    label: "User Left",
+    label: trans("chatControllerSignal.userLeft"),
     value: "userLeft",
-    description: "A user went offline",
+    description: trans("chatControllerSignal.userLeftDesc"),
   },
   {
-    label: "Room Switched",
+    label: trans("chatControllerSignal.roomSwitched"),
     value: "roomSwitched",
-    description: "Active room changed. Read currentRoomId.",
+    description: trans("chatControllerSignal.roomSwitchedDesc"),
   },
   {
-    label: "Connected",
+    label: trans("chatControllerSignal.connected"),
     value: "connected",
-    description: "Connected to the signal server",
+    description: trans("chatControllerSignal.connectedDesc"),
   },
   {
-    label: "Disconnected",
+    label: trans("chatControllerSignal.disconnected"),
     value: "disconnected",
-    description: "Disconnected from the signal server",
+    description: trans("chatControllerSignal.disconnectedDesc"),
   },
   {
-    label: "Error",
+    label: trans("chatControllerSignal.error"),
     value: "error",
-    description: "A connection error occurred",
+    description: trans("chatControllerSignal.errorDesc"),
   },
   {
-    label: "AI Thinking Started",
+    label: trans("chatControllerSignal.aiThinkingStarted"),
     value: "aiThinkingStarted",
-    description: "The AI assistant started generating a response in a room",
+    description: trans("chatControllerSignal.aiThinkingStartedDesc"),
   },
   {
-    label: "AI Thinking Stopped",
+    label: trans("chatControllerSignal.aiThinkingStopped"),
     value: "aiThinkingStopped",
-    description: "The AI assistant finished (or was cancelled) in a room",
+    description: trans("chatControllerSignal.aiThinkingStoppedDesc"),
   },
   {
-    label: "Shared State Changed",
+    label: trans("chatControllerSignal.sharedStateChanged"),
     value: "sharedStateChanged",
-    description:
-      "The app-level shared state was updated by any user. Read chatController.sharedState to get the current state.",
+    description: trans("chatControllerSignal.sharedStateChangedDesc"),
   },
   {
-    label: "Room Data Changed",
+    label: trans("chatControllerSignal.roomDataChanged"),
     value: "roomDataChanged",
-    description:
-      "Room-scoped shared data was updated by any user. Read chatController.roomData to get the current data.",
+    description: trans("chatControllerSignal.roomDataChangedDesc"),
   },
 ] as const;
 
@@ -87,13 +86,13 @@ const ChatControllerEvents = [
 const childrenMap = {
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   userId: stringExposingStateControl("userId", "user_1"),
-  userName: stringExposingStateControl("userName", "User"),
+  userName: stringExposingStateControl("userName", trans("chatControllerSignal.userNameDefault")),
 
   onEvent: eventHandlerControl(ChatControllerEvents),
 
   ready: stateComp<boolean>(false),
   error: stateComp<string | null>(null),
-  connectionStatus: stateComp<string>("Connecting..."),
+  connectionStatus: stateComp<string>(trans("chatControllerSignal.connectingStatus")),
   onlineUsers: stateComp<JSONObject[]>([]),
   typingUsers: stateComp<JSONObject[]>([]),
   currentRoomId: stateComp<string | null>(null),
@@ -162,9 +161,9 @@ const SignalController = React.memo(
     // ── Connection state ──────────────────────────────────────────────
     const ready = connection.state === "open";
     const connectionLabel = useMemo(() => {
-      if (connection.state === "open") return "Online";
-      if (connection.state === "connecting") return "Connecting...";
-      return "Offline";
+      if (connection.state === "open") return trans("chatControllerSignal.onlineStatus");
+      if (connection.state === "connecting") return trans("chatControllerSignal.connectingStatus");
+      return trans("chatControllerSignal.offlineStatus");
     }, [connection.state]);
 
     useEffect(() => {
@@ -459,14 +458,14 @@ const ChatControllerSignalBase = withViewFn(
         room={roomName}
         initialPresence={{
           userId: userId || "user_1",
-          userName: userName || "User",
+          userName: userName || trans("chatControllerSignal.userNameDefault"),
           currentRoomId: null,
           typing: false,
         }}
         onAuthenticationFailed={(error: any) => {
           console.error("[ChatControllerV2] Auth failed:", error);
           comp.children.error.dispatchChangeValueAction(
-            error?.reason || error?.message || "Authentication failed",
+            error?.reason || error?.message || trans("chatControllerSignal.authenticationFailed"),
           );
           comp.children.onEvent.getView()("error");
         }}
@@ -474,7 +473,7 @@ const ChatControllerSignalBase = withViewFn(
         <SignalController
           comp={comp}
           userId={userId || "user_1"}
-          userName={userName || "User"}
+          userName={userName || trans("chatControllerSignal.userNameDefault")}
         />
       </HocuspocusRoomProvider>
     );
@@ -489,17 +488,16 @@ const ChatControllerSignalWithProps = withPropertyViewFn(
     <>
       <Section name={sectionNames.basic}>
         {comp.children.applicationId.propertyView({
-          label: "Application ID",
-          tooltip:
-            "Scopes the signal room to this application. All users of the same app share presence and notifications.",
+          label: trans("chatControllerSignal.applicationIdLabel"),
+          tooltip: trans("chatControllerSignal.applicationIdTooltip"),
         })}
         {comp.children.userId.propertyView({
-          label: "User ID",
-          tooltip: "Current user's unique identifier",
+          label: trans("chatControllerSignal.userIdLabel"),
+          tooltip: trans("chatControllerSignal.userIdTooltip"),
         })}
         {comp.children.userName.propertyView({
-          label: "User Name",
-          tooltip: "Current user's display name",
+          label: trans("chatControllerSignal.userNameLabel"),
+          tooltip: trans("chatControllerSignal.userNameTooltip"),
         })}
       </Section>
       <Section name={sectionNames.interaction}>
@@ -512,35 +510,35 @@ const ChatControllerSignalWithProps = withPropertyViewFn(
 // ─── Expose state properties ────────────────────────────────────────────────
 
 let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
-  new NameConfig("ready", "Whether the signal server is connected and ready"),
-  new NameConfig("error", "Error message if connection failed"),
+  new NameConfig("ready", trans("chatControllerSignal.readyExposed")),
+  new NameConfig("error", trans("chatControllerSignal.errorExposed")),
   new NameConfig(
     "connectionStatus",
-    "Current connection status (Online / Connecting... / Offline)",
+    trans("chatControllerSignal.connectionStatusExposed"),
   ),
   new NameConfig(
     "onlineUsers",
-    "Array of currently online users: [{ userId, userName, currentRoomId }]",
+    trans("chatControllerSignal.onlineUsersExposed"),
   ),
   new NameConfig(
     "typingUsers",
-    "Array of users currently typing: [{ userId, userName, roomId }]",
+    trans("chatControllerSignal.typingUsersExposed"),
   ),
-  new NameConfig("currentRoomId", "Currently active room/channel ID"),
-  new NameConfig("userId", "Current user ID"),
-  new NameConfig("userName", "Current user name"),
-  new NameConfig("applicationId", "Application scope ID"),
+  new NameConfig("currentRoomId", trans("chatControllerSignal.currentRoomIdExposed")),
+  new NameConfig("userId", trans("chatControllerSignal.userIdExposed")),
+  new NameConfig("userName", trans("chatControllerSignal.userNameExposed")),
+  new NameConfig("applicationId", trans("chatControllerSignal.applicationIdExposed")),
   new NameConfig(
     "aiThinkingRooms",
-    "Map of roomId → boolean indicating which rooms have an AI currently thinking. E.g. { 'room_123': true }",
+    trans("chatControllerSignal.aiThinkingRoomsExposed"),
   ),
   new NameConfig(
     "sharedState",
-    "App-level shared state (JSON) that auto-syncs across all connected users. Write with setSharedState(key, value).",
+    trans("chatControllerSignal.sharedStateExposed"),
   ),
   new NameConfig(
     "roomData",
-    "Room-scoped shared data (JSON) that auto-syncs. Structure: { roomId: { key: value } }. Not visible as chat messages. Write with setRoomData(roomId, key, value).",
+    trans("chatControllerSignal.roomDataExposed"),
   ),
 ]);
 
@@ -550,8 +548,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "startTyping",
-      description:
-        "Signal that the current user started typing. Other users will see the typing indicator.",
+      description: trans("chatControllerSignal.startTypingMethodDesc"),
       params: [{ name: "roomId", type: "string" }],
     },
     execute: (comp, values) => {
@@ -564,7 +561,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "stopTyping",
-      description: "Signal that the current user stopped typing",
+      description: trans("chatControllerSignal.stopTypingMethodDesc"),
       params: [],
     },
     execute: (comp) => {
@@ -577,8 +574,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "switchRoom",
-      description:
-        "Set the current room/channel context. Presence and typing will scope to this room.",
+      description: trans("chatControllerSignal.switchRoomMethodDesc"),
       params: [{ name: "roomId", type: "string" }],
     },
     execute: (comp, values) => {
@@ -591,8 +587,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setAiThinking",
-      description:
-        "Broadcast to all room members that the AI assistant is thinking (or has finished). All users in the room will see the thinking indicator.",
+      description: trans("chatControllerSignal.setAiThinkingMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "isThinking", type: "string" },
@@ -609,8 +604,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setSharedState",
-      description:
-        "Set a key-value pair in the app-level shared state. Auto-syncs to all connected users instantly via CRDT.",
+      description: trans("chatControllerSignal.setSharedStateMethodDesc"),
       params: [
         { name: "key", type: "string" },
         { name: "value", type: "JSONValue" },
@@ -626,7 +620,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "deleteSharedState",
-      description: "Delete a key from the app-level shared state.",
+      description: trans("chatControllerSignal.deleteSharedStateMethodDesc"),
       params: [{ name: "key", type: "string" }],
     },
     execute: (comp, values) => {
@@ -639,8 +633,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setRoomData",
-      description:
-        "Set a key-value pair in a room's shared data. Auto-syncs to all connected users. Not visible as a chat message — use for real-time JSON data exchange within a room/channel.",
+      description: trans("chatControllerSignal.setRoomDataMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "key", type: "string" },
@@ -661,8 +654,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "deleteRoomData",
-      description:
-        "Delete a key from a room's shared data. If no key is provided, deletes all data for the room.",
+      description: trans("chatControllerSignal.deleteRoomDataMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "key", type: "string" },
@@ -681,7 +673,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setUser",
-      description: "Update the current user credentials",
+      description: trans("chatControllerSignal.setUserMethodDesc"),
       params: [
         { name: "userId", type: "string" },
         { name: "userName", type: "string" },

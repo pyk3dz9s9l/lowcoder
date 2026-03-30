@@ -27,6 +27,7 @@ import {
   OnlineUserName,
 } from "../styles";
 import { useChatBox } from "../ChatBoxContext";
+import { trans } from "i18n";
 
 export interface RoomPanelProps {
   onCreateModalOpen: () => void;
@@ -117,7 +118,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             onRoomSwitch(room.id);
           }
         }}
-        title={isSearch ? `Join "${room.name}"` : room.name}
+        title={isSearch ? trans("chatBoxV2.joinRoomTitle", { roomName: room.name }) : room.name}
       >
         {room.type === "llm" ? (
           <RobotOutlined
@@ -150,20 +151,20 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 : undefined
             }
           >
-            AI
+            {trans("chatBoxV2.aiShortLabel")}
           </LlmRoomBadge>
         )}
-        {isSearch && <SearchResultBadge>Join</SearchResultBadge>}
+        {isSearch && <SearchResultBadge>{trans("chatBoxV2.joinAction")}</SearchResultBadge>}
         {isActive && !isSearch && (
           <Popconfirm
-            title={`Leave "${room.name}"?`}
+            title={trans("chatBoxV2.leaveRoomConfirm", { roomName: room.name })}
             onConfirm={(e) => {
               e?.stopPropagation();
               onRoomLeave(room.id);
             }}
             onCancel={(e) => e?.stopPropagation()}
-            okText="Leave"
-            cancelText="Cancel"
+            okText={trans("chatBoxV2.leaveAction")}
+            cancelText={trans("chatBoxV2.cancelAction")}
             okButtonProps={{ danger: true }}
           >
             <LogoutOutlined
@@ -179,10 +180,10 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
   return (
     <RoomPanelContainer $width={roomsPanelWidth} $sidebarStyle={sidebarStyle}>
       <RoomPanelHeader $sidebarStyle={sidebarStyle}>
-        <span>Rooms</span>
+        <span>{trans("chatBoxV2.roomsHeader")}</span>
         <div style={{ display: "flex", gap: 2 }}>
           {onInviteModalOpen && (
-            <Tooltip title="Invite user to room">
+            <Tooltip title={trans("chatBoxV2.inviteUserToRoomTooltip")}>
               <Button
                 type="text"
                 size="small"
@@ -192,7 +193,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             </Tooltip>
           )}
           {allowRoomCreation && (
-            <Tooltip title="Create room">
+            <Tooltip title={trans("chatBoxV2.createRoomTooltip")}>
               <Button
                 type="text"
                 size="small"
@@ -208,7 +209,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
         <div style={{ padding: "8px 8px 0" }}>
           <Input
             size="small"
-            placeholder="Search public rooms..."
+            placeholder={trans("chatBoxV2.searchPublicRoomsPlaceholder")}
             prefix={<SearchOutlined style={{ color: "#aaa" }} />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -221,15 +222,20 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
       {isSearchMode && (
         <div style={{ padding: "6px 8px 0", fontSize: 11, color: "#888" }}>
           {searchResults.length > 0
-            ? `${searchResults.length} result${searchResults.length > 1 ? "s" : ""}`
-            : `No public rooms match "${searchQuery}"`}
+            ? trans(
+                searchResults.length === 1
+                  ? "chatBoxV2.searchResultsCountSingle"
+                  : "chatBoxV2.searchResultsCountPlural",
+                { count: searchResults.length },
+              )
+            : trans("chatBoxV2.noPublicRoomsMatch", { searchQuery })}
           <Button
             type="link"
             size="small"
             style={{ fontSize: 11, padding: 0, marginLeft: 4 }}
             onClick={clearSearch}
           >
-            Back
+            {trans("chatBoxV2.backAction")}
           </Button>
         </div>
       )}
@@ -249,7 +255,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             }}
           >
             <MailOutlined />
-            Pending Invites ({pendingInvites.length})
+            {trans("chatBoxV2.pendingInvitesHeader", { count: pendingInvites.length })}
           </div>
           {pendingInvites.map((invite) => (
             <div
@@ -274,7 +280,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 {invite.roomName}
               </div>
               <div style={{ fontSize: 11, color: "#888", marginBottom: 8 }}>
-                Invited by {invite.fromUserName}
+                {trans("chatBoxV2.invitedBy", { userName: invite.fromUserName })}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <Button
@@ -282,10 +288,10 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                   size="small"
                   onClick={() => onInviteAccept(invite.id)}
                 >
-                  Accept
+                  {trans("chatBoxV2.acceptAction")}
                 </Button>
                 <Button size="small" onClick={() => onInviteDecline(invite.id)}>
-                  Decline
+                  {trans("chatBoxV2.declineAction")}
                 </Button>
               </div>
             </div>
@@ -303,8 +309,9 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
               padding: 16,
             }}
           >
-            No rooms yet.
-            {allowRoomCreation ? " Create one!" : ""}
+            {allowRoomCreation
+              ? trans("chatBoxV2.noRoomsYetCreateOne")
+              : trans("chatBoxV2.noRoomsYet")}
           </div>
         )}
 
@@ -314,19 +321,19 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             <>
               {llmRooms.length > 0 && (
                 <>
-                  <RoomSectionLabel label="AI Rooms" />
+                  <RoomSectionLabel label={trans("chatBoxV2.aiRoomsLabel")} />
                   {llmRooms.map(renderRoomItem)}
                 </>
               )}
               {publicRooms.length > 0 && (
                 <>
-                  <RoomSectionLabel label="Public" />
+                  <RoomSectionLabel label={trans("chatBoxV2.publicRoomsLabel")} />
                   {publicRooms.map(renderRoomItem)}
                 </>
               )}
               {privateRooms.length > 0 && (
                 <>
-                  <RoomSectionLabel label="Private" />
+                  <RoomSectionLabel label={trans("chatBoxV2.privateRoomsLabel")} />
                   {privateRooms.map(renderRoomItem)}
                 </>
               )}
@@ -339,7 +346,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
         <OnlinePresenceSection>
           <OnlinePresenceLabel>
             <TeamOutlined />
-            Online — {roomOnlineUsers.length}
+            {trans("chatBoxV2.onlinePresence", { count: roomOnlineUsers.length })}
           </OnlinePresenceLabel>
           {roomOnlineUsers.map((user) => (
             <OnlineUserItem key={user.userId}>
@@ -348,7 +355,9 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                 <OnlineDot />
               </OnlineAvatar>
               <OnlineUserName title={user.userName}>
-                {user.userId === currentUserId ? `${user.userName} (You)` : user.userName}
+                {user.userId === currentUserId
+                  ? trans("chatBoxV2.userWithYou", { userName: user.userName })
+                  : user.userName}
               </OnlineUserName>
             </OnlineUserItem>
           ))}
