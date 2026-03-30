@@ -19,7 +19,6 @@ const AllHookComp = [
   "urlParams",
   "theme",
   "meeting",
-  "chatController",
   "chatControllerSignal"
 ] as const;
 
@@ -48,10 +47,6 @@ const HookCompConfig: Record<
     singleton: false,
   },
   meeting: {
-    category: "ui",
-    singleton: false,
-  },
-  chatController: {
     category: "ui",
     singleton: false,
   },

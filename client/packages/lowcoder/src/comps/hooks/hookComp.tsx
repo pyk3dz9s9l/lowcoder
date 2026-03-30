@@ -37,7 +37,6 @@ import { ThemeComp } from "./themeComp";
 import UrlParamsHookComp from "./UrlParamsHookComp";
 import { UtilsComp } from "./utilsComp";
 import { ScreenInfoHookComp } from "./screenInfoComp";
-import { ChatControllerComp } from "../comps/chatBoxComponent/chatControllerComp";
 import { ChatControllerSignal } from "./chatControllerV2Comp";
 
 window._ = _;
@@ -120,7 +119,6 @@ const HookMap: HookCompMapRawType = {
   urlParams: UrlParamsHookComp,
   drawer: DrawerComp,
   theme: ThemeComp,
-  chatController: ChatControllerComp,
   chatControllerSignal: ChatControllerSignal,
 };
 
@@ -159,8 +157,7 @@ function SelectHookView(props: {
     if (
       (props.compType !== "modal" &&
         props.compType !== "drawer" &&
-        props.compType !== "meeting" &&
-        props.compType !== "chatController") ||
+        props.compType !== "meeting") ||
       !selectedComp ||
       (editorState.selectSource !== "addComp" &&
         editorState.selectSource !== "leftPanel")
