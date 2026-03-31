@@ -14,11 +14,11 @@ import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
 import {
   AnimationStyle,
-  ChatBoxV2ContainerStyle,
-  ChatBoxV2SidebarStyle,
-  ChatBoxV2HeaderStyle,
-  ChatBoxV2MessageStyle,
-  ChatBoxV2InputStyle,
+  ChatBoxContainerStyle,
+  ChatBoxSidebarStyle,
+  ChatBoxHeaderStyle,
+  ChatBoxMessageStyle,
+  ChatBoxInputStyle,
 } from "comps/controls/styleControlConstants";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
@@ -32,54 +32,54 @@ import type { ChatRoom, PendingRoomInvite } from "./store";
 
 const ChatEvents = [
   {
-    label: trans("chatBoxV2.messageSent"),
+    label: trans("chatBox.messageSent"),
     value: "messageSent",
-    description: trans("chatBoxV2.messageSentDesc"),
+    description: trans("chatBox.messageSentDesc"),
   },
   {
-    label: trans("chatBoxV2.startTyping"),
+    label: trans("chatBox.startTyping"),
     value: "startTyping",
-    description: trans("chatBoxV2.startTypingDesc"),
+    description: trans("chatBox.startTypingDesc"),
   },
   {
-    label: trans("chatBoxV2.stopTyping"),
+    label: trans("chatBox.stopTyping"),
     value: "stopTyping",
-    description: trans("chatBoxV2.stopTypingDesc"),
+    description: trans("chatBox.stopTypingDesc"),
   },
   {
-    label: trans("chatBoxV2.roomSwitch"),
+    label: trans("chatBox.roomSwitch"),
     value: "roomSwitch",
-    description: trans("chatBoxV2.roomSwitchDesc"),
+    description: trans("chatBox.roomSwitchDesc"),
   },
   {
-    label: trans("chatBoxV2.roomJoin"),
+    label: trans("chatBox.roomJoin"),
     value: "roomJoin",
-    description: trans("chatBoxV2.roomJoinDesc"),
+    description: trans("chatBox.roomJoinDesc"),
   },
   {
-    label: trans("chatBoxV2.roomLeave"),
+    label: trans("chatBox.roomLeave"),
     value: "roomLeave",
-    description: trans("chatBoxV2.roomLeaveDesc"),
+    description: trans("chatBox.roomLeaveDesc"),
   },
   {
-    label: trans("chatBoxV2.roomCreate"),
+    label: trans("chatBox.roomCreate"),
     value: "roomCreate",
-    description: trans("chatBoxV2.roomCreateDesc"),
+    description: trans("chatBox.roomCreateDesc"),
   },
   {
-    label: trans("chatBoxV2.inviteSend"),
+    label: trans("chatBox.inviteSend"),
     value: "inviteSend",
-    description: trans("chatBoxV2.inviteSendDesc"),
+    description: trans("chatBox.inviteSendDesc"),
   },
   {
-    label: trans("chatBoxV2.inviteAccept"),
+    label: trans("chatBox.inviteAccept"),
     value: "inviteAccept",
-    description: trans("chatBoxV2.inviteAcceptDesc"),
+    description: trans("chatBox.inviteAcceptDesc"),
   },
   {
-    label: trans("chatBoxV2.inviteDecline"),
+    label: trans("chatBox.inviteDecline"),
     value: "inviteDecline",
-    description: trans("chatBoxV2.inviteDeclineDesc"),
+    description: trans("chatBox.inviteDeclineDesc"),
   },
 ] as const;
 
@@ -87,11 +87,11 @@ const ChatEvents = [
 
 const childrenMap = {
   // ── Chat content ─────────────────────────────────────────────────
-  chatTitle: stringExposingStateControl("chatTitle", trans("chatBoxV2.chatTitleDefault")),
+  chatTitle: stringExposingStateControl("chatTitle", trans("chatBox.chatTitleDefault")),
   showHeader: withDefault(BoolControl, true),
   messages: jsonArrayControl([]),
   currentUserId: withDefault(StringControl, "user_1"),
-  currentUserName: withDefault(StringControl, trans("chatBoxV2.currentUserNameDefault")),
+  currentUserName: withDefault(StringControl, trans("chatBox.currentUserNameDefault")),
   typingUsers: jsonArrayControl([]),
   isAiThinking: withDefault(BoolControl, false),
   lastSentMessageText: stringExposingStateControl("lastSentMessageText", ""),
@@ -119,12 +119,12 @@ const childrenMap = {
   // ── Style / layout ────────────────────────────────────────────────
   autoHeight: AutoHeightControl,
   onEvent: eventHandlerControl(ChatEvents),
-  style: styleControl(ChatBoxV2ContainerStyle, "style"),
+  style: styleControl(ChatBoxContainerStyle, "style"),
   animationStyle: styleControl(AnimationStyle, "animationStyle"),
-  sidebarStyle: styleControl(ChatBoxV2SidebarStyle, "sidebarStyle"),
-  headerStyle: styleControl(ChatBoxV2HeaderStyle, "headerStyle"),
-  messageStyle: styleControl(ChatBoxV2MessageStyle, "messageStyle"),
-  inputStyle: styleControl(ChatBoxV2InputStyle, "inputStyle"),
+  sidebarStyle: styleControl(ChatBoxSidebarStyle, "sidebarStyle"),
+  headerStyle: styleControl(ChatBoxHeaderStyle, "headerStyle"),
+  messageStyle: styleControl(ChatBoxMessageStyle, "messageStyle"),
+  inputStyle: styleControl(ChatBoxInputStyle, "inputStyle"),
 };
 
 // ─── Property panel ──────────────────────────────────────────────────────────
@@ -137,62 +137,62 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
     <>
       <Section name={sectionNames.basic}>
         {children.chatTitle.propertyView({
-          label: trans("chatBoxV2.chatTitleLabel"),
-          tooltip: trans("chatBoxV2.chatTitleTooltip"),
+          label: trans("chatBox.chatTitleLabel"),
+          tooltip: trans("chatBox.chatTitleTooltip"),
         })}
         {children.messages.propertyView({
-          label: trans("chatBoxV2.messagesLabel"),
-          tooltip: trans("chatBoxV2.messagesTooltip"),
+          label: trans("chatBox.messagesLabel"),
+          tooltip: trans("chatBox.messagesTooltip"),
         })}
         {children.currentUserId.propertyView({
-          label: trans("chatBoxV2.currentUserIdLabel"),
-          tooltip: trans("chatBoxV2.currentUserIdTooltip"),
+          label: trans("chatBox.currentUserIdLabel"),
+          tooltip: trans("chatBox.currentUserIdTooltip"),
         })}
         {children.currentUserName.propertyView({
-          label: trans("chatBoxV2.currentUserNameLabel"),
-          tooltip: trans("chatBoxV2.currentUserNameTooltip"),
+          label: trans("chatBox.currentUserNameLabel"),
+          tooltip: trans("chatBox.currentUserNameTooltip"),
         })}
       </Section>
 
-      <Section name={trans("chatBoxV2.roomsPanelSection")}>
-        {children.showRoomsPanel.propertyView({ label: trans("chatBoxV2.showRoomsPanelLabel") })}
+      <Section name={trans("chatBox.roomsPanelSection")}>
+        {children.showRoomsPanel.propertyView({ label: trans("chatBox.showRoomsPanelLabel") })}
         {children.roomsPanelWidth.propertyView({
-          label: trans("chatBoxV2.panelWidthLabel"),
-          tooltip: trans("chatBoxV2.panelWidthTooltip"),
+          label: trans("chatBox.panelWidthLabel"),
+          tooltip: trans("chatBox.panelWidthTooltip"),
         })}
         {children.rooms.propertyView({
-          label: trans("chatBoxV2.roomsLabel"),
-          tooltip: trans("chatBoxV2.roomsTooltip"),
+          label: trans("chatBox.roomsLabel"),
+          tooltip: trans("chatBox.roomsTooltip"),
         })}
         {children.currentRoomId.propertyView({
-          label: trans("chatBoxV2.currentRoomIdLabel"),
-          tooltip: trans("chatBoxV2.currentRoomIdTooltip"),
+          label: trans("chatBox.currentRoomIdLabel"),
+          tooltip: trans("chatBox.currentRoomIdTooltip"),
         })}
         {children.pendingInvites.propertyView({
-          label: trans("chatBoxV2.pendingInvitesLabel"),
-          tooltip: trans("chatBoxV2.pendingInvitesTooltip"),
+          label: trans("chatBox.pendingInvitesLabel"),
+          tooltip: trans("chatBox.pendingInvitesTooltip"),
         })}
-        {children.allowRoomCreation.propertyView({ label: trans("chatBoxV2.allowRoomCreationLabel") })}
-        {children.allowRoomSearch.propertyView({ label: trans("chatBoxV2.allowRoomSearchLabel") })}
+        {children.allowRoomCreation.propertyView({ label: trans("chatBox.allowRoomCreationLabel") })}
+        {children.allowRoomSearch.propertyView({ label: trans("chatBox.allowRoomSearchLabel") })}
       </Section>
 
-      <Section name={trans("chatBoxV2.realTimeSection")}>
+      <Section name={trans("chatBox.realTimeSection")}>
         {children.typingUsers.propertyView({
-          label: trans("chatBoxV2.typingUsersLabel"),
-          tooltip: trans("chatBoxV2.typingUsersTooltip"),
+          label: trans("chatBox.typingUsersLabel"),
+          tooltip: trans("chatBox.typingUsersTooltip"),
         })}
         {children.isAiThinking.propertyView({
-          label: trans("chatBoxV2.aiIsThinkingLabel"),
-          tooltip: trans("chatBoxV2.aiIsThinkingTooltip"),
+          label: trans("chatBox.aiIsThinkingLabel"),
+          tooltip: trans("chatBox.aiIsThinkingTooltip"),
         })}
         {children.onlineUsers.propertyView({
-          label: trans("chatBoxV2.onlineUsersLabel"),
-          tooltip: trans("chatBoxV2.onlineUsersTooltip"),
+          label: trans("chatBox.onlineUsersLabel"),
+          tooltip: trans("chatBox.onlineUsersTooltip"),
         })}
       </Section>
 
-      <Section name={trans("chatBoxV2.displaySection")}>
-        {children.showHeader.propertyView({ label: trans("chatBoxV2.showHeaderLabel") })}
+      <Section name={trans("chatBox.displaySection")}>
+        {children.showHeader.propertyView({ label: trans("chatBox.showHeaderLabel") })}
       </Section>
 
       {["logic", "both"].includes(editorMode) && (
@@ -210,16 +210,16 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
           </Section>
-          <Section name={trans("chatBoxV2.sidebarStyleSection")}>
+          <Section name={trans("chatBox.sidebarStyleSection")}>
             {children.sidebarStyle.getPropertyView()}
           </Section>
-          <Section name={trans("chatBoxV2.headerStyleSection")}>
+          <Section name={trans("chatBox.headerStyleSection")}>
             {children.headerStyle.getPropertyView()}
           </Section>
-          <Section name={trans("chatBoxV2.messageStyleSection")}>
+          <Section name={trans("chatBox.messageStyleSection")}>
             {children.messageStyle.getPropertyView()}
           </Section>
-          <Section name={trans("chatBoxV2.inputStyleSection")}>
+          <Section name={trans("chatBox.inputStyleSection")}>
             {children.inputStyle.getPropertyView()}
           </Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>
@@ -231,11 +231,11 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   );
 });
 
-ChatBoxPropertyView.displayName = "ChatBoxV2PropertyView";
+ChatBoxPropertyView.displayName = "ChatBoxPropertyView";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-let ChatBoxV2Tmp = (function () {
+let ChatBoxTmp = (function () {
   return new UICompBuilder(childrenMap, (props) => {
     const messages = Array.isArray(props.messages) ? props.messages : [];
     const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
@@ -327,41 +327,41 @@ let ChatBoxV2Tmp = (function () {
     .build();
 })();
 
-ChatBoxV2Tmp = class extends ChatBoxV2Tmp {
+ChatBoxTmp = class extends ChatBoxTmp {
   override autoHeight(): boolean {
     return this.children.autoHeight.getView();
   }
 };
 
-export const ChatBoxV2Comp = withExposingConfigs(ChatBoxV2Tmp, [
-  new NameConfig("chatTitle", trans("chatBoxV2.chatTitleExposed")),
+export const ChatBoxComp = withExposingConfigs(ChatBoxTmp, [
+  new NameConfig("chatTitle", trans("chatBox.chatTitleExposed")),
   new NameConfig(
     "lastSentMessageText",
-    trans("chatBoxV2.lastSentMessageTextExposed"),
+    trans("chatBox.lastSentMessageTextExposed"),
   ),
-  new NameConfig("messageText", trans("chatBoxV2.messageTextExposed")),
-  new NameConfig("currentRoomId", trans("chatBoxV2.currentRoomIdExposed")),
+  new NameConfig("messageText", trans("chatBox.messageTextExposed")),
+  new NameConfig("currentRoomId", trans("chatBox.currentRoomIdExposed")),
   new NameConfig(
     "pendingRoomId",
-    trans("chatBoxV2.pendingRoomIdExposed"),
+    trans("chatBox.pendingRoomIdExposed"),
   ),
-  new NameConfig("newRoomName", trans("chatBoxV2.newRoomNameExposed")),
+  new NameConfig("newRoomName", trans("chatBox.newRoomNameExposed")),
   new NameConfig(
     "newRoomType",
-    trans("chatBoxV2.newRoomTypeExposed"),
+    trans("chatBox.newRoomTypeExposed"),
   ),
-  new NameConfig("newRoomDescription", trans("chatBoxV2.newRoomDescriptionExposed")),
+  new NameConfig("newRoomDescription", trans("chatBox.newRoomDescriptionExposed")),
   new NameConfig(
     "newRoomLlmQuery",
-    trans("chatBoxV2.newRoomLlmQueryExposed"),
+    trans("chatBox.newRoomLlmQueryExposed"),
   ),
   new NameConfig(
     "inviteTargetUserId",
-    trans("chatBoxV2.inviteTargetUserIdExposed"),
+    trans("chatBox.inviteTargetUserIdExposed"),
   ),
   new NameConfig(
     "pendingInviteId",
-    trans("chatBoxV2.pendingInviteIdExposed"),
+    trans("chatBox.pendingInviteIdExposed"),
   ),
   NameConfigHidden,
 ]);

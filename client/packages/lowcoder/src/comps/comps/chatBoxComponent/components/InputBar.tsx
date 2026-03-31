@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
-import type { ChatBoxV2InputStyleType } from "comps/controls/styleControlConstants";
+import type { ChatBoxInputStyleType } from "comps/controls/styleControlConstants";
 import { InputBarContainer, StyledTextArea } from "../styles";
 import { trans } from "i18n";
 
@@ -10,7 +10,7 @@ export interface InputBarProps {
   onStartTyping: () => void;
   onStopTyping: () => void;
   onDraftChange: (text: string) => void;
-  inputStyle?: ChatBoxV2InputStyleType;
+  inputStyle?: ChatBoxInputStyleType;
 }
 
 export const InputBar = React.memo((props: InputBarProps) => {
@@ -89,7 +89,7 @@ export const InputBar = React.memo((props: InputBarProps) => {
         value={draft}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        placeholder={trans("chatBoxV2.typeMessagePlaceholder")}
+        placeholder={trans("chatBox.typeMessagePlaceholder")}
         rows={1}
       />
       <Button

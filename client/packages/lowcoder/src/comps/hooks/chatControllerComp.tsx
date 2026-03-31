@@ -19,65 +19,65 @@ import {
   useMyPresence,
   useOthers,
   useConnection,
-} from "../comps/chatBoxComponentv2/store";
+} from "../comps/chatBoxComponent/store";
 import type {
   AiThinkingState,
   OnlineUser,
   TypingUser,
-} from "../comps/chatBoxComponentv2/store";
+} from "../comps/chatBoxComponent/store";
 
 // ─── Event definitions ──────────────────────────────────────────────────────
 
 const ChatControllerEvents = [
   {
-    label: trans("chatControllerSignal.userJoined"),
+    label: trans("chatController.userJoined"),
     value: "userJoined",
-    description: trans("chatControllerSignal.userJoinedDesc"),
+    description: trans("chatController.userJoinedDesc"),
   },
   {
-    label: trans("chatControllerSignal.userLeft"),
+    label: trans("chatController.userLeft"),
     value: "userLeft",
-    description: trans("chatControllerSignal.userLeftDesc"),
+    description: trans("chatController.userLeftDesc"),
   },
   {
-    label: trans("chatControllerSignal.roomSwitched"),
+    label: trans("chatController.roomSwitched"),
     value: "roomSwitched",
-    description: trans("chatControllerSignal.roomSwitchedDesc"),
+    description: trans("chatController.roomSwitchedDesc"),
   },
   {
-    label: trans("chatControllerSignal.connected"),
+    label: trans("chatController.connected"),
     value: "connected",
-    description: trans("chatControllerSignal.connectedDesc"),
+    description: trans("chatController.connectedDesc"),
   },
   {
-    label: trans("chatControllerSignal.disconnected"),
+    label: trans("chatController.disconnected"),
     value: "disconnected",
-    description: trans("chatControllerSignal.disconnectedDesc"),
+    description: trans("chatController.disconnectedDesc"),
   },
   {
-    label: trans("chatControllerSignal.error"),
+    label: trans("chatController.error"),
     value: "error",
-    description: trans("chatControllerSignal.errorDesc"),
+    description: trans("chatController.errorDesc"),
   },
   {
-    label: trans("chatControllerSignal.aiThinkingStarted"),
+    label: trans("chatController.aiThinkingStarted"),
     value: "aiThinkingStarted",
-    description: trans("chatControllerSignal.aiThinkingStartedDesc"),
+    description: trans("chatController.aiThinkingStartedDesc"),
   },
   {
-    label: trans("chatControllerSignal.aiThinkingStopped"),
+    label: trans("chatController.aiThinkingStopped"),
     value: "aiThinkingStopped",
-    description: trans("chatControllerSignal.aiThinkingStoppedDesc"),
+    description: trans("chatController.aiThinkingStoppedDesc"),
   },
   {
-    label: trans("chatControllerSignal.sharedStateChanged"),
+    label: trans("chatController.sharedStateChanged"),
     value: "sharedStateChanged",
-    description: trans("chatControllerSignal.sharedStateChangedDesc"),
+    description: trans("chatController.sharedStateChangedDesc"),
   },
   {
-    label: trans("chatControllerSignal.roomDataChanged"),
+    label: trans("chatController.roomDataChanged"),
     value: "roomDataChanged",
-    description: trans("chatControllerSignal.roomDataChangedDesc"),
+    description: trans("chatController.roomDataChangedDesc"),
   },
 ] as const;
 
@@ -86,13 +86,13 @@ const ChatControllerEvents = [
 const childrenMap = {
   applicationId: stringExposingStateControl("applicationId", "lowcoder_app"),
   userId: stringExposingStateControl("userId", "user_1"),
-  userName: stringExposingStateControl("userName", trans("chatControllerSignal.userNameDefault")),
+  userName: stringExposingStateControl("userName", trans("chatController.userNameDefault")),
 
   onEvent: eventHandlerControl(ChatControllerEvents),
 
   ready: stateComp<boolean>(false),
   error: stateComp<string | null>(null),
-  connectionStatus: stateComp<string>(trans("chatControllerSignal.connectingStatus")),
+  connectionStatus: stateComp<string>(trans("chatController.connectingStatus")),
   onlineUsers: stateComp<JSONObject[]>([]),
   typingUsers: stateComp<JSONObject[]>([]),
   currentRoomId: stateComp<string | null>(null),
@@ -100,12 +100,12 @@ const childrenMap = {
   sharedState: stateComp<JSONObject>({}),
   roomData: stateComp<JSONObject>({}),
 
-  _signalActions: stateComp<JSONObject>({}),
+  _controllerActions: stateComp<JSONObject>({}),
 };
 
-// ─── Signal actions interface ────────────────────────────────────────────────
+// ─── Chat controller actions interface ───────────────────────────────────────
 
-interface SignalActions {
+interface ChatControllerActions {
   startTyping: (roomId?: string) => void;
   stopTyping: () => void;
   switchRoom: (roomId: string) => void;
@@ -118,14 +118,14 @@ interface SignalActions {
 
 // ─── Inner component that uses Hocuspocus hooks ─────────────────────────────
 
-interface SignalControllerProps {
+interface ChatControllerRuntimeProps {
   comp: any;
   userId: string;
   userName: string;
 }
 
-const SignalController = React.memo(
-  ({ comp, userId, userName }: SignalControllerProps) => {
+const ChatControllerRuntime = React.memo(
+  ({ comp, userId, userName }: ChatControllerRuntimeProps) => {
     const connection = useConnection();
     const [, setMyPresence] = useMyPresence();
     const others = useOthers();
@@ -161,9 +161,9 @@ const SignalController = React.memo(
     // ── Connection state ──────────────────────────────────────────────
     const ready = connection.state === "open";
     const connectionLabel = useMemo(() => {
-      if (connection.state === "open") return trans("chatControllerSignal.onlineStatus");
-      if (connection.state === "connecting") return trans("chatControllerSignal.connectingStatus");
-      return trans("chatControllerSignal.offlineStatus");
+      if (connection.state === "open") return trans("chatController.onlineStatus");
+      if (connection.state === "connecting") return trans("chatController.connectingStatus");
+      return trans("chatController.offlineStatus");
     }, [connection.state]);
 
     useEffect(() => {
@@ -387,7 +387,7 @@ const SignalController = React.memo(
     );
 
     // ── Proxy ref for stable callbacks ────────────────────────────────
-    const actionsRef = useRef<SignalActions>({
+    const actionsRef = useRef<ChatControllerActions>({
       startTyping,
       stopTyping,
       switchRoom,
@@ -409,7 +409,7 @@ const SignalController = React.memo(
     };
 
     useEffect(() => {
-      const proxy: SignalActions = {
+      const proxy: ChatControllerActions = {
         startTyping: (...args) => actionsRef.current.startTyping(...args),
         stopTyping: () => actionsRef.current.stopTyping(),
         switchRoom: (...args) => actionsRef.current.switchRoom(...args),
@@ -419,7 +419,7 @@ const SignalController = React.memo(
         setRoomData: (...args) => actionsRef.current.setRoomData(...args),
         deleteRoomData: (...args) => actionsRef.current.deleteRoomData(...args),
       };
-      compRef.current.children._signalActions.dispatchChangeValueAction(
+      compRef.current.children._controllerActions.dispatchChangeValueAction(
         proxy as unknown as JSONObject,
       );
     }, []);
@@ -440,11 +440,11 @@ const SignalController = React.memo(
   },
 );
 
-SignalController.displayName = "SignalController";
+ChatControllerRuntime.displayName = "ChatControllerRuntime";
 
 // ─── View function (wraps HocuspocusRoomProvider) ────────────────────────────
 
-const ChatControllerSignalBase = withViewFn(
+const ChatControllerBase = withViewFn(
   simpleMultiComp(childrenMap),
   (comp) => {
     const userId = comp.children.userId.getView().value;
@@ -458,22 +458,22 @@ const ChatControllerSignalBase = withViewFn(
         room={roomName}
         initialPresence={{
           userId: userId || "user_1",
-          userName: userName || trans("chatControllerSignal.userNameDefault"),
+          userName: userName || trans("chatController.userNameDefault"),
           currentRoomId: null,
           typing: false,
         }}
         onAuthenticationFailed={(error: any) => {
-          console.error("[ChatControllerV2] Auth failed:", error);
+          console.error("[ChatController] Auth failed:", error);
           comp.children.error.dispatchChangeValueAction(
-            error?.reason || error?.message || trans("chatControllerSignal.authenticationFailed"),
+            error?.reason || error?.message || trans("chatController.authenticationFailed"),
           );
           comp.children.onEvent.getView()("error");
         }}
       >
-        <SignalController
+        <ChatControllerRuntime
           comp={comp}
           userId={userId || "user_1"}
-          userName={userName || trans("chatControllerSignal.userNameDefault")}
+          userName={userName || trans("chatController.userNameDefault")}
         />
       </HocuspocusRoomProvider>
     );
@@ -482,22 +482,22 @@ const ChatControllerSignalBase = withViewFn(
 
 // ─── Property panel ─────────────────────────────────────────────────────────
 
-const ChatControllerSignalWithProps = withPropertyViewFn(
-  ChatControllerSignalBase,
+const ChatControllerWithProps = withPropertyViewFn(
+  ChatControllerBase,
   (comp) => (
     <>
       <Section name={sectionNames.basic}>
         {comp.children.applicationId.propertyView({
-          label: trans("chatControllerSignal.applicationIdLabel"),
-          tooltip: trans("chatControllerSignal.applicationIdTooltip"),
+          label: trans("chatController.applicationIdLabel"),
+          tooltip: trans("chatController.applicationIdTooltip"),
         })}
         {comp.children.userId.propertyView({
-          label: trans("chatControllerSignal.userIdLabel"),
-          tooltip: trans("chatControllerSignal.userIdTooltip"),
+          label: trans("chatController.userIdLabel"),
+          tooltip: trans("chatController.userIdTooltip"),
         })}
         {comp.children.userName.propertyView({
-          label: trans("chatControllerSignal.userNameLabel"),
-          tooltip: trans("chatControllerSignal.userNameTooltip"),
+          label: trans("chatController.userNameLabel"),
+          tooltip: trans("chatController.userNameTooltip"),
         })}
       </Section>
       <Section name={sectionNames.interaction}>
@@ -509,50 +509,50 @@ const ChatControllerSignalWithProps = withPropertyViewFn(
 
 // ─── Expose state properties ────────────────────────────────────────────────
 
-let ChatControllerSignal = withExposingConfigs(ChatControllerSignalWithProps, [
-  new NameConfig("ready", trans("chatControllerSignal.readyExposed")),
-  new NameConfig("error", trans("chatControllerSignal.errorExposed")),
+let ChatControllerComp = withExposingConfigs(ChatControllerWithProps, [
+  new NameConfig("ready", trans("chatController.readyExposed")),
+  new NameConfig("error", trans("chatController.errorExposed")),
   new NameConfig(
     "connectionStatus",
-    trans("chatControllerSignal.connectionStatusExposed"),
+    trans("chatController.connectionStatusExposed"),
   ),
   new NameConfig(
     "onlineUsers",
-    trans("chatControllerSignal.onlineUsersExposed"),
+    trans("chatController.onlineUsersExposed"),
   ),
   new NameConfig(
     "typingUsers",
-    trans("chatControllerSignal.typingUsersExposed"),
+    trans("chatController.typingUsersExposed"),
   ),
-  new NameConfig("currentRoomId", trans("chatControllerSignal.currentRoomIdExposed")),
-  new NameConfig("userId", trans("chatControllerSignal.userIdExposed")),
-  new NameConfig("userName", trans("chatControllerSignal.userNameExposed")),
-  new NameConfig("applicationId", trans("chatControllerSignal.applicationIdExposed")),
+  new NameConfig("currentRoomId", trans("chatController.currentRoomIdExposed")),
+  new NameConfig("userId", trans("chatController.userIdExposed")),
+  new NameConfig("userName", trans("chatController.userNameExposed")),
+  new NameConfig("applicationId", trans("chatController.applicationIdExposed")),
   new NameConfig(
     "aiThinkingRooms",
-    trans("chatControllerSignal.aiThinkingRoomsExposed"),
+    trans("chatController.aiThinkingRoomsExposed"),
   ),
   new NameConfig(
     "sharedState",
-    trans("chatControllerSignal.sharedStateExposed"),
+    trans("chatController.sharedStateExposed"),
   ),
   new NameConfig(
     "roomData",
-    trans("chatControllerSignal.roomDataExposed"),
+    trans("chatController.roomDataExposed"),
   ),
 ]);
 
 // ─── Expose methods ─────────────────────────────────────────────────────────
 
-ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
+ChatControllerComp = withMethodExposing(ChatControllerComp, [
   {
     method: {
       name: "startTyping",
-      description: trans("chatControllerSignal.startTypingMethodDesc"),
+      description: trans("chatController.startTypingMethodDesc"),
       params: [{ name: "roomId", type: "string" }],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.startTyping) {
         actions.startTyping(values?.[0] as string | undefined);
       }
@@ -561,11 +561,11 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "stopTyping",
-      description: trans("chatControllerSignal.stopTypingMethodDesc"),
+      description: trans("chatController.stopTypingMethodDesc"),
       params: [],
     },
     execute: (comp) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.stopTyping) {
         actions.stopTyping();
       }
@@ -574,11 +574,11 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "switchRoom",
-      description: trans("chatControllerSignal.switchRoomMethodDesc"),
+      description: trans("chatController.switchRoomMethodDesc"),
       params: [{ name: "roomId", type: "string" }],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.switchRoom) {
         actions.switchRoom(values?.[0] as string);
       }
@@ -587,14 +587,14 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setAiThinking",
-      description: trans("chatControllerSignal.setAiThinkingMethodDesc"),
+      description: trans("chatController.setAiThinkingMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "isThinking", type: "string" },
       ],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.setAiThinking) {
         const isThinking = values?.[1] === true || values?.[1] === "true";
         actions.setAiThinking(values?.[0] as string, isThinking);
@@ -604,14 +604,14 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setSharedState",
-      description: trans("chatControllerSignal.setSharedStateMethodDesc"),
+      description: trans("chatController.setSharedStateMethodDesc"),
       params: [
         { name: "key", type: "string" },
         { name: "value", type: "JSONValue" },
       ],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.setSharedState) {
         actions.setSharedState(values?.[0] as string, values?.[1]);
       }
@@ -620,11 +620,11 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "deleteSharedState",
-      description: trans("chatControllerSignal.deleteSharedStateMethodDesc"),
+      description: trans("chatController.deleteSharedStateMethodDesc"),
       params: [{ name: "key", type: "string" }],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.deleteSharedState) {
         actions.deleteSharedState(values?.[0] as string);
       }
@@ -633,7 +633,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setRoomData",
-      description: trans("chatControllerSignal.setRoomDataMethodDesc"),
+      description: trans("chatController.setRoomDataMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "key", type: "string" },
@@ -641,7 +641,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
       ],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.setRoomData) {
         actions.setRoomData(
           values?.[0] as string,
@@ -654,14 +654,14 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "deleteRoomData",
-      description: trans("chatControllerSignal.deleteRoomDataMethodDesc"),
+      description: trans("chatController.deleteRoomDataMethodDesc"),
       params: [
         { name: "roomId", type: "string" },
         { name: "key", type: "string" },
       ],
     },
     execute: (comp, values) => {
-      const actions = comp.children._signalActions.getView() as unknown as SignalActions;
+      const actions = comp.children._controllerActions.getView() as unknown as ChatControllerActions;
       if (actions?.deleteRoomData) {
         actions.deleteRoomData(
           values?.[0] as string,
@@ -673,7 +673,7 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   {
     method: {
       name: "setUser",
-      description: trans("chatControllerSignal.setUserMethodDesc"),
+      description: trans("chatController.setUserMethodDesc"),
       params: [
         { name: "userId", type: "string" },
         { name: "userName", type: "string" },
@@ -688,4 +688,4 @@ ChatControllerSignal = withMethodExposing(ChatControllerSignal, [
   },
 ]);
 
-export { ChatControllerSignal };
+export { ChatControllerComp };

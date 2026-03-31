@@ -143,8 +143,8 @@ export type UICompType =
   | "comment" //Added By Mousheng
   | "mention" //Added By Mousheng
   | "chat" //Added By Kamal Qureshi
-  | "chatControllerSignal"
-  | "chatBoxV"
+  | "chatController"
+  | "chatBox"
   | "autocomplete" //Added By Mousheng
   | "colorPicker" //Added By Mousheng
   | "floatingButton" //Added By Mousheng

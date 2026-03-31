@@ -62,7 +62,7 @@ export const ChatBoxView = React.memo(() => {
             {ctx.currentRoomId && roomOnlineCount > 0 && (
               <OnlineCountBadge>
                 <OnlineCountDot />
-                {trans("chatBoxV2.onlineCount", { count: roomOnlineCount })}
+                {trans("chatBox.onlineCount", { count: roomOnlineCount })}
               </OnlineCountBadge>
             )}
           </ChatHeaderBar>
@@ -122,4 +122,4 @@ export const ChatBoxView = React.memo(() => {
   );
 });
 
-ChatBoxView.displayName = "ChatBoxV2View";
+ChatBoxView.displayName = "ChatBoxView";

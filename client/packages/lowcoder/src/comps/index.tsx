@@ -194,8 +194,8 @@ import { ModalComp } from "./hooks/modalComp";
 import { defaultCollapsibleContainerData } from "./comps/containerComp/collapsibleContainerComp";
 import { ContainerComp as FloatTextContainerComp } from "./comps/containerComp/textContainerComp";
 import { ChatComp } from "./comps/chatComp";
-import { ChatControllerSignal } from "./hooks/chatControllerV2Comp";
-import { ChatBoxV2Comp } from "./comps/chatBoxComponentv2";
+import { ChatControllerComp } from "./hooks/chatControllerComp";
+import { ChatBoxComp } from "./comps/chatBoxComponent";
 
 type Registry = {
   [key in UICompType]?: UICompManifest;
@@ -948,24 +948,24 @@ export var uiCompMap: Registry = {
     comp: MentionComp,
   },
 
-  chatControllerSignal: {
-    name: "Chat Signal Controller",
-    enName: "Chat Signal Controller",
-    description: "Signal server for real-time chat — broadcasts message activity, typing indicators, and online presence via Hocuspocus/Yjs. Pair with Chat Box V2 and your own data queries.",
+  chatController: {
+    name: "Chat Controller",
+    enName: "Chat Controller",
+    description: "Real-time chat controller for presence, typing indicators, and shared room state via Hocuspocus/Yjs. Pair with Chat Box and your own data queries.",
     categories: ["collaboration"],
     icon: CommentCompIcon,
     keywords: "chatbox,chat,controller,signal,realtime,presence,typing,hocuspocus,yjs",
-    comp: ChatControllerSignal,
+    comp: ChatControllerComp,
   },
 
-  chatBoxV: {
-    name: "Chat Box V2",
-    enName: "Chat Box V2",
-    description: "Chat UI component — displays messages from any data source, fires send events, shows typing indicators from Chat Signal Controller",
+  chatBox: {
+    name: "Chat Box",
+    enName: "Chat Box",
+    description: "Chat UI component that displays messages from any data source, fires send events, and shows typing indicators from Chat Controller",
     categories: ["collaboration"],
     icon: CommentCompIcon,
-    keywords: "chatbox,chat,conversation,messaging,v2",
-    comp: ChatBoxV2Comp,
+    keywords: "chatbox,chat,conversation,messaging",
+    comp: ChatBoxComp,
     layoutInfo: {
       w: 12,
       h: 24,

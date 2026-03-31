@@ -36,7 +36,7 @@ export const InviteUserModal = React.memo((props: InviteUserModalProps) => {
 
   return (
     <Modal
-      title={trans("chatBoxV2.inviteUserTitle")}
+      title={trans("chatBox.inviteUserTitle")}
       open={open}
       onCancel={handleCancel}
       footer={null}
@@ -48,7 +48,7 @@ export const InviteUserModal = React.memo((props: InviteUserModalProps) => {
         <Alert
           type="warning"
           showIcon
-          message={trans("chatBoxV2.invitesPrivateOnly")}
+          message={trans("chatBox.invitesPrivateOnly")}
         />
       ) : (
         <>
@@ -59,32 +59,32 @@ export const InviteUserModal = React.memo((props: InviteUserModalProps) => {
             style={{ marginBottom: 16 }}
             message={
               <span style={{ fontSize: 13 }}>
-                {trans("chatBoxV2.sendingInviteFor", { roomName: currentRoom.name })}
+                {trans("chatBox.sendingInviteFor", { roomName: currentRoom.name })}
               </span>
             }
           />
           <Form form={form} layout="vertical">
             <Form.Item
               name="toUserId"
-              label={trans("chatBoxV2.inviteUserIdLabel")}
-              rules={[{ required: true, message: trans("chatBoxV2.inviteUserIdRequired") }]}
+              label={trans("chatBox.inviteUserIdLabel")}
+              rules={[{ required: true, message: trans("chatBox.inviteUserIdRequired") }]}
             >
               <Input
-                placeholder={trans("chatBoxV2.inviteUserIdPlaceholder")}
+                placeholder={trans("chatBox.inviteUserIdPlaceholder")}
                 prefix={<UserAddOutlined style={{ color: "#999" }} />}
               />
             </Form.Item>
             <Form.Item
               name="toUserName"
-              label={trans("chatBoxV2.inviteUserNameOptionalLabel")}
+              label={trans("chatBox.inviteUserNameOptionalLabel")}
             >
-              <Input placeholder={trans("chatBoxV2.inviteUserNamePlaceholder")} />
+              <Input placeholder={trans("chatBox.inviteUserNamePlaceholder")} />
             </Form.Item>
             <Form.Item style={{ marginBottom: 0 }}>
               <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-                <Button onClick={handleCancel}>{trans("chatBoxV2.cancelAction")}</Button>
+                <Button onClick={handleCancel}>{trans("chatBox.cancelAction")}</Button>
                 <Button type="primary" onClick={handleSubmit} icon={<UserAddOutlined />}>
-                  {trans("chatBoxV2.sendInviteButton")}
+                  {trans("chatBox.sendInviteButton")}
                 </Button>
               </Space>
             </Form.Item>

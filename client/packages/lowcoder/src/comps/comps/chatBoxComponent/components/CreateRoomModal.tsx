@@ -70,7 +70,7 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
 
   return (
     <Modal
-      title={trans("chatBoxV2.createRoomModalTitle")}
+      title={trans("chatBox.createRoomModalTitle")}
       open={open}
       onCancel={handleCancel}
       footer={null}
@@ -81,7 +81,7 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
       {/* Room mode selector */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 12, color: "#888", marginBottom: 8, fontWeight: 500 }}>
-          {trans("chatBoxV2.roomTypeLabel")}
+          {trans("chatBox.roomTypeLabel")}
         </div>
         <Segmented
           block
@@ -92,7 +92,7 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
               label: (
                 <div style={{ padding: "4px 0" }}>
                   <GlobalOutlined style={{ marginRight: 6 }} />
-                  {trans("chatBoxV2.normalRoomLabel")}
+                  {trans("chatBox.normalRoomLabel")}
                 </div>
               ),
               value: "normal",
@@ -101,7 +101,7 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
               label: (
                 <div style={{ padding: "4px 0", color: roomMode === "llm" ? "#7c3aed" : undefined }}>
                   <RobotOutlined style={{ marginRight: 6 }} />
-                  {trans("chatBoxV2.aiRoomLabel")}
+                  {trans("chatBox.aiRoomLabel")}
                 </div>
               ),
               value: "llm",
@@ -123,8 +123,8 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
           }}
           message={
             <span style={{ fontSize: 13, color: "#5b21b6" }}>
-              <strong>{trans("chatBoxV2.aiRoomStrongLabel")}</strong>{" "}
-              {trans("chatBoxV2.aiRoomMessage")}
+              <strong>{trans("chatBox.aiRoomStrongLabel")}</strong>{" "}
+              {trans("chatBox.aiRoomMessage")}
             </span>
           }
         />
@@ -138,34 +138,34 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
       >
         <Form.Item
           name="roomName"
-          label={trans("chatBoxV2.roomNameLabel")}
+          label={trans("chatBox.roomNameLabel")}
           rules={[
-            { required: true, message: trans("chatBoxV2.roomNameRequired") },
-            { min: 2, message: trans("chatBoxV2.roomNameMin") },
-            { max: 50, message: trans("chatBoxV2.roomNameMax") },
+            { required: true, message: trans("chatBox.roomNameRequired") },
+            { min: 2, message: trans("chatBox.roomNameMin") },
+            { max: 50, message: trans("chatBox.roomNameMax") },
           ]}
         >
           <Input
             placeholder={
               roomMode === "llm"
-                ? trans("chatBoxV2.roomNamePlaceholderAi")
-                : trans("chatBoxV2.roomNamePlaceholderNormal")
+                ? trans("chatBox.roomNamePlaceholderAi")
+                : trans("chatBox.roomNamePlaceholderNormal")
             }
           />
         </Form.Item>
 
-        <Form.Item name="description" label={trans("chatBoxV2.descriptionLabel")}>
-          <Input.TextArea placeholder={trans("chatBoxV2.descriptionPlaceholder")} rows={2} />
+        <Form.Item name="description" label={trans("chatBox.descriptionLabel")}>
+          <Input.TextArea placeholder={trans("chatBox.descriptionPlaceholder")} rows={2} />
         </Form.Item>
 
         {roomMode === "normal" && (
-          <Form.Item name="roomType" label={trans("chatBoxV2.visibilityLabel")}>
+          <Form.Item name="roomType" label={trans("chatBox.visibilityLabel")}>
             <Radio.Group>
               <Radio value="public">
-                <GlobalOutlined style={{ color: "#52c41a", marginRight: 4 }} /> {trans("chatBoxV2.publicRoomsLabel")}
+                <GlobalOutlined style={{ color: "#52c41a", marginRight: 4 }} /> {trans("chatBox.publicRoomsLabel")}
               </Radio>
               <Radio value="private">
-                <LockOutlined style={{ color: "#fa8c16", marginRight: 4 }} /> {trans("chatBoxV2.privateRoomsLabel")}
+                <LockOutlined style={{ color: "#fa8c16", marginRight: 4 }} /> {trans("chatBox.privateRoomsLabel")}
               </Radio>
             </Radio.Group>
           </Form.Item>
@@ -176,24 +176,24 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
             name="llmQueryName"
             label={
               <span>
-                {trans("chatBoxV2.queryNameLabel")}{" "}
+                {trans("chatBox.queryNameLabel")}{" "}
                 <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>
-                  ({trans("chatBoxV2.queryNameHint")})
+                  ({trans("chatBox.queryNameHint")})
                 </span>
               </span>
             }
-            rules={[{ required: true, message: trans("chatBoxV2.queryNameRequired") }]}
+            rules={[{ required: true, message: trans("chatBox.queryNameRequired") }]}
             extra={
               <span style={{ fontSize: 12, color: "#888" }}>
-                {trans("chatBoxV2.queryNameExtraPrefix")}{" "}
+                {trans("chatBox.queryNameExtraPrefix")}{" "}
                 <code style={{ fontSize: 11 }}>conversationHistory</code>,{" "}
                 <code style={{ fontSize: 11 }}>prompt</code>, and{" "}
-                <code style={{ fontSize: 11 }}>roomId</code> {trans("chatBoxV2.queryNameExtraSuffix")}
+                <code style={{ fontSize: 11 }}>roomId</code> {trans("chatBox.queryNameExtraSuffix")}
               </span>
             }
           >
             <Input
-              placeholder={trans("chatBoxV2.queryNamePlaceholder")}
+              placeholder={trans("chatBox.queryNamePlaceholder")}
               prefix={<RobotOutlined style={{ color: "#c084fc" }} />}
             />
           </Form.Item>
@@ -201,7 +201,7 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
 
         <Form.Item style={{ marginBottom: 0 }}>
           <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-            <Button onClick={handleCancel}>{trans("chatBoxV2.cancelAction")}</Button>
+            <Button onClick={handleCancel}>{trans("chatBox.cancelAction")}</Button>
             <Button
               type="primary"
               htmlType="submit"
@@ -213,8 +213,8 @@ export const CreateRoomModal = React.memo((props: CreateRoomModalProps) => {
               }
             >
               {roomMode === "llm"
-                ? trans("chatBoxV2.createAiRoomButton")
-                : trans("chatBoxV2.createRoomButton")}
+                ? trans("chatBox.createAiRoomButton")
+                : trans("chatBox.createRoomButton")}
             </Button>
           </Space>
         </Form.Item>

@@ -1,14 +1,14 @@
 import styled from "styled-components";
 import type {
-  ChatBoxV2ContainerStyleType,
-  ChatBoxV2SidebarStyleType,
-  ChatBoxV2HeaderStyleType,
-  ChatBoxV2MessageStyleType,
-  ChatBoxV2InputStyleType,
+  ChatBoxContainerStyleType,
+  ChatBoxSidebarStyleType,
+  ChatBoxHeaderStyleType,
+  ChatBoxMessageStyleType,
+  ChatBoxInputStyleType,
   AnimationStyleType,
 } from "comps/controls/styleControlConstants";
 
-export const Wrapper = styled.div<{ $style: ChatBoxV2ContainerStyleType; $anim: AnimationStyleType }>`
+export const Wrapper = styled.div<{ $style: ChatBoxContainerStyleType; $anim: AnimationStyleType }>`
   height: 100%;
   display: flex;
   overflow: hidden;
@@ -22,7 +22,7 @@ export const Wrapper = styled.div<{ $style: ChatBoxV2ContainerStyleType; $anim: 
 
 export const RoomPanelContainer = styled.div<{
   $width: string;
-  $sidebarStyle?: ChatBoxV2SidebarStyleType;
+  $sidebarStyle?: ChatBoxSidebarStyleType;
 }>`
   width: ${(p) => p.$width};
   min-width: 160px;
@@ -34,7 +34,7 @@ export const RoomPanelContainer = styled.div<{
   border-radius: ${(p) => p.$sidebarStyle?.radius || "0"};
 `;
 
-export const RoomPanelHeader = styled.div<{ $sidebarStyle?: ChatBoxV2SidebarStyleType }>`
+export const RoomPanelHeader = styled.div<{ $sidebarStyle?: ChatBoxSidebarStyleType }>`
   padding: 12px;
   font-weight: 600;
   font-size: 13px;
@@ -54,7 +54,7 @@ export const RoomListContainer = styled.div`
 
 export const RoomItemStyled = styled.div<{
   $active: boolean;
-  $sidebarStyle?: ChatBoxV2SidebarStyleType;
+  $sidebarStyle?: ChatBoxSidebarStyleType;
 }>`
   padding: ${(p) => p.$sidebarStyle?.padding || "8px 10px"};
   margin-bottom: 4px;
@@ -103,7 +103,7 @@ export const ChatPanelContainer = styled.div`
   min-width: 0;
 `;
 
-export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxV2HeaderStyleType }>`
+export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxHeaderStyleType }>`
   padding: ${(p) => p.$headerStyle?.padding || "12px 16px"};
   border-bottom: 1px solid ${(p) => p.$headerStyle?.headerBorder || "#eee"};
   background: ${(p) => p.$headerStyle?.headerBackground || "transparent"};
@@ -113,7 +113,7 @@ export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxV2HeaderStyleTyp
   align-items: center;
 `;
 
-export const MessagesArea = styled.div<{ $messageStyle?: ChatBoxV2MessageStyleType }>`
+export const MessagesArea = styled.div<{ $messageStyle?: ChatBoxMessageStyleType }>`
   flex: 1;
   overflow-y: auto;
   padding: 16px;
@@ -132,7 +132,7 @@ export const MessageWrapper = styled.div<{ $own: boolean }>`
 
 export const Bubble = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxV2MessageStyleType;
+  $messageStyle?: ChatBoxMessageStyleType;
 }>`
   padding: ${(p) => p.$messageStyle?.padding || "10px 14px"};
   border-radius: ${(p) => {
@@ -154,7 +154,7 @@ export const Bubble = styled.div<{
 
 export const BubbleMeta = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxV2MessageStyleType;
+  $messageStyle?: ChatBoxMessageStyleType;
 }>`
   font-size: 11px;
   color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
@@ -165,7 +165,7 @@ export const BubbleMeta = styled.div<{
 
 export const BubbleTime = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxV2MessageStyleType;
+  $messageStyle?: ChatBoxMessageStyleType;
 }>`
   font-size: 10px;
   color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
@@ -174,7 +174,7 @@ export const BubbleTime = styled.div<{
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
 
-export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxV2InputStyleType }>`
+export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxInputStyleType }>`
   padding: 12px 16px;
   border-top: 1px solid ${(p) => p.$inputStyle?.inputAreaBorder || "#eee"};
   background: ${(p) => p.$inputStyle?.inputAreaBackground || "transparent"};
@@ -183,7 +183,7 @@ export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxV2InputStyleT
   align-items: flex-end;
 `;
 
-export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxV2InputStyleType }>`
+export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxInputStyleType }>`
   flex: 1;
   padding: ${(p) => p.$inputStyle?.padding || "8px 14px"};
   border: 1px solid ${(p) => p.$inputStyle?.inputBorder || "#d9d9d9"};

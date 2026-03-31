@@ -6,7 +6,7 @@ import { CopyOutlined, CheckOutlined, RobotOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { parseMessageTimestamp, formatChatTime } from "util/dateTimeUtils";
 import { LLM_BOT_AUTHOR_ID } from "../store";
-import type { ChatBoxV2MessageStyleType } from "comps/controls/styleControlConstants";
+import type { ChatBoxMessageStyleType } from "comps/controls/styleControlConstants";
 import { trans } from "i18n";
 import {
   MessagesArea,
@@ -56,13 +56,13 @@ const AiMessageBubble = React.memo(
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
           </AiBubble>
           <Tooltip
-            title={copied ? trans("chatBoxV2.copied") : trans("chatBoxV2.copyAction")}
+            title={copied ? trans("chatBox.copied") : trans("chatBox.copyAction")}
             placement="right"
           >
             <AiCopyButton
               className="ai-copy-btn"
               onClick={handleCopy}
-              aria-label={trans("chatBoxV2.copyAiResponse")}
+              aria-label={trans("chatBox.copyAiResponse")}
             >
               {copied ? (
                 <CheckOutlined style={{ fontSize: 11, color: "#52c41a" }} />
@@ -91,7 +91,7 @@ export interface MessageListProps {
   typingUsers: any[];
   currentUserId: string;
   isAiThinking?: boolean;
-  messageStyle?: ChatBoxV2MessageStyleType;
+  messageStyle?: ChatBoxMessageStyleType;
 }
 
 export const MessageList = React.memo((props: MessageListProps) => {
@@ -112,8 +112,8 @@ export const MessageList = React.memo((props: MessageListProps) => {
       {messages.length === 0 ? (
         <EmptyChat>
           <div style={{ fontSize: 24 }}>💬</div>
-          <div>{trans("chatBoxV2.noMessagesYet")}</div>
-          <div style={{ fontSize: 12 }}>{trans("chatBoxV2.startConversation")}</div>
+          <div>{trans("chatBox.noMessagesYet")}</div>
+          <div style={{ fontSize: 12 }}>{trans("chatBox.startConversation")}</div>
         </EmptyChat>
       ) : (
         messages.map((msg, idx) => {
@@ -171,7 +171,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
         <AiBubbleWrapper>
           <AiBadge>
             <RobotOutlined style={{ fontSize: 9 }} />
-            {trans("chatBoxV2.aiThinking")}
+            {trans("chatBox.aiThinking")}
           </AiBadge>
           <LlmLoadingBubble>
             <span />
@@ -190,13 +190,13 @@ export const MessageList = React.memo((props: MessageListProps) => {
           </TypingDots>
           <TypingLabel>
             {typingUsers.length === 1
-              ? trans("chatBoxV2.singleUserTyping", {
+              ? trans("chatBox.singleUserTyping", {
                   userName:
                     typingUsers[0].userName ||
                     typingUsers[0].userId ||
-                    trans("chatBoxV2.someoneLabel"),
+                    trans("chatBox.someoneLabel"),
                 })
-              : trans("chatBoxV2.multipleUsersTyping", { count: typingUsers.length })}
+              : trans("chatBox.multipleUsersTyping", { count: typingUsers.length })}
           </TypingLabel>
         </TypingIndicatorWrapper>
       )}
