@@ -69,7 +69,12 @@ export const publishAppAction: ActionConfig = {
         return;
       }
 
-      const response = await ApplicationApi.publishApplication({ applicationId });
+      const response = await ApplicationApi.publishApplication({
+        applicationId,
+        request: {
+          tag: "1.0.0"
+        }
+      });
       
       if (response.data.success) {
         message.success('Application published successfully');
