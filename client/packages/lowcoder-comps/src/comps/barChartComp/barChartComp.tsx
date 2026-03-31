@@ -61,6 +61,8 @@ BarChartTmpComp = withViewFn(BarChartTmpComp, (comp) => {
   const [chartSize, setChartSize] = useState<ChartSize>();
   const firstResize = useRef(true);
   const theme = useContext(ThemeContext);
+  const [chartKey, setChartKey] = useState(0);
+  const prevRaceMode = useRef<boolean>();
   const defaultChartTheme = {
     color: chartColorPalette,
     backgroundColor: "#fff",
@@ -72,6 +74,17 @@ BarChartTmpComp = withViewFn(BarChartTmpComp, (comp) => {
   } catch (error) {
     log.error('theme chart error: ', error);
   }
+
+
+  // Detect race mode changes and force chart recreation
+  const currentRaceMode = comp.children.chartConfig?.children?.comp?.children?.race?.getView();
+  useEffect(() => {
+    if (prevRaceMode.current !== undefined && prevRaceMode.current !== currentRaceMode) {
+      // Force chart recreation when race mode changes
+      setChartKey(prev => prev + 1);
+    }
+    prevRaceMode.current = currentRaceMode;
+  }, [currentRaceMode]);
 
   const triggerClickEvent = async (dispatch: any, action: CompAction<JSONValue>) => {
     await getPromiseAfterDispatch(
@@ -160,7 +173,6 @@ BarChartTmpComp = withViewFn(BarChartTmpComp, (comp) => {
   useResizeDetector({
     targetRef: containerRef,
     onResize: ({width, height}) => {
-      console.log('barChart - resize');
       if (width && height) {
         setChartSize({ w: width, h: height });
       }
@@ -176,11 +188,13 @@ BarChartTmpComp = withViewFn(BarChartTmpComp, (comp) => {
   return (
     <div ref={containerRef} style={{height: '100%'}}>
       <ReactECharts
+        key={chartKey}
         ref={(e) => (echartsCompRef.current = e)}
         style={{ height: "100%" }}
-        notMerge
-        lazyUpdate
+        notMerge={!currentRaceMode}
+        lazyUpdate={!currentRaceMode}
         opts={{ locale: getEchartsLocale() }}
+        theme={themeConfig}
         option={option}
         mode={mode}
       />

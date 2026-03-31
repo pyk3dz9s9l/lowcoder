@@ -54,6 +54,9 @@ export type EditViewFn<T> = (props: {
   value: T;
   onChange: (value: T) => void;
   onChangeEnd: () => void;
+  onCommit?: (value: T) => void;
+  onCancel?: () => void;
+  onImmediateSave?: (value: T) => void;
   otherProps?: Record<string, any>;
 }) => ReactNode;
 
@@ -151,11 +154,11 @@ function EditableCellComp<T extends JSONValue>(props: EditableCellProps<T>) {
     []
   );
 
-  const onChangeEnd = useCallback(() => {
+  const commitValue = useCallback((finalValue: T | null) => {
     if (!mountedRef.current) return;
-    
+
     setIsEditing(false);
-    const newValue = _.isNil(tmpValue) || _.isEqual(tmpValue, baseValue) ? null : tmpValue;
+    const newValue = _.isNil(finalValue) || _.isEqual(finalValue, baseValue) ? null : finalValue;
     dispatch(
       changeChildAction(
         "changeValue",
@@ -163,14 +166,47 @@ function EditableCellComp<T extends JSONValue>(props: EditableCellProps<T>) {
         false
       )
     );
-    if(!_.isEqual(tmpValue, value)) {
+    if(!_.isEqual(finalValue, value)) {
       onTableEvent?.('columnEdited');
     }
-  }, [dispatch, tmpValue, baseValue, value, onTableEvent, setIsEditing]);
+  }, [dispatch, baseValue, value, onTableEvent, setIsEditing]);
+
+  const onChangeEnd = useCallback(() => {
+    commitValue(tmpValue);
+  }, [commitValue, tmpValue]);
+
+  const onCommit = useCallback((nextValue: T) => {
+    if (!mountedRef.current) return;
+    setTmpValue(nextValue);
+    commitValue(nextValue);
+  }, [commitValue]);
+
+  const onCancel = useCallback(() => {
+    if (!mountedRef.current) return;
+    setIsEditing(false);
+    setTmpValue(value);
+  }, [setIsEditing, value]);
+
+  const onImmediateSave = useCallback((newValue: T) => {
+    if (!mountedRef.current) return;
+    
+    setTmpValue(newValue);
+    const changeValue = _.isNil(newValue) || _.isEqual(newValue, baseValue) ? null : newValue;
+    dispatch(
+      changeChildAction(
+        "changeValue",
+        changeValue,
+        false
+      )
+    );
+    if(!_.isEqual(newValue, value)) {
+      onTableEvent?.('columnEdited');
+    }
+  }, [dispatch, baseValue, value, onTableEvent]);
 
   const editView = useMemo(
-    () => editViewFn?.({ value, onChange, onChangeEnd, otherProps }) ?? <></>,
-    [editViewFn, value, onChange, onChangeEnd, otherProps]
+    () => editViewFn?.({ value, onChange, onChangeEnd, onCommit, onCancel, onImmediateSave, otherProps }) ?? <></>,
+    [editViewFn, value, onChange, onChangeEnd, onCommit, onCancel, onImmediateSave, otherProps]
   );
 
   const enterEditFn = useCallback(() => {

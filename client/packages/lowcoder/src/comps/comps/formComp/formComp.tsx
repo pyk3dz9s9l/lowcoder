@@ -285,7 +285,8 @@ let FormTmpComp = class extends FormBaseComp implements IForm {
   }
   traverseFormItems(consumer: (item: GridItemComp) => boolean) {
     return traverseCompTree(this.getCompTree(), (item) => {
-      return item.children.comp.children.formDataKey ? consumer(item as GridItemComp) : true;
+      const hasFormDataKey = item.children.comp.children.hasOwnProperty("formDataKey");
+      return hasFormDataKey ? consumer(item as GridItemComp) : true;
     });
   }
   validateFormItems() {
@@ -334,7 +335,9 @@ let FormTmpComp = class extends FormBaseComp implements IForm {
         name: "setValue",
         getParams: (t) => {
           // use component name when formDataKey is empty
-          const key = t.children.comp.children.formDataKey?.getView() || t.children.name.getView();
+          const formDataKey = t.children.comp.children.formDataKey?.getView();
+          const componentName = t.children.name.getView();
+          const key = formDataKey || componentName;
           const value = newData[key];
           return value !== undefined ? [value as EvalParamType] : undefined;
         },
@@ -343,7 +346,9 @@ let FormTmpComp = class extends FormBaseComp implements IForm {
         name: "setRange",
         getParams: (t) => {
           // use component name when formDataKey is empty
-          const key = t.children.comp.children.formDataKey?.getView() || t.children.name.getView();
+          const formDataKey = t.children.comp.children.formDataKey?.getView();
+          const componentName = t.children.name.getView();
+          const key = formDataKey || componentName;
           const value = newData[key] ? newData[key] : undefined;
           return value !== undefined ? [value as EvalParamType] : undefined;
         },
@@ -382,20 +387,28 @@ let FormTmpComp = class extends FormBaseComp implements IForm {
     switch (action.type) {
       case CompActionTypes.UPDATE_NODES_V2: {
         const ret = super.reduce(action);
-        // When the initial value changes, update the form
         if (ret.children.initialData !== this.children.initialData) {
           // FIXME: kill setTimeout ?
           setTimeout(() => {
-            this.dispatch(
-              customAction<SetDataAction>(
-                {
-                  type: "setData",
-                  initialData: (action.value["initialData"] as ValueAndMsg<JSONObject>).value || {},
-                },
-                false
-              )
-            );
-          });
+            const newInitialData = (action.value["initialData"] as ValueAndMsg<JSONObject>)
+              .value;
+            // only setData when initialData has explicit keys.
+            if (
+              newInitialData &&
+              typeof newInitialData === "object" &&
+              Object.keys(newInitialData).length > 0
+            ) {
+              this.dispatch(
+                customAction<SetDataAction>(
+                  {
+                    type: "setData",
+                    initialData: newInitialData,
+                  },
+                  false
+                )
+              );
+            }
+          }, 1000);
         }
         return ret;
       }

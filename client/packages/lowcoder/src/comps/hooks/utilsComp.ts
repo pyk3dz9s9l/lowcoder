@@ -10,6 +10,7 @@ import { logoutAction } from "redux/reduxActions/userActions";
 import StoreRegistry from "@lowcoder-ee/redux/store/storeRegistry";
 import UserApi from "@lowcoder-ee/api/userApi";
 import { messageInstance } from "components/GlobalInstances";
+import { isEditMode } from "../utils/globalSettings";
 
 const UtilsCompBase = simpleMultiComp({});
 export let UtilsComp = withExposingConfigs(UtilsCompBase, []);
@@ -30,6 +31,16 @@ interface DownloadFileOptions {
 }
 
 UtilsComp = withMethodExposing(UtilsComp, [
+  {
+    method: {
+      name: "isEditMode",
+      description: trans("utilsComp.isEditMode"),
+      params: [],
+    },
+    execute: (comp, params) => {
+      return isEditMode();
+    },
+  },
   {
     method: {
       name: "openUrl",
@@ -76,12 +87,12 @@ UtilsComp = withMethodExposing(UtilsComp, [
     method: {
       name: "copyToClipboard",
       description: trans("utilsComp.copyToClipboard"),
-      params: [{ name: "url", type: "string" }],
+      params: [{ name: "text", type: "string" }],
     },
     execute: (comp, params) => {
       const text = params?.[0];
       if (typeof text === "string" && !isEmpty(text)) {
-        copy(text);
+        copy(text, { format: "text/plain" });
       }
     },
   },

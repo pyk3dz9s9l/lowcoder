@@ -26,11 +26,15 @@ export const en = {
   "text": "Text",
   "basic": "Basic",
   "label": "Label",
+  "hidden": "Hidden",
+  "disabled": "Disabled",
   "layout": "Layout",
   "color": "Color",
   "form": "Form",
   "menu": "Menu",
   "menuItem": "Menu Item",
+  "subMenuItem": "Sub Menu",
+  "untitled": "Untitled",
   "ok": "OK",
   "cancel": "Cancel",
   "finish": "Finish",
@@ -45,6 +49,7 @@ export const en = {
   "accessControl": "Access Control",
   "copySuccess": "Copied Successfully",
   "copyError": "Copy Error",
+  "tags": "Tags",
   
   "api": {
     "publishSuccess": "Published Successfully",
@@ -235,7 +240,9 @@ export const en = {
     "verticalGridCells": "Vertical Grid Cells",
     "timeZone": "TimeZone",
     "pickerMode": "Picker Mode",
-    "customTags": "Custom Tags"
+    "customTags": "Allow Custom Tags",
+    "customTagsTooltip": "Allow users to enter custom tags that are not in the options list.",
+    "zIndex": "z-Index"
   },
   "autoHeightProp": {
     "auto": "Auto",
@@ -474,6 +481,7 @@ export const en = {
   // fourth part
 
   "style": {
+    "styleOptions": "Style Options",
     "boxShadowColor": 'Shadow Color',
     "boxShadow": 'Box Shadow',
     "opacity": 'Opacity',
@@ -570,6 +578,10 @@ export const en = {
     "headerText": "Header Text Color",
     "labelColor": "Label Color",
     "label": "Label Color",
+    "colorType": "Color Type",
+    "presetColor": "Preset Color",
+    "preset": "Preset",
+    "custom": "Custom",
     "lineHeight":"Line Height",
     "subTitleColor": "SubTitle Color",
     "titleText": "Title Color",
@@ -580,6 +592,7 @@ export const en = {
     "siderBackgroundImagePosition": "Sider Background Image Position",
     "siderBackgroundImageOrigin": "Sider Background Image Origin",
     "activeBackground": "Active Background Color",
+    "selectBackground": "Selected Background Color",
     "labelBackground": "Label Background Color",
     "gradientBackground": "Gradient Background Color",
     "direction": "Direction",
@@ -599,6 +612,14 @@ export const en = {
     "chartTextColor": "Text Color",
     "detailSize": "Detail Size",
     "hideColumn": "Hide Column",
+    "height": "Height",
+    "gap": "Gap",
+    "flexWrap": "Flex Wrap",
+    "justifyContent": "Justify Content",
+    "alignItems": "Align Items",
+    "borderless": "Borderless",
+    "individualStyling": "Individual Styling",
+    "individualStylingTooltip": "When enabled, each tag can have its own colors, borders, and spacing. When disabled, all tags use the general style settings.",
 
     // Chat Component Styles
     "sidebarBackground": "Sidebar Background",
@@ -704,7 +725,15 @@ export const en = {
     "headerBackgroundImageOriginTip": "Specifies the positioning area of the header's background image. Example: padding-box, border-box, content-box.",
     "footerBackgroundImageOriginTip": "Specifies the positioning area of the footer's background image. Example: padding-box, border-box, content-box.",
     "rotationTip": "Specifies the rotation angle of the element. Example: 45deg, 90deg, -180deg.",
-    "lineHeightTip": "Sets the height of a line of text. Example: 1.5, 2, 120%."
+    "lineHeightTip": "Sets the height of a line of text. Example: 1.5, 2, 120%.",
+    "paginationBackground": "Pagination Background",
+    "paginationBackgroundTooltip": "Background color for pagination controls",
+    "paginationText": "Pagination Text",
+    "paginationTextTooltip": "Text color for pagination numbers and controls",
+    "paginationActiveBackground": "Pagination Active Background",
+    "paginationActiveBackgroundTooltip": "Background color for the active/selected page number",
+    "paginationActiveText": "Pagination Active Text",
+    "paginationActiveTextTooltip": "Text color for the active/selected page number",
   },
   "export": {
     "hiddenDesc": "If true, the component is hidden",
@@ -1172,6 +1201,10 @@ export const en = {
     "tableCompDesc": "A rich table component for displaying data in a structured table format, with options for sorting and filtering, tree Data display and extensible Rows.",
     "tableCompKeywords": "table, data, sorting, filtering",
 
+    "tableLiteCompName": "Table (Lite)",
+    "tableLiteCompDesc": "A lightweight, high-performance table component optimized for displaying many rows fast, with essential sorting and filtering capabilities.",
+    "tableLiteCompKeywords": "table, data, sorting, filtering, performance, lite",
+
     "imageCompName": "Image",
     "imageCompDesc": "A component for displaying images, supporting various formats based on URI or Base64 Data.",
     "imageCompKeywords": "image, display, media, Base64",
@@ -1279,6 +1312,10 @@ export const en = {
     "drawerCompName": "Drawer",
     "drawerCompDesc": "A sliding panel component that can be used for additional navigation or content display, typically emerging from the edge of the screen.",
     "drawerCompKeywords": "drawer, sliding, panel, navigation",
+
+    "toastCompName": "Toast",
+    "toastCompDesc": "A notification component for displaying brief messages, alerts, or feedback to users. Supports click and close event handlers.",
+    "toastCompKeywords": "toast, notification, alert, message, snackbar",
 
     "chartCompName": "Chart (deprecated)",
     "chartCompDesc": "A versatile component for visualizing data through various types of charts and graphs.",
@@ -2022,14 +2059,15 @@ export const en = {
     "targetTitle": "Target Data",
     "content": "Content {i}",
     "items": "Items",
-    "targetKeys": "Selected Keys",
+    "targetKeys": "Target Keys",
     "oneWay": "One Way",
     "pagination": "Pagination",
     "pageSize": "Page Size",
     "allowSearch": "Allow Search",
     "selectedKeys": "Selected Keys",
     "searchInfo": "Search Info",
-    "targerObject": "Targer Object"
+    "targetObject": "Target Object",
+    "caseSensitive": "Case Sensitive"
   },
 
   "avatarGroup": {
@@ -2213,6 +2251,7 @@ export const en = {
     "filesValueDesc": "The Contents of the Currently Uploaded File Are Base64 Encoded",
     "filesDesc": "List of the Current Uploaded Files. For Details, Refer to",
     "clearValueDesc": "Clear All Files",
+    "clearValueAtDesc": "Clear File at Index",
     "parseFiles": "Parse Files",
     "parsedValueTooltip1": "If parseFiles Is True, Upload Files Will Parse to Object, Array, or String. Parsed Data Can Be Accessed via the parsedValue Array.",
     "parsedValueTooltip2": "Supports Excel, JSON, CSV, and Text Files. Other Formats Will Return Null.",
@@ -2221,11 +2260,29 @@ export const en = {
     "usePhoto": "Use Photo",
     "retakePhoto": "Retake Photo",
     "capture": "Capture",
+    "button": "Button",
+    "dragArea": "Drag Area",
+    "uploadMode": "Upload Mode",
+    "dragAreaText": "Click or drag file to this area to upload",
+    "dragAreaHint": "Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.",
+    "dragHintText": "Hint Text",
+    "fileNamePattern": "File Name Pattern",
+    "fileNamePatternTooltip": "A regular expression pattern to validate file names (e.g., '^[a-zA-Z0-9_-]+\\.[a-z]+$' for alphanumeric names). Leave empty to allow all file names.",
+    "fileNamePatternPlaceholder": "^[a-zA-Z0-9_-]+\\.[a-z]+$",
+    "fileNamePatternErrorMsg": "Upload Failed. The File Name Does Not Match the Required Pattern.",
+    "invalidFileNamePatternMsg": "Invalid File Name Pattern: {error}",
+    "captureResolution": "Capture Resolution",
+    "captureResolutionTooltip": "Set the camera resolution for image capture. Higher resolutions produce better quality but may not be supported by all cameras.",
+    "captureResolutionAuto": "Auto (Camera Default)",
+    "captureResolution1080p": "1080p",
+    "captureResolution720p": "720p",
+    "captureResolution480p": "480p",
   },
   "date": {
     "format": "Format",
     "inputFormat": "Input Format",
     "formatTip": "Support: 'YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD', 'Timestamp'",
+    "inputFormatTip": "Supports multiple formats separated by commas (e.g., 'MM/DD/YYYY, MMDDYYYY, YYYY-MM-DD'). First format is used for display. See",
     "reference": "Please Refer to",
     "showTime": "Show Time",
     "start": "Start Date",
@@ -2382,6 +2439,11 @@ export const en = {
     "switch": "Switch",
     "rating": "Rating",
     "progress": "Progress",
+    "multilineText": "Multiline Text",
+    "multilineEditorTitle": "Edit Multiline Text",
+    "multilineEditorSave": "Save",
+    "multilineEditorCancel": "Cancel",
+    "multilineEditorPlaceholder": "Enter text here...",
     "option": "Operation",
     "optionList": "Operation List",
     "option1": "Operation 1",
@@ -2432,6 +2494,7 @@ export const en = {
     "filterChange": "Filter Change",
     "sortChange": "Sort Change",
     "pageChange": "Page Change",
+    "pageSizeChange": "Page Size Change",
     "refresh": "Refresh",
     "rowColor": "Conditional row color",
     "rowColorDesc": "Conditionally Set the Row Color Based on the Optional Variables: CurrentRow, CurrentOriginalIndex, CurrentIndex, ColumnTitle. For Example: '{{ currentRow.id > 3 ? \"green\" : \"red\" }}'",
@@ -2641,10 +2704,16 @@ export const en = {
     "titleAlign": "Title Alignment",
     "widthTooltip": "Pixel or Percentage, e.g. 520, 60%",
     "heightTooltip": "Pixel, e.g. 378",
+    "open": "Open",
+    "openDesc": "Triggered When the Drawer is Opened",
+    "close": "Close",
+    "closeDesc": "Triggered When the Drawer is Closed",
     "openDrawerDesc": "Open Drawer",
     "closeDrawerDesc": "Close Drawer",
     "width": "Drawer Width",
-    "height": "Drawer Height"
+    "height": "Drawer Height",
+    "closeIcon": "Close Icon",
+
   },
   "meeting": {
     "logLevel": "Agora SDK Log Level",
@@ -3331,6 +3400,7 @@ export const en = {
     "joinTimeColumn": "Joining Time",
     "actionColumn": "Operation",
     "roleColumn": "Role",
+    "filterByRole": "Filter by role",
     "exitGroup": "Exit Group",
     "moveOutGroup": "Remove from Group",
     "inviteUser": "Invite Members",
@@ -3397,7 +3467,14 @@ export const en = {
     "gutter" : "Gap",
     "gutterTooltip" : "The distance between tabs in px",
     "tabsCentered" : "Centered Tabs",
-    "destroyInactiveTab": "Destroy Inactive TabPane"
+    "destroyInactiveTab": "Destroy Inactive TabPane",
+    "tabBehavior": "Tab Behavior",
+    "tabBehaviorLazy": "Lazy",
+    "tabBehaviorKeepAlive": "Keep Alive",
+    "tabBehaviorDestroy": "Destroy Inactive",
+    "tabBehaviorLazyTooltip": "Render tabs only when they are first activated. Hidden tabs are not rendered until selected.",
+    "tabBehaviorKeepAliveTooltip": "Keep all tab contents mounted and initialized. Hidden tabs remain mounted but are visually hidden.",
+    "tabBehaviorDestroyTooltip": "Unmount contents of inactive tabs to free resources. Hidden tabs are destroyed until selected again."
   },
   "formComp": {
     "containerPlaceholder": "Drag Components from the Right Pane or",
@@ -3477,7 +3554,7 @@ export const en = {
     "logoURL": "Navigation Logo URL",
     "horizontalAlignment": "Horizontal Alignment",
     "logoURLDesc": "You can display a Logo on the left side by entering URI Value or Base64 String like data:image/png;base64,AAA... CCC",
-    "itemsDesc": "Hierarchical Navigation Menu Items"
+    "itemsDesc": "Menu Items"
   },
   "droppadbleMenuItem": {
     "subMenu": "Submenu {number}"
@@ -3529,12 +3606,68 @@ export const en = {
     "error": "Send an Error Notification"
   },
   "toastComp": {
-    "destroy": "close a Notification",
-    "info": "Send a Notification",
-    "loading": "Send a Loading Notification",
-    "success": "Send a Success Notification",
-    "warn": "Send a Warning Notification",
-    "error": "Send an Error Notification"
+    // Method descriptions
+    "destroy": "Close a notification by key",
+    "info": "Show an info notification",
+    "success": "Show a success notification",
+    "warn": "Show a warning notification",
+    "error": "Show an error notification",
+    "showMethod": "Show notification with configured settings",
+    "closeMethod": "Close the notification",
+    "openMethod": "Show an info notification (alias for info)",
+    
+    // Property labels
+    "title": "Title",
+    "titlePlaceholder": "Notification title",
+    "description": "Description",
+    "descriptionPlaceholder": "Notification description",
+    "type": "Type",
+    "duration": "Duration (seconds)",
+    "durationTooltip": "Time in seconds before auto-close. Set to 0 to disable auto-close.",
+    "placement": "Placement",
+    "dismissible": "Show Close Button",
+    "showProgress": "Show Progress Bar",
+    "showProgressTooltip": "Display a progress bar indicating time until auto-close",
+    "pauseOnHover": "Pause on Hover",
+    "behavior": "Behavior",
+    "width": "Width",
+    "widthTooltip": "Width of the notification in pixels, percentages, or other CSS units. if you want to adjust it according to the screen size, you can use viewport units. Example: 100vw",
+    "progressHeight": "Progress Bar Height",
+    "progressHeightTooltip": "Height of the progress bar. Example: 4px, 8px",
+    "closeIconColor": "Close Icon Color",
+    "infoIconColor": "Info Icon Color",
+    "successIconColor": "Success Icon Color",
+    "warningIconColor": "Warning Icon Color",
+    "errorIconColor": "Error Icon Color",
+    "progressColor": "Progress Bar Color",
+    "progressBackground": "Progress Bar Background",
+    
+    // Type options
+    "typeInfo": "Info",
+    "typeSuccess": "Success",
+    "typeWarning": "Warning",
+    "typeError": "Error",
+    
+    // Placement options
+    "placementTopLeft": "Top Left",
+    "placementTopRight": "Top Right",
+    "placementBottomLeft": "Bottom Left",
+    "placementBottomRight": "Bottom Right",
+    
+    // Event labels
+    "click": "Click",
+    "clickDesc": "Triggered when the notification is clicked",
+    "close": "Close",
+    "closeDesc": "Triggered when the notification is closed or dismissed",
+    
+    // Exposed state descriptions
+    "visibleDesc": "Whether the notification is currently visible",
+    "titleDesc": "The configured title of the notification",
+    "descriptionDesc": "The configured description of the notification",
+    "typeDesc": "The configured type (info, success, warning, error)",
+    "durationDesc": "The configured duration in seconds",
+    "placementDesc": "The configured placement position",
+    "widthDesc": "The configured width of the notification"
   },
   "themeComp": {
     "switchTo": "Switch Theme"
@@ -4308,6 +4441,7 @@ export const en = {
     "fileUploadError": "File upload error",
     "fileFormatError": "File format error",
     "groupWithSquareBrackets": "[Group] ",
+    "managePermissions": "Manage permissions",
     "allPermissions": "Owner",
     "appSharingDialogueTitle" : "App Sharing and Permissions",
     "appSocialSharing" : "Share Your App and Experience on:",
@@ -4318,6 +4452,8 @@ export const en = {
     "appPublicMessage": "Make the app public. Anyone can view.",
     "modulePublicMessage": "Make the module public. Anyone can view.",
     "marketplaceURL": "https://api-service.lowcoder.cloud",
+    "appMemberMessage": "All shared members can view this app.",
+    "moduleMemberMessage": "All shared members can view this module.",
     "appMarketplaceMessage": "Publish your App on the Public Marketplace. Anyone can view and copy it from there.",
     "moduleMarketplaceMessage": "Publish your Module on the Public Marketplace. Anyone can view and copy it from there.",
     "marketplaceGoodPublishing": "Please make sure your app is well-named and easy to use. Remove any sensitive information before publishing. Also, remove local datasources and replace by static built-in temporary data.",
@@ -4340,6 +4476,8 @@ export const en = {
     "createNavigation": "Create Navigation",
     "howToUseAPI": "How to use the Open Rest API",
     "support": "Support",
+    "versions": "Versions",
+    "publishVersionDescription": "By publishing, your users will see the current state of your app. Further editing will not be visible until you publish again",
   },
   
   "support" : {

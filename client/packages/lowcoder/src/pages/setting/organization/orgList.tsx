@@ -173,6 +173,9 @@ type DataItemInfo = {
   logoUrl: string;
   createdAt?: number;
   updatedAt?: number;
+  isCurrentOrg?: boolean;
+  isAdmin: boolean;
+  userRole: string;
 };
 
 function OrganizationSetting() {
@@ -198,20 +201,29 @@ function OrganizationSetting() {
 
 
 
-  // Filter to only show orgs where user has admin permissions
-  const adminOrgs = displayWorkspaces.filter((org: Org) => {
+  // Show all organizations with role information
+  const allOrgs = displayWorkspaces;
+  const adminOrgCount = displayWorkspaces.filter((org: Org) => {
     const role = user.orgRoleMap.get(org.id);
     return role === ADMIN_ROLE || role === SUPER_ADMIN_ROLE;
-  });
+  }).length;
 
-  const dataSource = adminOrgs.map((org: Org) => ({
-    id: org.id,
-    del: adminOrgs.length > 1,
-    orgName: org.name,
-    logoUrl: org.logoUrl || "",
-    createdAt: org.createdAt,
-    updatedAt: org.updatedAt,
-  }));
+  const dataSource = allOrgs.map((org: Org) => {
+    const userRole = user.orgRoleMap.get(org.id);
+    const isAdmin = userRole === ADMIN_ROLE || userRole === SUPER_ADMIN_ROLE;
+    
+    return {
+      id: org.id,
+      del: isAdmin && adminOrgCount > 1,
+      orgName: org.name,
+      logoUrl: org.logoUrl || "",
+      createdAt: org.createdAt,
+      updatedAt: org.updatedAt,
+      isCurrentOrg: org.isCurrentOrg,
+      isAdmin,
+      userRole,
+    };
+  });
 
 
 
@@ -262,7 +274,7 @@ function OrganizationSetting() {
                   dataIndex: "orgName",
                   ellipsis: true,
                   render: (_, record: any) => {
-                    const isActiveOrg = record.id === user.currentOrgId;
+                    const isActiveOrg = record.isCurrentOrg;
                     return (
                       <OrgName>
                         <StyledOrgLogo source={record.logoUrl} orgName={record.orgName} />
@@ -307,7 +319,7 @@ function OrganizationSetting() {
                 key: i,
                 operation: (
                   <OperationWrapper>
-                    {item.id !== user.currentOrgId && (
+                    {!item.isCurrentOrg && (
                       <SwitchBtn
                         className={"home-datasource-edit-button"}
                         buttonType={"blue"}
@@ -320,13 +332,15 @@ function OrganizationSetting() {
                         {trans("profile.switchWorkspace")}
                       </SwitchBtn>
                     )}
+                    {item.isAdmin && (
                     <EditBtn
                       className={"home-datasource-edit-button"}
                       buttonType={"primary"}
                       onClick={() => history.push(buildOrgId(item.id))}
                     >
-                      {trans("edit")}
-                    </EditBtn>
+                        {trans("edit")}
+                      </EditBtn>
+                    )}
                     {item.del && (
                       <EditPopover
                         del={() => {

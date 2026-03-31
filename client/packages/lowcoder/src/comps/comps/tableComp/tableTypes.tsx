@@ -140,6 +140,11 @@ export const TableEventOptions = [
     description: trans("table.pageChange"),
   },
   {
+    label: trans("table.pageSizeChange"),
+    value: "pageSizeChange",
+    description: trans("table.pageSizeChange"),
+  },
+  {
     label: trans("table.refresh"),
     value: "refresh",
     description: trans("table.refresh"),
@@ -265,6 +270,7 @@ const tableChildrenMap = {
   selectedCell: stateComp<JSONObject>({}),
   inlineAddNewRow: BoolControl,
   editModeClicks: dropdownControl(editModeClickOptions, "single"),
+  currentExpandedRows: stateComp<string[]>([]),
 };
 
 export const TableInitComp = (function () {

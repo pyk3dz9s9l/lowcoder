@@ -100,7 +100,7 @@ const ColumnDropdown = styled(Dropdown)`
 const ColumnBatchOptionWrapper = styled.div`
   display: flex;
   align-items: center;
-  color: ${GreyTextColor}
+  color: ${GreyTextColor};
   line-height: 16px;
   font-size: 13px;
 `;
@@ -611,6 +611,11 @@ export function compTablePropertyView<T extends MultiBaseComp<TableChildrenType>
                 label: trans("table.dynamicColumnConfig"),
                 tooltip: trans("table.dynamicColumnConfigDesc"),
             })}
+          </Section>
+
+          <Section name={trans("prop.component")}>
+            {comp.children.className.propertyView({ label: trans("prop.className") })}
+            {comp.children.dataTestId.propertyView({ label: trans("prop.dataTestId") })}
           </Section>
         </>
       )}

@@ -26,6 +26,7 @@ import {
   depsConfig,
   DepsConfig,
   NameConfig,
+  NameConfigHidden,
   withExposingConfigs,
 } from "comps/generators/withExposing";
 import { withMethodExposing } from "comps/generators/withMethodExposing";
@@ -98,11 +99,15 @@ export class TableImplComp extends TableInitComp implements IContainer {
   }
 
   downloadData(fileName: string) {
+    // displayData already contains only visible columns (filtered in transformDispalyData)
+    const displayData = (this as any).exposingValues["displayData"];
+    const delimiter = this.children.toolbar.children.columnSeparator.getView();
+
     saveDataAsFile({
-      data: (this as any).exposingValues["displayData"],
+      data: displayData,
       filename: fileName,
       fileType: "csv",
-      delimiter: this.children.toolbar.children.columnSeparator.getView(),
+      delimiter,
     });
   }
 
@@ -480,7 +485,6 @@ export class TableImplComp extends TableInitComp implements IContainer {
           return { ...oriRow, ...changeValues };
         })
         .value();
-      // console.info("toUpdateRowsNode. input: ", input, " res: ", res);
       return res;
     });
   }
@@ -516,14 +520,25 @@ export class TableImplComp extends TableInitComp implements IContainer {
       oriDisplayData: this.oriDisplayDataNode(),
       withParams: this.children.columns.withParamsNode(),
       dataIndexes: this.children.columns.getColumnsNode("dataIndex"),
+      changeSet: this.changeSetNode(),
     };
     const resNode = withFunction(fromRecord(nodes), (input) => {
       const dataIndexWithParamsDict = _(input.dataIndexes)
         .mapValues((dataIndex, idx) => input.withParams[idx])
         .mapKeys((withParams, idx) => input.dataIndexes[idx])
         .value();
-      const res = getColumnsAggr(input.oriDisplayData, dataIndexWithParamsDict);
-      // console.info("columnAggrNode: ", res);
+      
+      const columnChangeSets: Record<string, Record<string, any>> = {};
+      _.forEach(input.changeSet, (rowData, rowId) => {
+        _.forEach(rowData, (value, dataIndex) => {
+          if (!columnChangeSets[dataIndex]) {
+            columnChangeSets[dataIndex] = {};
+          }
+          columnChangeSets[dataIndex][rowId] = value;
+        });
+      });
+      
+      const res = getColumnsAggr(input.oriDisplayData, dataIndexWithParamsDict, columnChangeSets);
       return res;
     });
     return lastValueIfEqual(this, "columnAggrNode", [resNode, nodes] as const, (a, b) =>
@@ -703,7 +718,76 @@ TableTmpComp = withMethodExposing(TableTmpComp, [
       comp.children.selection.children.selectedRowKey.dispatchChangeValueAction(allKeys[0] || "0");
       comp.children.selection.children.selectedRowKeys.dispatchChangeValueAction(allKeys);
     },
-  },  
+  },
+  {
+    method: {
+      name: "selectRowsByIndex",
+      description: "Select rows by index",
+      params: [
+        { name: "rowIndexes", type: "arrayNumberString"},
+      ]
+    },
+    execute: (comp, values) => {
+      const rowIndexes = values[0];
+      if (!isArray(rowIndexes)) {
+        return Promise.reject("selectRowsByIndex function only accepts array of string or number i.e. ['1', '2', '3'] or [1, 2, 3]")
+      }
+      const displayData = comp.filterData ?? [];
+      const selectedKeys: string[] = rowIndexes
+        .map((index) => {
+          const numIndex = Number(index);
+          if (isNaN(numIndex) || numIndex < 0 || numIndex >= displayData.length) {
+            return null;
+          }
+          return displayData[numIndex][OB_ROW_ORI_INDEX];
+        })
+        .filter((key): key is string => key !== null);
+      
+      comp.children.selection.children.selectedRowKey.dispatchChangeValueAction(selectedKeys[0] || "0");
+      comp.children.selection.children.selectedRowKeys.dispatchChangeValueAction(selectedKeys);
+    },
+  },
+  {
+    method: {
+      name: "selectRowsByIds",
+      description: "Select rows by ids",
+      params: [
+        { name: "rowIds", type: "arrayNumberString"},
+      ]
+    },
+    execute: (comp, values) => {
+      const rowIds = values[0];
+      if (!isArray(rowIds)) {
+        return Promise.reject("selectRowsByIds function only accepts array of string or number i.e. ['1', '2', '3'] or [1, 2, 3]")
+      }
+      const displayData = comp.filterData ?? [];
+      
+      // Common ID field names to check
+      const idFields = ['id', 'ID', 'Id', 'key', 'Key', 'KEY'];
+      
+      const selectedKeys: string[] = rowIds
+        .map((id) => {
+          // First try to find by common ID fields
+          for (const field of idFields) {
+            const foundRow = displayData.find((row) => {
+              const fieldValue = row[field];
+              return fieldValue !== undefined && String(fieldValue) === String(id);
+            });
+            if (foundRow) {
+              return foundRow[OB_ROW_ORI_INDEX];
+            }
+          }
+          
+          // If no ID field found, fall back to comparing with OB_ROW_ORI_INDEX
+          const foundRow = displayData.find((row) => row[OB_ROW_ORI_INDEX] === String(id));
+          return foundRow ? foundRow[OB_ROW_ORI_INDEX] : null;
+        })
+        .filter((key): key is string => key !== null);
+      
+      comp.children.selection.children.selectedRowKey.dispatchChangeValueAction(selectedKeys[0] || "0");
+      comp.children.selection.children.selectedRowKeys.dispatchChangeValueAction(selectedKeys);
+    },
+  },
   {
     method: {
       name: "cancelChanges",
@@ -724,6 +808,73 @@ TableTmpComp = withMethodExposing(TableTmpComp, [
       comp.children.columns.dispatchClearInsertSet();
     },
   },
+  {
+    method: {
+      name: "setExpandedRows",
+      description: "",
+      params: [
+        { name: "expandedRows", type: "arrayString"},
+      ],
+    },
+    execute: (comp, values) => {
+      const expandedRows = values[0];
+      if (!isArray(expandedRows)) {
+        return Promise.reject("setExpandedRows function only accepts array of string i.e. ['1', '2', '3']")
+      }
+      if (expandedRows && isArray(expandedRows)) {
+        comp.children.currentExpandedRows.dispatchChangeValueAction(expandedRows as string[]);
+      }
+    },
+  }
+  ,
+  {
+    method: {
+      name: "hideColumns",
+      description: "Hide specified columns by dataIndex or title",
+      params: [
+        { name: "columns", type: "arrayString" },
+      ],
+    },
+    execute: (comp, values) => {
+      const columns = values[0];
+      if (!isArray(columns)) {
+        return Promise.reject("hideColumns expects an array of strings, e.g. ['id','name']");
+      }
+      const targets = new Set((columns as any[]).map((c) => String(c)));
+      comp.children.columns.getView().forEach((c) => {
+        const view = c.getView();
+        if (targets.has(view.dataIndex) || targets.has(view.title)) {
+          // Ensure both persistent and temporary flags are updated
+          c.children.hide.dispatchChangeValueAction(true);
+          c.children.tempHide.dispatchChangeValueAction(true);
+        }
+      });
+    },
+  }
+  ,
+  {
+    method: {
+      name: "showColumns",
+      description: "Show specified columns by dataIndex or title",
+      params: [
+        { name: "columns", type: "arrayString" },
+      ],
+    },
+    execute: (comp, values) => {
+      const columns = values[0];
+      if (!isArray(columns)) {
+        return Promise.reject("showColumns expects an array of strings, e.g. ['id','name']");
+      }
+      const targets = new Set((columns as any[]).map((c) => String(c)));
+      comp.children.columns.getView().forEach((c) => {
+        const view = c.getView();
+        if (targets.has(view.dataIndex) || targets.has(view.title)) {
+          c.children.hide.dispatchChangeValueAction(false);
+          c.children.tempHide.dispatchChangeValueAction(false);
+        }
+      });
+    },
+  }
 ]);
 
 // exposing data
@@ -954,6 +1105,30 @@ export const TableComp = withExposingConfigs(TableTmpComp, [
     },
     trans("table.displayDataDesc")
   ),
+  new CompDepsConfig(
+    "hiddenColumns",
+    (comp) => {
+      return {
+        dataIndexes: comp.children.columns.getColumnsNode("dataIndex"),
+        hides: comp.children.columns.getColumnsNode("hide"),
+        tempHides: comp.children.columns.getColumnsNode("tempHide"),
+        columnSetting: comp.children.toolbar.children.columnSetting.node(),
+      };
+    },
+    (input) => {
+      const hidden: string[] = [];
+      _.forEach(input.dataIndexes, (dataIndex, idx) => {
+        const isHidden = columnHide({
+          hide: input.hides[idx].value,
+          tempHide: input.tempHides[idx],
+          enableColumnSetting: input.columnSetting.value,
+        });
+        if (isHidden) hidden.push(dataIndex);
+      });
+      return hidden;
+    },
+    trans("table.displayDataDesc")
+  ),
   new DepsConfig(
     "filter",
     (children) => {
@@ -978,5 +1153,25 @@ export const TableComp = withExposingConfigs(TableTmpComp, [
     },
     trans("table.selectedCellDesc")
   ),
+  depsConfig({
+    name: "currentExpandedRow",
+    desc: trans("table.sortDesc"),
+    depKeys: ["currentExpandedRows"],
+    func: (input) => {
+      if (input.currentExpandedRows.length > 0) {
+        return input.currentExpandedRows[input.currentExpandedRows.length - 1];
+      }
+      return "";
+    },
+  }),
+  depsConfig({
+    name: "currentExpandedRows",
+    desc: trans("table.sortDesc"),
+    depKeys: ["currentExpandedRows"],
+    func: (input) => {
+      return input.currentExpandedRows;
+    },
+  }),
   new NameConfig("data", trans("table.dataDesc")),
+  NameConfigHidden,
 ]);

@@ -179,11 +179,12 @@ export const useTextInputProps = (props: RecordConstructorToView<typeof textInpu
   const inputValue = { ...props.value }.value;
 
   useEffect(() => {
+    setLocalInputValue(defaultValue);
     props.value.onChange(defaultValue)
   }, [defaultValue]);
 
   useEffect(() => {
-    if (inputValue !== localInputValue) {
+    if (!touchRef.current) {
       setLocalInputValue(inputValue);
     }
   }, [inputValue]);
@@ -219,9 +220,9 @@ export const useTextInputProps = (props: RecordConstructorToView<typeof textInpu
     debounce(function (value: string, valueCtx: any) {
       propsRef.current.value.onChange(value);
       propsRef.current.onEvent("change");
-    }, 1000)
-  );
-  
+      changeRef.current = false;  // Reset after commit
+    }, 100)
+  );  
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -230,6 +231,12 @@ export const useTextInputProps = (props: RecordConstructorToView<typeof textInpu
     changeRef.current = true;
     touchRef.current = true;
     debouncedOnChangeRef.current?.(value, propsRef.current.value);
+  };
+
+  const handleBlur = () => {
+    debouncedOnChangeRef.current.flush?.();
+    touchRef.current = false;
+    propsRef.current.onEvent("blur");
   };
 
   // Cleanup refs on unmount
@@ -251,6 +258,7 @@ export const useTextInputProps = (props: RecordConstructorToView<typeof textInpu
         } as any,
       }),
       onChange: handleChange,
+      onBlur: handleBlur,
     },
     validateState,
   ];

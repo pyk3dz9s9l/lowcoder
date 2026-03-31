@@ -79,6 +79,7 @@ type PropertyViewParam = {
   // auto-generated message?
   depMsg?: string;
   allowGradient?: boolean;
+  tooltip?: React.ReactNode;
 };
 
 export class ColorControl extends ColorCodeControl {
@@ -139,7 +140,7 @@ function ColorItem(props: {
   }, [containerRef]);
 
   return (
-    <ControlPropertyViewWrapper label={param.label} labelEllipsis>
+    <ControlPropertyViewWrapper label={param.label} tooltip={param.tooltip} labelEllipsis>
       <ColorContainer ref={containerRef}>
         <ColorSelect
           dispatch={controlThis.dispatch}

@@ -266,9 +266,12 @@ export function* createOrgSaga(action: ReduxAction<{ orgName: string }>) {
     if (isValidResponse) {
       // update org list
       yield call(getUserSaga);
-      yield put({
-        type: ReduxActionTypes.CREATE_ORG_SUCCESS,
-      });
+      // Refetch workspaces to update the profile dropdown
+      yield put(fetchWorkspacesAction(1, 10));
+        yield put({
+          type: ReduxActionTypes.CREATE_ORG_SUCCESS,
+        });
+
     }
   } catch (error: any) {
     yield put({
@@ -367,12 +370,15 @@ export function* fetchWorkspacesSaga(action: ReduxAction<{page: number, pageSize
       const apiData = response.data.data;
       
       // Transform orgId/orgName to match Org interface
-      const transformedItems = apiData.data.map(item => ({
-        id: item.orgId,
-        name: item.orgName,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      }));
+      const transformedItems = apiData.data
+        .filter(item => item.orgView && item.orgView.orgId) 
+        .map(item => ({
+          id: item.orgView.orgId,
+          name: item.orgView.orgName,
+          createdAt: item.orgView.createdAt,
+          updatedAt: item.orgView.updatedAt,
+          isCurrentOrg: item.isCurrentOrg,
+        }));
         
       yield put({
         type: ReduxActionTypes.FETCH_WORKSPACES_SUCCESS,

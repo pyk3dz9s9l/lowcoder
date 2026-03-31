@@ -104,6 +104,7 @@ import {
   TurnstileCaptchaCompIconSmall,
   PivotTableCompIconSmall,
   GraphChartCompIconSmall,
+  TagsCompIconSmall,
 } from "lowcoder-design";
 
 // Memoize icon components to prevent unnecessary re-renders
@@ -221,6 +222,7 @@ export const CompStateIcon: {
   mention: <MemoizedIcon Icon={MentionCompIconSmall} />,
   mermaid: <MemoizedIcon Icon={MermaidCompIconSmall} />,
   modal: <MemoizedIcon Icon={ModalCompIconSmall} />,
+  toast: <MemoizedIcon Icon={CommentCompIconSmall} />,
   module: <MemoizedIcon Icon={ModuleIconSmall} />,
   moduleContainer: <MemoizedIcon Icon={ModuleIconSmall} />,
   navigation: <MemoizedIcon Icon={NavComIconSmall} />,
@@ -236,7 +238,9 @@ export const CompStateIcon: {
   signature: <MemoizedIcon Icon={SignatureCompIconSmall} />,
   step: <MemoizedIcon Icon={StepCompIconSmall} />,
   table: <MemoizedIcon Icon={TableCompIconSmall} />,
+  tableLite: <MemoizedIcon Icon={TableCompIconSmall} />,
   text: <MemoizedIcon Icon={TextCompIconSmall} />,
+  multiTags: <MemoizedIcon Icon={TagsCompIconSmall} />, 
   timeline: <MemoizedIcon Icon={TimeLineCompIconSmall} />,
   toggleButton: <MemoizedIcon Icon={ToggleButtonCompIconSmall} />,
   tour: <MemoizedIcon Icon={TourCompIconSmall} />,

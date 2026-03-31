@@ -6,7 +6,7 @@ import {
 } from "lowcoder-core";
 import { BoolControl } from "../../controls/boolControl";
 import { LabelControl } from "../../controls/labelControl";
-import { BoolCodeControl, StringControl } from "../../controls/codeControl";
+import { BoolCodeControl, StringControl, NumberControl } from "../../controls/codeControl";
 import { PaddingControl } from "../../controls/paddingControl";
 import { MarginControl } from "../../controls/marginControl";
 import {
@@ -217,6 +217,12 @@ export const DropdownStyled = styled.div<{ $style: ChildrenMultiSelectStyleType 
     min-width: 14px;
     margin-right: 0;
   }
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: ${props => props.$style?.selectBackground ? `${props.$style.selectBackground}` : 'transparent'};
+  }
+  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: ${props => props.$style?.activeBackground ? `${props.$style.activeBackground}` : 'transparent'};
+  }
 `;
 
 const Wrapper = styled.span`
@@ -242,6 +248,7 @@ export const SelectChildrenMap = {
   margin: MarginControl,
   padding: PaddingControl,
   inputFieldStyle:styleControl(SelectStyle),
+  tabIndex: NumberControl,
   ...SelectInputValidationChildren,
   ...formDataChildren,
 };
@@ -269,6 +276,7 @@ export const SelectUIView = (
     placeholder={props.placeholder}
     value={props.value}
     showSearch={props.showSearch}
+    tabIndex={typeof props.tabIndex === 'number' ? props.tabIndex : undefined}
     filterOption={(input, option) => {
       if (!option) return false;
       return String(option.label ?? option.value ?? "").toLowerCase().includes(input.toLowerCase());
@@ -348,6 +356,7 @@ export const SelectPropertyView = (
           {disabledPropertyView(children)}
           {hiddenPropertyView(children)}
           {showDataLoadingIndicatorsPropertyView(children as any)}
+          {children.tabIndex.propertyView({ label: trans("prop.tabIndex") })}
         </Section>
       </>
     )}
