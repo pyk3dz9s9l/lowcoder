@@ -52,11 +52,6 @@ const ChatEvents = [
     description: trans("chatBox.roomSwitchDesc"),
   },
   {
-    label: trans("chatBox.roomJoin"),
-    value: "roomJoin",
-    description: trans("chatBox.roomJoinDesc"),
-  },
-  {
     label: trans("chatBox.roomLeave"),
     value: "roomLeave",
     description: trans("chatBox.roomLeaveDesc"),
@@ -280,10 +275,6 @@ let ChatBoxTmp = (function () {
       onRoomSwitch: (roomId: string) => {
         props.pendingRoomId.onChange(roomId);
         props.onEvent("roomSwitch");
-      },
-      onRoomJoin: (roomId: string) => {
-        props.pendingRoomId.onChange(roomId);
-        props.onEvent("roomJoin");
       },
       onRoomLeave: (roomId: string) => {
         props.pendingRoomId.onChange(roomId);

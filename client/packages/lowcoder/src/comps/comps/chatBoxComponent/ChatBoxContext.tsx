@@ -14,7 +14,6 @@ type ChatEventName =
   | "startTyping"
   | "stopTyping"
   | "roomSwitch"
-  | "roomJoin"
   | "roomLeave"
   | "roomCreate"
   | "inviteSend"
@@ -62,7 +61,6 @@ export interface ChatBoxContextValue {
 
   // Room actions
   onRoomSwitch: (roomId: string) => void;
-  onRoomJoin: (roomId: string) => void;
   onRoomLeave: (roomId: string) => void;
   onRoomCreate: (
     name: string,

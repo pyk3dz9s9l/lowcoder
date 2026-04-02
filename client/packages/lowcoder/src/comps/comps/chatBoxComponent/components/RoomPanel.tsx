@@ -17,7 +17,6 @@ import {
   RoomPanelHeader,
   RoomListContainer,
   RoomItemStyled,
-  SearchResultBadge,
   LlmRoomBadge,
   OnlinePresenceSection,
   OnlinePresenceLabel,
@@ -48,7 +47,6 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     onlineUsers,
     sidebarStyle,
     onRoomSwitch,
-    onRoomJoin,
     onRoomLeave,
     onInviteAccept,
     onInviteDecline,
@@ -81,7 +79,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     setIsSearchMode(true);
     const lower = q.toLowerCase();
     setSearchResults(
-      rooms.filter((r) => r.type === "public" && r.name.toLowerCase().includes(lower)),
+      rooms.filter((r) => r.name.toLowerCase().includes(lower)),
     );
   };
 
@@ -89,11 +87,6 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
     setSearchQuery("");
     setIsSearchMode(false);
     setSearchResults([]);
-  };
-
-  const handleJoinAndClear = (roomId: string) => {
-    onRoomJoin(roomId);
-    clearSearch();
   };
 
   const roomListItems = isSearchMode ? searchResults : rooms;
@@ -112,13 +105,14 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
         $active={isActive}
         $sidebarStyle={sidebarStyle}
         onClick={() => {
-          if (isSearch) {
-            handleJoinAndClear(room.id);
-          } else if (!isActive) {
+          if (!isActive) {
             onRoomSwitch(room.id);
           }
+          if (isSearch) {
+            clearSearch();
+          }
         }}
-        title={isSearch ? trans("chatBox.joinRoomTitle", { roomName: room.name }) : room.name}
+        title={room.name}
       >
         {room.type === "llm" ? (
           <RobotOutlined
@@ -154,7 +148,6 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
             {trans("chatBox.aiShortLabel")}
           </LlmRoomBadge>
         )}
-        {isSearch && <SearchResultBadge>{trans("chatBox.joinAction")}</SearchResultBadge>}
         {isActive && !isSearch && (
           <Popconfirm
             title={trans("chatBox.leaveRoomConfirm", { roomName: room.name })}
@@ -209,7 +202,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
         <div style={{ padding: "8px 8px 0" }}>
           <Input
             size="small"
-            placeholder={trans("chatBox.searchPublicRoomsPlaceholder")}
+            placeholder={trans("chatBox.searchPlaceholder")}
             prefix={<SearchOutlined style={{ color: "#aaa" }} />}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -228,7 +221,7 @@ export const RoomPanel = React.memo((props: RoomPanelProps) => {
                   : "chatBox.searchResultsCountPlural",
                 { count: searchResults.length },
               )
-            : trans("chatBox.noPublicRoomsMatch", { searchQuery })}
+            : trans("chatBox.noRoomsMatch", { searchQuery })}
           <Button
             type="link"
             size="small"
