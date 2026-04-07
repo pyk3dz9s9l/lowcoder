@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useRef, useEffect } from "react";
 import { EditorContext, EditorState } from "comps/editorState";
 import { GridCompOperator } from "comps/utils/gridCompOperator";
+import { HookCompOperator } from "comps/utils/hookCompOperator";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
 import { EditorHistory } from "util/editoryHistory";
 import { executeQueryAction } from "lowcoder-core";
@@ -75,6 +76,31 @@ function handleGlobalKeyDown(
       break;
     }
     default:
+      // Capture component copy/paste/cut/deselect globally
+      if (modKeyPressed(e)) {
+        const key = e.key?.toLowerCase();
+        if (key === "c") {
+          if (!HookCompOperator.copyComp(editorState, editorState.selectedComps())) {
+            HookCompOperator.clearCopy();
+            GridCompOperator.copyComp(editorState, editorState.selectedComps());
+          }
+          break;
+        }
+        if (key === "v") {
+          if (!HookCompOperator.pasteComp(editorState)) {
+            GridCompOperator.pasteComp(editorState);
+          }
+          break;
+        }
+        if (key === "x") {
+          GridCompOperator.cutComp(editorState, editorState.selectedComps());
+          break;
+        }
+      }
+      if (e.key === "Escape") {
+        editorState.setSelectedCompNames(new Set());
+        break;
+      }
       return;
   }
   // avoid conflicts with the browser
@@ -194,9 +220,16 @@ function handleEditorKeyDown(e: React.KeyboardEvent, editorState: EditorState) {
       e.stopPropagation();
       return;
     case "copyComps":
+      if (HookCompOperator.copyComp(editorState, editorState.selectedComps())) {
+        return;
+      }
+      HookCompOperator.clearCopy();
       GridCompOperator.copyComp(editorState, editorState.selectedComps());
       return;
     case "pasteComps":
+      if (HookCompOperator.pasteComp(editorState)) {
+        return;
+      }
       GridCompOperator.pasteComp(editorState);
       return;
     case "cutComps":
