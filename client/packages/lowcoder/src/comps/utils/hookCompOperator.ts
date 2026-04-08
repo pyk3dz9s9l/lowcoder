@@ -1,24 +1,15 @@
 import { HookComp } from "comps/hooks/hookComp";
 import { EditorState } from "comps/editorState";
+import { singletonHookComp } from "comps/hooks/hookCompTypes";
 import { wrapActionExtraInfo, type Comp } from "lowcoder-core";
 import { messageInstance } from "lowcoder-design";
 import { trans } from "i18n";
 
-type CopyableHookType = "modal" | "drawer";
-
-type CopyableHookComp = HookComp & {
-  children: HookComp["children"] & {
-    compType: { getView: () => CopyableHookType };
-  };
-};
-
-const copyableHookTypes = new Set<CopyableHookType>(["modal", "drawer"]);
-
 export class HookCompOperator {
-  private static copyHooks: CopyableHookComp[] = [];
+  private static copyHooks: HookComp[] = [];
 
   /**
-   * Copy modals/drawers by name from selectedCompNames.
+   * Copy non-singleton hook components by name from selectedCompNames.
    */
   static copyComp(editorState: EditorState, compRecords: Record<string, Comp>) {
     const selectedNames = Array.from(editorState.selectedCompNames);
@@ -31,8 +22,8 @@ export class HookCompOperator {
       .filter((comp: any) => {
         const name = comp.children.name.getView();
         const compType = comp.children.compType.getView();
-        return selectedNames.includes(name) && copyableHookTypes.has(compType);
-      }) as CopyableHookComp[];
+        return selectedNames.includes(name) && !singletonHookComp(compType);
+      }) as HookComp[];
 
     if (!selectedHookComps.length) {
       return false;
@@ -48,7 +39,7 @@ export class HookCompOperator {
   }
 
   /**
-   * Paste previously copied modals/drawers and re-generate nested component names.
+   * Paste previously copied hook components and re-generate nested component names.
    */
   static pasteComp(editorState: EditorState) {
     if (!this.copyHooks.length) {
