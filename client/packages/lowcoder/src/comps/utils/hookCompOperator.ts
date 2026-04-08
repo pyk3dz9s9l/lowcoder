@@ -8,17 +8,14 @@ import { trans } from "i18n";
 export class HookCompOperator {
   private static copyHooks: HookComp[] = [];
 
-  /**
-   * Copy non-singleton hook components by name from selectedCompNames.
-   */
   static copyComp(editorState: EditorState, compRecords: Record<string, Comp>) {
     const selectedNames = Array.from(editorState.selectedCompNames);
     if (!selectedNames.length) {
       return false;
     }
 
-    const hookMap = editorState.getHooksComp().getAllCompItems();
-    const selectedHookComps = Object.values(hookMap)
+    const hookComps = editorState.getHooksComp().getView();
+    const selectedHookComps = hookComps
       .filter((comp: any) => {
         const name = comp.children.name.getView();
         const compType = comp.children.compType.getView();
@@ -30,7 +27,7 @@ export class HookCompOperator {
     }
 
     this.copyHooks = selectedHookComps;
-    messageInstance.success(trans("notification.copySuccess"));
+    messageInstance.success(trans("copySuccess"));
     return true;
   }
 
@@ -38,9 +35,7 @@ export class HookCompOperator {
     this.copyHooks = [];
   }
 
-  /**
-   * Paste previously copied hook components and re-generate nested component names.
-   */
+ 
   static pasteComp(editorState: EditorState) {
     if (!this.copyHooks.length) {
       messageInstance.info(trans("gridCompOperator.selectCompFirst"));
@@ -86,7 +81,7 @@ export class HookCompOperator {
     });
 
     editorState.setSelectedCompNames(newNames, "leftPanel");
-    messageInstance.success(trans("notification.copySuccess"));
+    messageInstance.success(trans("copySuccess"));
     return true;
   }
 }
