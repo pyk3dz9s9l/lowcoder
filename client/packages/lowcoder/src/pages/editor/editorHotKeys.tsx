@@ -2,6 +2,8 @@ import React, { useCallback, useContext, useRef, useEffect } from "react";
 import { EditorContext, EditorState } from "comps/editorState";
 import { GridCompOperator, readFromClipboard } from "comps/utils/gridCompOperator";
 import { HookCompOperator } from "comps/utils/hookCompOperator";
+import { messageInstance } from "lowcoder-design";
+import { trans } from "i18n";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
 import { EditorHistory } from "util/editoryHistory";
 import { executeQueryAction } from "lowcoder-core";
@@ -18,16 +20,17 @@ import { preview } from "constants/routesURL";
 import { useApplicationId } from "util/hooks";
 import { useUnmount } from "react-use";
 
-function handleCopyComps(editorState: EditorState) {
-  const isHook = HookCompOperator.copyComp(editorState);
+async function handleCopyComps(editorState: EditorState) {
+  const isHook = await HookCompOperator.copyComp(editorState);
   if (!isHook) {
-    GridCompOperator.copyComp(editorState, editorState.selectedComps());
+    await GridCompOperator.copyComp(editorState, editorState.selectedComps());
   }
 }
 
 async function handlePasteComps(editorState: EditorState) {
   const payload = await readFromClipboard();
   if (!payload) {
+    messageInstance.info(trans("gridCompOperator.selectCompFirst"));
     return;
   }
 

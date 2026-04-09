@@ -91,14 +91,14 @@ function buildEmptyPayload(): LowcoderClipboardPayload {
   };
 }
 
-export function writeHookOnlyToClipboard(hookItems: ClipboardHookItem[]) {
+export async function writeHookOnlyToClipboard(hookItems: ClipboardHookItem[]): Promise<boolean> {
   const payload = buildEmptyPayload();
   payload.hookItems = hookItems;
-  writeToClipboard(payload);
+  return writeToClipboard(payload);
 }
 
 export class GridCompOperator {
-  static copyComp(editorState: EditorState, compRecords: Record<string, Comp>) {
+  static async copyComp(editorState: EditorState, compRecords: Record<string, Comp>): Promise<boolean> {
     const oldUi = editorState.getUIComp().getComp();
     if (!oldUi) {
       messageInstance.info(trans("gridCompOperator.notSupport"));
@@ -152,9 +152,13 @@ export class GridCompOperator {
     const payload = buildEmptyPayload();
     payload.sourcePositionParams = sourcePositionParams;
     payload.gridItems = gridItems;
-    writeToClipboard(payload);
-
-    return true;
+    const written = await writeToClipboard(payload);
+    if (written) {
+      messageInstance.success(trans("gridCompOperator.copyCompsSuccess", { compNum: gridItems.length }));
+    } else {
+      messageInstance.error(trans("gridCompOperator.clipboardWriteError"));
+    }
+    return written;
   }
 
   static pasteFromPayload(editorState: EditorState, payload: LowcoderClipboardPayload): boolean {
@@ -240,6 +244,7 @@ export class GridCompOperator {
       })
     );
     editorState.setSelectedCompNames(copyCompNames);
+    messageInstance.success(trans("gridCompOperator.pasteCompsSuccess", { compNum: copyCompNames.size }));
     return true;
   }
 
@@ -274,10 +279,11 @@ export class GridCompOperator {
     window.open(APPLICATION_VIEW_URL(applicationId, "edit"))
   }
 
-  static cutComp(editorState: EditorState, compRecords: Record<string, Comp>) {
-    this.copyComp(editorState, compRecords) &&
-      this.doDelete(editorState, compRecords) &&
-        messageInstance.info(trans("gridCompOperator.cutCompsSuccess", { pasteKey, undoKey }));
+  static async cutComp(editorState: EditorState, compRecords: Record<string, Comp>) {
+    const copied = await this.copyComp(editorState, compRecords);
+    if (copied && this.doDelete(editorState, compRecords)) {
+      messageInstance.info(trans("gridCompOperator.cutCompsSuccess", { pasteKey, undoKey }));
+    }
   }
 
   private static doDelete(editorState: EditorState, compRecords: Record<string, Comp>): boolean {

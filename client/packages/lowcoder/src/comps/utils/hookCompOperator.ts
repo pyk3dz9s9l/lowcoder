@@ -11,7 +11,7 @@ import {
 } from "./gridCompOperator";
 
 export class HookCompOperator {
-  static copyComp(editorState: EditorState): boolean {
+  static async copyComp(editorState: EditorState): Promise<boolean> {
     const selectedNames = Array.from(editorState.selectedCompNames);
     if (!selectedNames.length) {
       return false;
@@ -40,9 +40,13 @@ export class HookCompOperator {
       return { compType, comp, name, fullValue };
     });
 
-    writeHookOnlyToClipboard(hookItems);
-    messageInstance.success(trans("copySuccess"));
-    return true;
+    const written = await writeHookOnlyToClipboard(hookItems);
+    if (written) {
+      messageInstance.success(trans("gridCompOperator.copyCompsSuccess", { compNum: hookItems.length }));
+    } else {
+      messageInstance.error(trans("gridCompOperator.clipboardWriteError"));
+    }
+    return written;
   }
 
   static pasteFromPayload(editorState: EditorState, payload: LowcoderClipboardPayload): boolean {
@@ -82,7 +86,7 @@ export class HookCompOperator {
     });
 
     editorState.setSelectedCompNames(newNames, "leftPanel");
-    messageInstance.success(trans("copySuccess"));
+    messageInstance.success(trans("gridCompOperator.pasteCompsSuccess", { compNum: newNames.size }));
     return true;
   }
 }

@@ -91,8 +91,12 @@ export const en = {
   "gridCompOperator": {
     "notSupport": "Not Supported",
     "selectAtLeastOneComponent": "Please select at least one component",
-    "selectCompFirst": "Select components before copying",
+    "selectCompFirst": "Please copy a component first",
     "noContainerSelected": "[Bug] No container selected",
+    "copyCompsSuccess": "Copied {compNum} {compNum, plural, one {component} other {components}} to clipboard",
+    "pasteCompsSuccess": "Pasted {compNum} {compNum, plural, one {component} other {components}}",
+    "clipboardReadError": "Unable to read clipboard. Please allow clipboard access and try again",
+    "clipboardWriteError": "Unable to write to clipboard. Please allow clipboard access and try again",
     "deleteCompsSuccess": "Deleted successfully. Press {undoKey} to undo.",
     "deleteCompsTitle": "Delete Components",
     "deleteCompsBody": "Are you sure you want to delete {compNum} selected components?",
