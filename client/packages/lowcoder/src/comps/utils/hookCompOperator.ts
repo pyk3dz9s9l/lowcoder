@@ -1,14 +1,17 @@
 import { HookComp } from "comps/hooks/hookComp";
 import { EditorState } from "comps/editorState";
 import { singletonHookComp } from "comps/hooks/hookCompTypes";
-import { wrapActionExtraInfo, type Comp } from "lowcoder-core";
+import { wrapActionExtraInfo } from "lowcoder-core";
 import { messageInstance } from "lowcoder-design";
 import { trans } from "i18n";
+import {
+  writeHookOnlyToClipboard,
+  type ClipboardHookItem,
+  type LowcoderClipboardPayload,
+} from "./gridCompOperator";
 
 export class HookCompOperator {
-  private static copyHooks: HookComp[] = [];
-
-  static copyComp(editorState: EditorState, compRecords: Record<string, Comp>) {
+  static copyComp(editorState: EditorState): boolean {
     const selectedNames = Array.from(editorState.selectedCompNames);
     if (!selectedNames.length) {
       return false;
@@ -26,19 +29,24 @@ export class HookCompOperator {
       return false;
     }
 
-    this.copyHooks = selectedHookComps;
+    const hookItems: ClipboardHookItem[] = selectedHookComps.map((hookComp) => {
+      const compType = hookComp.children.compType.getView();
+      const name = hookComp.children.name.getView();
+      const childComp: any = hookComp.children.comp;
+      const baseValue = childComp?.toJsonValue ? childComp.toJsonValue() : {};
+      const pasteValue = childComp?.getPasteValue?.(editorState.getNameGenerator()) ?? {};
+      const comp = { ...baseValue, ...pasteValue };
+      const fullValue = hookComp.toJsonValue();
+      return { compType, comp, name, fullValue };
+    });
+
+    writeHookOnlyToClipboard(hookItems);
     messageInstance.success(trans("copySuccess"));
     return true;
   }
 
-  static clearCopy() {
-    this.copyHooks = [];
-  }
-
- 
-  static pasteComp(editorState: EditorState) {
-    if (!this.copyHooks.length) {
-      messageInstance.info(trans("gridCompOperator.selectCompFirst"));
+  static pasteFromPayload(editorState: EditorState, payload: LowcoderClipboardPayload): boolean {
+    if (payload.hookItems.length === 0) {
       return false;
     }
 
@@ -46,32 +54,25 @@ export class HookCompOperator {
     const nameGenerator = editorState.getNameGenerator();
     const newNames = new Set<string>();
 
-    this.copyHooks.forEach((hookComp) => {
-      const compType = hookComp.children.compType.getView();
-      const newName = nameGenerator.genItemName(compType);
-      const childComp: any = hookComp.children.comp;
-      const baseValue = childComp?.toJsonValue ? childComp.toJsonValue() : {};
-      const pasteValue =
-        childComp?.getPasteValue?.(nameGenerator) ?? {};
+    payload.hookItems.forEach((item) => {
+      const newName = nameGenerator.genItemName(item.compType);
 
-      const payload = {
-        ...(hookComp.toJsonValue() as any),
+      const dispatchPayload = {
+        ...(item.fullValue || {}),
         name: newName,
-        comp: {
-          ...baseValue,
-          ...pasteValue,
-        },
+        compType: item.compType,
+        comp: item.comp,
       };
 
       hooksComp.dispatch(
         wrapActionExtraInfo(
-          hooksComp.pushAction(payload),
+          hooksComp.pushAction(dispatchPayload),
           {
             compInfos: [
               {
                 type: "add",
                 compName: newName,
-                compType,
+                compType: item.compType,
               },
             ],
           }
@@ -85,4 +86,3 @@ export class HookCompOperator {
     return true;
   }
 }
-
