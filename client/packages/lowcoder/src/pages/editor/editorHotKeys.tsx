@@ -1,6 +1,9 @@
 import React, { useCallback, useContext, useRef, useEffect } from "react";
 import { EditorContext, EditorState } from "comps/editorState";
-import { GridCompOperator } from "comps/utils/gridCompOperator";
+import { GridCompOperator, readFromClipboard } from "comps/utils/gridCompOperator";
+import { HookCompOperator } from "comps/utils/hookCompOperator";
+import { messageInstance } from "lowcoder-design";
+import { trans } from "i18n";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
 import { EditorHistory } from "util/editoryHistory";
 import { executeQueryAction } from "lowcoder-core";
@@ -16,6 +19,26 @@ import { getShortcutAction } from "pages/common/shortcutConfigs";
 import { preview } from "constants/routesURL";
 import { useApplicationId } from "util/hooks";
 import { useUnmount } from "react-use";
+
+async function handleCopyComps(editorState: EditorState) {
+  const isHook = await HookCompOperator.copyComp(editorState);
+  if (!isHook) {
+    await GridCompOperator.copyComp(editorState, editorState.selectedComps());
+  }
+}
+
+async function handlePasteComps(editorState: EditorState) {
+  const payload = await readFromClipboard();
+  if (!payload) {
+    messageInstance.info(trans("gridCompOperator.selectCompFirst"));
+    return;
+  }
+
+  const hookPasted = HookCompOperator.pasteFromPayload(editorState, payload);
+  if (!hookPasted) {
+    GridCompOperator.pasteFromPayload(editorState, payload);
+  }
+}
 
 type Props = {
   children: React.ReactNode;
@@ -75,6 +98,25 @@ function handleGlobalKeyDown(
       break;
     }
     default:
+      if (modKeyPressed(e)) {
+        const key = e.key?.toLowerCase();
+        if (key === "c") {
+          handleCopyComps(editorState);
+          break;
+        }
+        if (key === "v") {
+          handlePasteComps(editorState);
+          break;
+        }
+        if (key === "x") {
+          GridCompOperator.cutComp(editorState, editorState.selectedComps());
+          break;
+        }
+      }
+      if (e.key === "Escape") {
+        editorState.setSelectedCompNames(new Set());
+        break;
+      }
       return;
   }
   // avoid conflicts with the browser
@@ -194,10 +236,10 @@ function handleEditorKeyDown(e: React.KeyboardEvent, editorState: EditorState) {
       e.stopPropagation();
       return;
     case "copyComps":
-      GridCompOperator.copyComp(editorState, editorState.selectedComps());
+      handleCopyComps(editorState);
       return;
     case "pasteComps":
-      GridCompOperator.pasteComp(editorState);
+      handlePasteComps(editorState);
       return;
     case "cutComps":
       GridCompOperator.cutComp(editorState, editorState.selectedComps());
