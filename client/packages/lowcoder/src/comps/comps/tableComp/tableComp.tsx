@@ -3,6 +3,7 @@ import { getPageSize } from "comps/comps/tableComp/paginationControl";
 import { EMPTY_ROW_KEY, TableCompView } from "comps/comps/tableComp/tableCompView";
 import { TableFilter } from "comps/comps/tableComp/tableToolbarComp";
 import {
+  applyHeaderFilters,
   columnHide,
   ColumnsAggrData,
   COLUMN_CHILDREN_KEY,
@@ -357,12 +358,14 @@ export class TableImplComp extends TableInitComp implements IContainer {
       data: this.sortDataNode(),
       searchValue: this.children.searchText.node(),
       filter: this.children.toolbar.children.filter.node(),
+      headerFilters: this.children.headerFilters.node(),
       showFilter: this.children.toolbar.children.showFilter.node(),
     };
     let context = this;
     const filteredDataNode = withFunction(fromRecord(nodes), (input) => {
-      const { data, searchValue, filter, showFilter } = input;
-      const filteredData = filterData(data, searchValue.value, filter, showFilter.value);
+      const { data, searchValue, filter, headerFilters, showFilter } = input;
+      const toolbarFilteredData = filterData(data, searchValue.value, filter, showFilter.value);
+      const filteredData = applyHeaderFilters(toolbarFilteredData, headerFilters);
       // console.info("filterNode. data: ", data, " filter: ", filter, " filteredData: ", filteredData);
       // if data is changed on search then trigger event
       if(Boolean(searchValue.value) && data.length !== filteredData.length) {
@@ -1140,6 +1143,18 @@ export const TableComp = withExposingConfigs(TableTmpComp, [
       return input.filter;
     },
     trans("table.filterDesc")
+  ),
+  new DepsConfig(
+    "headerFilters",
+    (children) => {
+      return {
+        headerFilters: children.headerFilters.node(),
+      };
+    },
+    (input) => {
+      return input.headerFilters;
+    },
+    trans("table.headerFiltersDesc")
   ),
   new DepsConfig(
     "selectedCell",
