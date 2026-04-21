@@ -341,6 +341,10 @@ const aggregationSiderItems = [
     icon: <LeftSettingIcon />,
   },
   {
+    key: SiderKey.Canvas,
+    icon: <LeftColorPaletteIcon />,
+  },
+  {
     key: SiderKey.JS,
     icon: <LeftJSSettingIcon />,
   },
@@ -725,14 +729,11 @@ function EditorView(props: EditorViewProps) {
                       {menuKey === SiderKey.Canvas && (
                         <SettingsDiv>
                           <ScrollBar>
-                            {application &&
-                              !isAggregationApp(
-                                AppUILayoutType[application.applicationType]
-                              ) && (
-                                <>
-                                  {appSettingsComp.getPropertyView()}
-                                </>
-                              )}
+                            {application && (
+                              <>
+                                {appSettingsComp.getPropertyView()}
+                              </>
+                            )}
                           </ScrollBar>
                         </SettingsDiv>
                       )}

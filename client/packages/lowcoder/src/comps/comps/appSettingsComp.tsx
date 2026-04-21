@@ -342,6 +342,14 @@ function AppGeneralSettingsModal(props: ChildrenInstance) {
 
 function AppCanvasSettingsModal(props: ChildrenInstance) {
   const isPublicApp = useSelector(isPublicApplication);
+  const application = useSelector(currentApplication);
+  // Aggregation apps (PC Navigation / Mobile Navigation) do not use the
+  // grid CanvasView, so grid columns / row height / row count / canvas max
+  // width have no visual effect for them. Only the theme + background +
+  // padding fields apply.
+  const isAggregation = !!application && isAggregationApp(
+    AppUILayoutType[application.applicationType]
+  );
   const {
     themeList,
     defaultTheme,
@@ -397,7 +405,7 @@ function AppCanvasSettingsModal(props: ChildrenInstance) {
   return (
     <>
       <BaseSection
-        name={"Theme Settings"}
+        name={trans("appSetting.themeSettings")}
         width={288}
         noMargin
         style={{
@@ -454,7 +462,7 @@ function AppCanvasSettingsModal(props: ChildrenInstance) {
         }}
       >
         <DivStyled>
-          {maxWidth.propertyView({
+          {!isAggregation && maxWidth.propertyView({
             dropdownLabel: trans("appSetting.canvasMaxWidth"),
             inputLabel: trans("appSetting.userDefinedMaxWidth"),
             inputPlaceholder: trans("appSetting.inputUserDefinedPxValue"),
@@ -462,15 +470,15 @@ function AppCanvasSettingsModal(props: ChildrenInstance) {
             min: 350,
             lastNode: <span>{trans("appSetting.maxWidthTip")}</span>,
           })}
-          {gridColumns.propertyView({
+          {!isAggregation && gridColumns.propertyView({
             label: trans("appSetting.gridColumns"),
             placeholder: '24',
           })}
-          {gridRowHeight.propertyView({
+          {!isAggregation && gridRowHeight.propertyView({
             label: trans("appSetting.gridRowHeight"),
             placeholder: '8',
           })}
-          {gridRowCount.propertyView({
+          {!isAggregation && gridRowCount.propertyView({
             label: trans("appSetting.gridRowCount"),
             placeholder: 'Infinity',
           })}

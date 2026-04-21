@@ -16,6 +16,7 @@ import { PreviewContainerID } from "constants/domLocators";
 import { EditorContainer, EmptyContent } from "pages/common/styledComponent";
 import { Layers } from "constants/Layers";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
+import { EditorContext } from "comps/editorState";
 import { default as Skeleton } from "antd/es/skeleton";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { dropdownControl } from "@lowcoder-ee/comps/controls/dropdownControl";
@@ -664,6 +665,34 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
   const bgColor = (useContext(ThemeContext)?.theme || defaultTheme).canvas;
   const onEvent = comp.children.onEvent.getView();
 
+  // Pull app-level Theme / Canvas Settings (managed via the left-sidebar
+  // "Canvas" pane and shared with normal apps + modules). Mobile nav already
+  // owns its own maxWidth + grid behaviour, so we only consume the
+  // background + padding subset here.
+  const editorState = useContext(EditorContext);
+  const appSettings = editorState?.getAppSettings();
+  const canvasBg = appSettings?.gridBg;
+  const canvasBgImage = appSettings?.gridBgImage;
+  const canvasBgImageRepeat = appSettings?.gridBgImageRepeat || "no-repeat";
+  const canvasBgImageSize = appSettings?.gridBgImageSize || "cover";
+  const canvasBgImagePosition = appSettings?.gridBgImagePosition || "center";
+  const canvasBgImageOrigin = appSettings?.gridBgImageOrigin || "padding-box";
+  const canvasPaddingX = appSettings?.gridPaddingX ?? 0;
+  const canvasPaddingY = appSettings?.gridPaddingY ?? 0;
+
+  const canvasBackgroundStyle: React.CSSProperties = {};
+  if (canvasBg) {
+    canvasBackgroundStyle.background = canvasBg;
+  }
+  if (canvasBgImage) {
+    canvasBackgroundStyle.backgroundImage = `url('${canvasBgImage}')`;
+    canvasBackgroundStyle.backgroundRepeat = canvasBgImageRepeat;
+    canvasBackgroundStyle.backgroundSize = canvasBgImageSize;
+    canvasBackgroundStyle.backgroundPosition = canvasBgImagePosition;
+    canvasBackgroundStyle.backgroundOrigin = canvasBgImageOrigin;
+  }
+  const canvasContentPadding = `${canvasPaddingY}px ${canvasPaddingX}px`;
+
   const getContainer = useCallback(() =>
     document.querySelector(`#${PreviewContainerID}`) ||
     document.querySelector(`#${CanvasContainerID}`) ||
@@ -870,8 +899,12 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
 
   if (readOnly) {
     return (
-      <TabLayoutViewContainer maxWidth={maxWidth} tabBarHeight={containerTabBarHeight}>
-        <AppViewContainer>{appView}</AppViewContainer>
+      <TabLayoutViewContainer
+        maxWidth={maxWidth}
+        tabBarHeight={containerTabBarHeight}
+        style={canvasBackgroundStyle}
+      >
+        <AppViewContainer style={{ padding: canvasContentPadding }}>{appView}</AppViewContainer>
         {menuMode === MobileMode.Hamburger ? (
           <>
             {hamburgerButton}
@@ -885,8 +918,12 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
   }
 
   return (
-    <CanvasContainer $maxWidth={maxWidth} id={CanvasContainerID}>
-      <EditorContainer>{appView}</EditorContainer>
+    <CanvasContainer
+      $maxWidth={maxWidth}
+      id={CanvasContainerID}
+      style={canvasBackgroundStyle}
+    >
+      <EditorContainer style={{ padding: canvasContentPadding }}>{appView}</EditorContainer>
       {menuMode === MobileMode.Hamburger ? (
         <>
           {hamburgerButton}
