@@ -219,8 +219,8 @@ const childrenMap = {
   gridColumns: RangeControl.closed(1, 48, 24),
   gridRowHeight: RangeControl.closed(4, 100, 8),
   gridRowCount: withDefault(NumberControl, DEFAULT_ROW_COUNT),
-  gridPaddingX: withDefault(NumberControl, 20),
-  gridPaddingY: withDefault(NumberControl, 20),
+  gridPaddingX: withDefault(NumberControl, 0),
+  gridPaddingY: withDefault(NumberControl, 0),
   gridBg: ColorControl,
   gridBgImage: StringControl,
   gridBgImageRepeat: StringControl,
@@ -343,10 +343,6 @@ function AppGeneralSettingsModal(props: ChildrenInstance) {
 function AppCanvasSettingsModal(props: ChildrenInstance) {
   const isPublicApp = useSelector(isPublicApplication);
   const application = useSelector(currentApplication);
-  // Aggregation apps (PC Navigation / Mobile Navigation) do not use the
-  // grid CanvasView, so grid columns / row height / row count / canvas max
-  // width have no visual effect for them. Only the theme + background +
-  // padding fields apply.
   const isAggregation = !!application && isAggregationApp(
     AppUILayoutType[application.applicationType]
   );
@@ -484,11 +480,11 @@ function AppCanvasSettingsModal(props: ChildrenInstance) {
           })}
           {gridPaddingX.propertyView({
             label: trans("appSetting.gridPaddingX"),
-            placeholder: '20',
+            placeholder: '0',
           })}
           {gridPaddingY.propertyView({
             label: trans("appSetting.gridPaddingY"),
-            placeholder: '20',
+            placeholder: '0',
           })}
           {gridBg.propertyView({
             label: trans("style.background"),

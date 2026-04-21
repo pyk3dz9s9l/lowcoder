@@ -11,8 +11,7 @@ import { AppSelectComp } from "comps/comps/layout/appSelectComp";
 import { NameAndExposingInfo } from "comps/utils/exposingTypes";
 import { ConstructorToComp, ConstructorToDataType } from "lowcoder-core";
 import { CanvasContainer } from "comps/comps/gridLayoutComp/canvasView";
-import { CanvasContainerID } from "constants/domLocators";
-import { PreviewContainerID } from "constants/domLocators";
+import { CanvasContainerID, PreviewContainerID } from "constants/domLocators";
 import { EditorContainer, EmptyContent } from "pages/common/styledComponent";
 import { Layers } from "constants/Layers";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
@@ -47,6 +46,21 @@ const TabBarItem = React.lazy(() =>
   }))
 );
 const EventOptions = [clickEvent] as const;
+
+/** Mobile nav editor: tab bar uses position:absolute bottom; this root is the containing block */
+const MobileNavCanvasRoot = styled(CanvasContainer)`
+  position: relative;
+`;
+
+/** Strip shared EditorContainer defaults (16px padding + scrollbar-gutter: stable) for mobile nav */
+const MobileNavEditorContainer = styled(EditorContainer)`
+  padding: 0;
+  padding-right: 0;
+  scrollbar-gutter: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  background: transparent;
+`;
 
 const AppViewContainer = styled.div`
   position: absolute;
@@ -222,17 +236,17 @@ const TabBarWrapper = styled.div<{
   $readOnly: boolean,
   $canvasBg: string,
   $tabBarHeight: string,
-  $maxWidth: number,
   $verticalAlignment: string;
 }>`
+  box-sizing: border-box;
   max-width: inherit;
   background: ${(props) => (props.$canvasBg)};
   margin: 0 auto;
-  position: fixed;
+  position: ${(props) => (props.$readOnly ? "fixed" : "absolute")};
   bottom: 0;
   left: 0;
   right: 0;
-  width: ${(props) => props.$readOnly ? "100%" : `${props.$maxWidth - 30}px`};
+  width: 100%;
   z-index: ${Layers.tabBar};
   padding-bottom: env(safe-area-inset-bottom, 0);
 
@@ -390,7 +404,6 @@ function convertTreeData(data: any) {
 
 function TabBarView(props: TabBarProps & { 
     tabBarHeight: string; 
-    maxWidth: number;
     verticalAlignment: string;
     showSeparator: boolean;
     navIconSize: string;
@@ -405,7 +418,6 @@ function TabBarView(props: TabBarProps & {
         $readOnly={props.readOnly}
         $canvasBg={canvasBg}
         $tabBarHeight={props.tabBarHeight}
-        $maxWidth={props.maxWidth}
         $verticalAlignment={props.verticalAlignment} 
       >
         <StyledTabBar
@@ -731,7 +743,7 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
         currentTab.children.app.getView()) || (
         <EmptyContent
           text={readOnly ? "" : trans("aggregation.emptyTabTooltip")}
-          style={{ height: "100%", backgroundColor: "white" }}
+          style={{ height: "100%" }}
         />
       );
     }
@@ -741,7 +753,7 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
       currentTab.children.action.getView()) || (
       <EmptyContent
         text={readOnly ? "" : trans("aggregation.emptyTabTooltip")}
-        style={{ height: "100%", backgroundColor: "white" }}
+        style={{ height: "100%" }}
       />
       )
   }, [tabIndex, tabViews, dataOptionType]);
@@ -798,7 +810,6 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
       tabItemActiveStyle={navItemActiveStyle}
       tabBarHeight={tabBarHeight}
       navIconSize={navIconSize}
-      maxWidth={maxWidth}
       verticalAlignment={verticalAlignment}
       showSeparator={showSeparator}
     />
@@ -918,12 +929,12 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
   }
 
   return (
-    <CanvasContainer
+    <MobileNavCanvasRoot
       $maxWidth={maxWidth}
       id={CanvasContainerID}
       style={canvasBackgroundStyle}
     >
-      <EditorContainer style={{ padding: canvasContentPadding }}>{appView}</EditorContainer>
+      <MobileNavEditorContainer style={{ padding: canvasContentPadding }}>{appView}</MobileNavEditorContainer>
       {menuMode === MobileMode.Hamburger ? (
         <>
           {hamburgerButton}
@@ -932,7 +943,7 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
       ) : (
         tabBarView
       )}
-    </CanvasContainer>
+    </MobileNavCanvasRoot>
   );
 });
 
