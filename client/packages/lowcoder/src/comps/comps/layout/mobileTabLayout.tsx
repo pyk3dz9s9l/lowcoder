@@ -692,7 +692,9 @@ MobileTabLayoutTmp = withViewFn(MobileTabLayoutTmp, (comp) => {
   const canvasPaddingX = appSettings?.gridPaddingX ?? 0;
   const canvasPaddingY = appSettings?.gridPaddingY ?? 0;
 
-  const canvasBackgroundStyle: React.CSSProperties = {};
+  const canvasBackgroundStyle: React.CSSProperties = {
+    background: "#FFFFFF",
+  };
   if (canvasBg) {
     canvasBackgroundStyle.background = canvasBg;
   }
