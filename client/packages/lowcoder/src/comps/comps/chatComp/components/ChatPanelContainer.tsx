@@ -1,6 +1,6 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanelContainer.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
@@ -25,6 +25,10 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import "@assistant-ui/styles/index.css";
 import "@assistant-ui/styles/markdown.css";
+import { EditorContext } from "@lowcoder-ee/comps/editorState";
+import { configureComponentAction } from "../../preLoadComp/actions/componentConfiguration";
+import { addComponentAction, moveComponentAction, nestComponentAction, resizeComponentAction } from "../../preLoadComp/actions/componentManagement";
+import { applyThemeAction, configureAppMetaAction, setCanvasSettingsAction } from "../../preLoadComp/actions/appConfiguration";
 
 // ============================================================================
 // STYLED CONTAINER - SIMPLE FIXED STYLING FOR BOTTOM PANEL
@@ -81,8 +85,153 @@ export interface ChatPanelContainerProps {
 function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<ChatPanelContainerProps, 'storage'>) {
   const { state, actions } = useChatContext();
   const [isRunning, setIsRunning] = useState(false);
+  const editorState = useContext(EditorContext);
+  const editorStateRef = useRef(editorState);
 
   const currentMessages = actions.getCurrentMessages();
+
+  // Keep the ref updated with the latest editorState
+  useEffect(() => {
+    // console.log("EDITOR STATE CHANGE ---> ", editorState);
+    editorStateRef.current = editorState;
+  }, [editorState]);
+
+  const performAction = async (actions: any[]) => {
+    if (!editorStateRef.current) {
+      console.error("No editorStateRef found");
+      return;
+    }
+  
+    const comp = editorStateRef.current.getUIComp().children.comp;
+    if (!comp) {
+      console.error("No comp found");
+      return;
+    }
+    // const layout = comp.children.layout.getView();
+    // console.log("LAYOUT", layout);
+  
+    for (const actionItem of actions) {
+      const { action, component, ...action_payload } = actionItem;
+  
+      switch (action) {
+        case "place_component":
+          await addComponentAction.execute({
+            actionKey: action,
+            actionValue: "",
+            actionPayload: action_payload,
+            selectedComponent: component,
+            selectedEditorComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "nest_component":
+          await nestComponentAction.execute({
+            actionKey: action,
+            actionValue: "",
+            actionPayload: action_payload,
+            selectedComponent: component,
+            selectedEditorComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "move_component":
+          await moveComponentAction.execute({
+            actionKey: action,
+            actionValue: "",
+            actionPayload: action_payload,
+            selectedComponent: component,
+            selectedEditorComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "resize_component":
+          await resizeComponentAction.execute({
+            actionKey: action,
+            actionValue: "",
+            actionPayload: action_payload,
+            selectedComponent: component,
+            selectedEditorComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "set_properties":
+          await configureComponentAction.execute({
+            actionKey: action,
+            actionValue: component,
+            actionPayload: action_payload,
+            selectedEditorComponent: null,
+            selectedComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "set_theme":
+          await applyThemeAction.execute({
+            actionKey: action,
+            actionValue: component,
+            actionPayload: action_payload,
+            selectedEditorComponent: null,
+            selectedComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "set_app_metadata":
+          await configureAppMetaAction.execute({
+            actionKey: action,
+            actionValue: component,
+            actionPayload: action_payload,
+            selectedEditorComponent: null,
+            selectedComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        case "set_canvas_setting":
+          await setCanvasSettingsAction.execute({
+            actionKey: action,
+            actionValue: component,
+            actionPayload: action_payload,
+            selectedEditorComponent: null,
+            selectedComponent: null,
+            selectedNestComponent: null,
+            editorState: editorStateRef.current,
+            selectedDynamicLayoutIndex: null,
+            selectedTheme: null,
+            selectedCustomShortcutAction: null
+          });
+          break;
+        default:
+          break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
     const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
@@ -117,9 +266,13 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(userMessage);
+      const response = await messageHandler.sendMessage(userMessage, state.currentThreadId);
       onMessageUpdate?.(userMessage.text);
       
+      if (response?.actions?.length) {
+        performAction(response.actions);
+      }
+
       await actions.addMessage(state.currentThreadId, {
         id: generateId(),
         role: "assistant",
