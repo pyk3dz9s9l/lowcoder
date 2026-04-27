@@ -120,7 +120,7 @@ function Bottom(props: any) {
               </ChatHeader>
               <ChatPanel
                 tableName="LC_AI"
-                modelHost="http://localhost:5678/webhook/9a363e76-d3a5-46d1-98c3-4359f7106d33"
+                modelHost="https://farancode.app.n8n.cloud/webhook/lowcoder-ai-agent"
                 systemPrompt="You are a helpful assistant."
                 streaming={true}
               />
