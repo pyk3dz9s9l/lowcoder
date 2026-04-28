@@ -1,5 +1,8 @@
 # Builds client/packages/lowcoder-sdk-webpack-bundle and deploys its dist/ folder to Netlify.
 #
+# Deploy uses --no-build so Netlify CLI does not run the site UI "build command" (e.g. expo).
+# The webpack bundle is built in the prior CI step.
+#
 # Repository secrets (Netlify: Site settings → General → Site details → Site ID;
 # User settings → Applications → Personal access tokens):
 #   NETLIFY_AUTH_TOKEN  — Netlify personal access token
@@ -49,4 +52,4 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SDK_SITE_ID }}
-        run: npx --yes netlify-cli deploy --prod --dir=dist
+        run: npx --yes netlify-cli deploy --prod --dir=dist --no-build
