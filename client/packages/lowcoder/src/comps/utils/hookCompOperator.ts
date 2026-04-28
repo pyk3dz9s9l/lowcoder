@@ -2,8 +2,6 @@ import { HookComp } from "comps/hooks/hookComp";
 import { EditorState } from "comps/editorState";
 import { singletonHookComp } from "comps/hooks/hookCompTypes";
 import { wrapActionExtraInfo } from "lowcoder-core";
-import { messageInstance } from "lowcoder-design";
-import { trans } from "i18n";
 import {
   writeHookOnlyToClipboard,
   type ClipboardHookItem,
@@ -40,13 +38,7 @@ export class HookCompOperator {
       return { compType, comp, name, fullValue };
     });
 
-    const written = await writeHookOnlyToClipboard(hookItems);
-    if (written) {
-      messageInstance.success(trans("gridCompOperator.copyCompsSuccess", { compNum: hookItems.length }));
-    } else {
-      messageInstance.error(trans("gridCompOperator.clipboardWriteError"));
-    }
-    return written;
+    return writeHookOnlyToClipboard(hookItems);
   }
 
   static pasteFromPayload(editorState: EditorState, payload: LowcoderClipboardPayload): boolean {
@@ -86,7 +78,6 @@ export class HookCompOperator {
     });
 
     editorState.setSelectedCompNames(newNames, "leftPanel");
-    messageInstance.success(trans("gridCompOperator.pasteCompsSuccess", { compNum: newNames.size }));
     return true;
   }
 }

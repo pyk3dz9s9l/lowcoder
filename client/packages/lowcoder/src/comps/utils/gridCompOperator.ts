@@ -152,13 +152,7 @@ export class GridCompOperator {
     const payload = buildEmptyPayload();
     payload.sourcePositionParams = sourcePositionParams;
     payload.gridItems = gridItems;
-    const written = await writeToClipboard(payload);
-    if (written) {
-      messageInstance.success(trans("gridCompOperator.copyCompsSuccess", { compNum: gridItems.length }));
-    } else {
-      messageInstance.error(trans("gridCompOperator.clipboardWriteError"));
-    }
-    return written;
+    return writeToClipboard(payload);
   }
 
   static pasteFromPayload(editorState: EditorState, payload: LowcoderClipboardPayload): boolean {
@@ -244,7 +238,6 @@ export class GridCompOperator {
       })
     );
     editorState.setSelectedCompNames(copyCompNames);
-    messageInstance.success(trans("gridCompOperator.pasteCompsSuccess", { compNum: copyCompNames.size }));
     return true;
   }
 
