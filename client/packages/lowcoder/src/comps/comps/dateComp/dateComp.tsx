@@ -282,9 +282,6 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
             props.onEvent
           );
         }}
-        onPanelChange={() => {
-          handleDateChange("", props.value.onChange, noop);
-        }}
         onFocus={() => props.onEvent("focus")}
         onBlur={() => props.onEvent("blur")}
         suffixIcon={hasIcon(props.suffixIcon) && props.suffixIcon}

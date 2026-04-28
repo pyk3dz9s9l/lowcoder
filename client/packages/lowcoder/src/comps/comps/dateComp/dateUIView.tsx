@@ -55,7 +55,7 @@ const StyledAntdSelect = styled(AntdSelect)`
 export interface DataUIViewProps extends DateCompViewProps {
   value?: DatePickerProps<Dayjs>['value'];
   onChange: DatePickerProps<Dayjs>['onChange'];
-  onPanelChange: () => void;
+  onPanelChange?: () => void;
   onClickDateTimeZone:(value:any)=>void;
   tabIndex?: number;
   $disabledStyle?: DisabledInputStyleType;
