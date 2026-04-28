@@ -6,6 +6,7 @@ import MainContent from "components/layout/MainContent";
 import { LayoutMenuItemComp, LayoutMenuItemListComp } from "comps/comps/layout/layoutMenuItemComp";
 import { menuPropertyView } from "comps/comps/navComp/components/MenuItemList";
 import { registerLayoutMap } from "comps/comps/uiComp";
+import { EditorContext } from "comps/editorState";
 import { MultiCompBuilder, withDefault, withViewFn } from "comps/generators";
 import { withDispatchHook } from "comps/generators/withDispatchHook";
 import { NameAndExposingInfo } from "comps/utils/exposingTypes";
@@ -14,7 +15,7 @@ import { TopHeaderHeight } from "constants/style";
 import { Section, controlItem, sectionNames } from "lowcoder-design";
 import { trans } from "i18n";
 import { EditorContainer, EmptyContent } from "pages/common/styledComponent";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { isUserViewMode, useAppPathParam } from "util/hooks";
 import { StringControl, jsonControl } from "comps/controls/codeControl";
@@ -381,6 +382,21 @@ NavTmpLayout = withViewFn(NavTmpLayout, (comp) => {
   const dataOptionType = comp.children.dataOptionType.getView();
   const onEvent = comp.children.onEvent.getView();
 
+  // Pull app-level Theme / Canvas Settings (managed via the left-sidebar
+  // "Canvas" pane and shared with normal apps + modules). For aggregation
+  // apps the grid sizing fields are intentionally hidden in the settings UI;
+  // we only consume the background + padding subset here.
+  const editorState = useContext(EditorContext);
+  const appSettings = editorState?.getAppSettings();
+  const canvasBg = appSettings?.gridBg;
+  const canvasBgImage = appSettings?.gridBgImage;
+  const canvasBgImageRepeat = appSettings?.gridBgImageRepeat || "no-repeat";
+  const canvasBgImageSize = appSettings?.gridBgImageSize || "cover";
+  const canvasBgImagePosition = appSettings?.gridBgImagePosition || "center";
+  const canvasBgImageOrigin = appSettings?.gridBgImageOrigin || "padding-box";
+  const canvasPaddingX = appSettings?.gridPaddingX ?? 0;
+  const canvasPaddingY = appSettings?.gridPaddingY ?? 0;
+
   // filter out hidden. unauthorised items filtered by server
   const filterItem = useCallback((item: LayoutMenuItemComp): boolean => {
     return !item.children.hidden.getView();
@@ -685,8 +701,25 @@ NavTmpLayout = withViewFn(NavTmpLayout, (comp) => {
     />
   );
 
+  // Build canvas background style (color + optional image), driven by the
+  // shared app-level Canvas Settings.
+  const canvasBackgroundStyle: React.CSSProperties = {};
+  if (canvasBg) {
+    canvasBackgroundStyle.background = canvasBg;
+  }
+  if (canvasBgImage) {
+    canvasBackgroundStyle.backgroundImage = `url('${canvasBgImage}')`;
+    canvasBackgroundStyle.backgroundRepeat = canvasBgImageRepeat;
+    canvasBackgroundStyle.backgroundSize = canvasBgImageSize;
+    canvasBackgroundStyle.backgroundPosition = canvasBgImagePosition;
+    canvasBackgroundStyle.backgroundOrigin = canvasBgImageOrigin;
+  }
+
   let content = (
-    <Layout style={{ height: isPreview ? undefined : "100vh" }}>
+    <Layout style={{
+      height: isPreview ? undefined : "100vh",
+      ...canvasBackgroundStyle,
+    }}>
       {(navPosition === 'top') && (
         <Header style={{ display: 'flex', alignItems: 'center', padding: 0 }}>
           { navMenu }
@@ -697,7 +730,15 @@ NavTmpLayout = withViewFn(NavTmpLayout, (comp) => {
           {navMenu}
         </StyledSide>
       )}
-      <ViewerMainContent $isPreview={isPreview}>{pageView}</ViewerMainContent>
+      <ViewerMainContent
+        $isPreview={isPreview}
+        style={{
+          padding: `${canvasPaddingY}px ${canvasPaddingX}px`,
+          ...canvasBackgroundStyle,
+        }}
+      >
+        {pageView}
+      </ViewerMainContent>
       {(navPosition === 'bottom') && (
         <Footer style={{ display: 'flex', alignItems: 'center', padding: 0 }}>
           { navMenu }
