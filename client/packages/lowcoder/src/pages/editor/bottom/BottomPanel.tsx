@@ -2,7 +2,7 @@ import { BottomContent } from "pages/editor/bottom/BottomContent";
 import { ResizableBox, ResizeCallbackData } from "react-resizable";
 import styled from "styled-components";
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { getPanelStyle, savePanelStyle } from "util/localStorageUtil";
 import { BottomResultPanel } from "../../../components/resultPanel/BottomResultPanel";
 import { AppState } from "../../../redux/reducers";
@@ -13,8 +13,10 @@ import Flex from "antd/es/flex";
 import type { MenuProps } from 'antd/es/menu';
 import { BuildOutlined, DatabaseOutlined } from "@ant-design/icons";
 import Menu from "antd/es/menu/menu";
+import Select from "antd/es/select";
 import { AIGenerate } from "lowcoder-design";
 import { ChatPanel } from "@lowcoder-ee/comps/comps/chatComp/components/ChatPanel";
+import { EditorContext } from "comps/editorState";
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -60,6 +62,18 @@ const ChatTitle = styled.h3`
   color: #222222;
 `;
 
+const QuerySelectorWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const QueryLabel = styled.span`
+  font-size: 12px;
+  color: #8b8fa3;
+  white-space: nowrap;
+`;
+
 const preventDefault = (e: any) => {
   e.preventDefault();
 };
@@ -84,6 +98,17 @@ function Bottom(props: any) {
 
   const [bottomHeight, setBottomHeight] = useState(panelStyle.bottom.h);
   const [currentOption, setCurrentOption] = useState("data");
+  const [selectedQuery, setSelectedQuery] = useState<string>("");
+
+  const editorState = useContext(EditorContext);
+
+  const queryOptions = useMemo(() => {
+    if (!editorState) return [];
+    return editorState.queryCompInfoList().map((info) => ({
+      label: info.name,
+      value: info.name,
+    }));
+  }, [editorState]);
 
   const items: MenuItem[] = [
     { key: 'data', icon: <DatabaseOutlined />, label: 'Data Queries' },
@@ -98,7 +123,7 @@ function Bottom(props: any) {
         height={panelStyle.bottom.h}
         resizeHandles={["n"]}
         minConstraints={[680, 285]}
-        maxConstraints={[Infinity, clientHeight - 48 - 40]} // - app_header - right_header
+        maxConstraints={[Infinity, clientHeight - 48 - 40]}
         onResizeStart={addListener}
         onResizeStop={resizeStop}
       >
@@ -117,12 +142,23 @@ function Bottom(props: any) {
             <Flex style={{height: '100%', flex: 1}} vertical>
               <ChatHeader>
                 <ChatTitle>Lowcoder AI Assistant</ChatTitle>
+                <QuerySelectorWrapper>
+                  <QueryLabel>Query:</QueryLabel>
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder="Select a query"
+                    value={selectedQuery || undefined}
+                    onChange={(value) => setSelectedQuery(value || "")}
+                    options={queryOptions}
+                    style={{ width: 200 }}
+                    size="small"
+                  />
+                </QuerySelectorWrapper>
               </ChatHeader>
               <ChatPanel
                 tableName="LC_AI"
-                modelHost="https://farancode.app.n8n.cloud/webhook/lowcoder-ai-agent"
-                systemPrompt="You are a helpful assistant."
-                streaming={true}
+                chatQuery={selectedQuery}
               />
             </Flex>
           )}

@@ -43,6 +43,10 @@ export interface ChatMessage {
     sendMessage(message: ChatMessage, sessionId?: string): Promise<MessageResponse>;
     // Future: sendMessageStream?(message: ChatMessage): AsyncGenerator<MessageResponse>;
   }
+
+  export interface AIAssistantMessageHandler {
+    sendMessage(message: ChatMessage, sessionId?: string, conversationHistory?: ChatMessage[]): Promise<MessageResponse>;
+  }
   
   export interface MessageResponse {
     content: string;
@@ -53,12 +57,6 @@ export interface ChatMessage {
   // ============================================================================
   // CONFIGURATION TYPES (simplified)
   // ============================================================================
-  
-  export interface N8NHandlerConfig {
-    modelHost: string;
-    systemPrompt?: string;
-    streaming?: boolean;
-  }
   
   export interface QueryHandlerConfig {
     chatQuery: string;
@@ -93,8 +91,6 @@ export interface ChatCoreProps {
 // Bottom Panel Props (simplified, no styling controls)
 export interface ChatPanelProps {
   tableName: string;
-  modelHost: string;
-  systemPrompt?: string;
-  streaming?: boolean;
+  chatQuery: string;
   onMessageUpdate?: (message: string) => void;
 }

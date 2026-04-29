@@ -14,7 +14,7 @@ import { ChatProvider } from "./components/context/ChatContext";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
 import { QueryHandler } from "./handlers/messageHandlers";
-import { useMemo, useRef, useEffect } from "react";  
+import { useMemo, useRef } from "react";  
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
 import { trans } from "i18n";
@@ -248,16 +248,6 @@ const ChatTmpComp = new UICompBuilder(
         props.onEvent("messageReceived");
       }
     };
-
-    // Cleanup on unmount
-    useEffect(() => {
-      return () => {
-        const tableName = uniqueTableName.current;
-        if (tableName) {
-          storage.cleanup();
-        }
-      };
-    }, []);
 
     // custom styles
     const styles = {

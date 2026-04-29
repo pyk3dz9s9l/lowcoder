@@ -18,7 +18,7 @@ import {
   RegularThreadData, 
   ArchivedThreadData 
 } from "./context/ChatContext";
-import { MessageHandler, ChatMessage } from "../types/chatTypes";
+import { AIAssistantMessageHandler, ChatMessage } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
@@ -77,7 +77,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export interface ChatPanelContainerProps {
   storage: any;
-  messageHandler: MessageHandler;
+  messageHandler: AIAssistantMessageHandler;
   placeholder?: string;
   onMessageUpdate?: (message: string) => void;
 }
@@ -262,11 +262,17 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       timestamp: Date.now(),
     };
   
+    const conversationHistory = [...currentMessages, userMessage];
+  
     await actions.addMessage(state.currentThreadId, userMessage);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(userMessage, state.currentThreadId);
+      const response = await messageHandler.sendMessage(
+        userMessage,
+        state.currentThreadId,
+        conversationHistory
+      );
       onMessageUpdate?.(userMessage.text);
       
       if (response?.actions?.length) {
@@ -316,7 +322,11 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(newMessages[newMessages.length - 1]);
+      const response = await messageHandler.sendMessage(
+        newMessages[newMessages.length - 1],
+        state.currentThreadId,
+        newMessages
+      );
       onMessageUpdate?.(text);
   
       newMessages.push({
