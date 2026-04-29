@@ -2,13 +2,12 @@ import React, { useCallback, useContext, useRef, useEffect } from "react";
 import { EditorContext, EditorState } from "comps/editorState";
 import { GridCompOperator, readFromClipboard } from "comps/utils/gridCompOperator";
 import { HookCompOperator } from "comps/utils/hookCompOperator";
-import { messageInstance } from "lowcoder-design";
-import { trans } from "i18n";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
 import { EditorHistory } from "util/editoryHistory";
 import { executeQueryAction } from "lowcoder-core";
 import {
   GlobalShortcutsWrapper,
+  isFilterInputTarget,
   modKeyPressed,
   selectCompModifierKeyPressed,
   ShortcutsWrapper,
@@ -20,6 +19,11 @@ import { preview } from "constants/routesURL";
 import { useApplicationId } from "util/hooks";
 import { useUnmount } from "react-use";
 
+
+function isNativeClipboardContext(e: KeyboardEvent | React.KeyboardEvent): boolean {
+  return isFilterInputTarget(e) || !!window.getSelection?.()?.toString();
+}
+
 async function handleCopyComps(editorState: EditorState) {
   const isHook = await HookCompOperator.copyComp(editorState);
   if (!isHook) {
@@ -30,7 +34,6 @@ async function handleCopyComps(editorState: EditorState) {
 async function handlePasteComps(editorState: EditorState) {
   const payload = await readFromClipboard();
   if (!payload) {
-    messageInstance.info(trans("gridCompOperator.selectCompFirst"));
     return;
   }
 
@@ -98,9 +101,10 @@ function handleGlobalKeyDown(
       break;
     }
     default:
-      if (modKeyPressed(e)) {
+      if (modKeyPressed(e) && !isNativeClipboardContext(e)) {
         const key = e.key?.toLowerCase();
-        if (key === "c") {
+        const hasSelectedComps = editorState.selectedCompNames.size > 0;
+        if (key === "c" && hasSelectedComps) {
           handleCopyComps(editorState);
           break;
         }
@@ -108,7 +112,7 @@ function handleGlobalKeyDown(
           handlePasteComps(editorState);
           break;
         }
-        if (key === "x") {
+        if (key === "x" && hasSelectedComps) {
           GridCompOperator.cutComp(editorState, editorState.selectedComps());
           break;
         }
@@ -236,12 +240,15 @@ function handleEditorKeyDown(e: React.KeyboardEvent, editorState: EditorState) {
       e.stopPropagation();
       return;
     case "copyComps":
+      if (isNativeClipboardContext(e) || editorState.selectedCompNames.size === 0) return;
       handleCopyComps(editorState);
       return;
     case "pasteComps":
+      if (isNativeClipboardContext(e)) return;
       handlePasteComps(editorState);
       return;
     case "cutComps":
+      if (isNativeClipboardContext(e) || editorState.selectedCompNames.size === 0) return;
       GridCompOperator.cutComp(editorState, editorState.selectedComps());
       return;
     case "deselectComps":
