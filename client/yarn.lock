@@ -12,36 +12,50 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agora-js/media@npm:4.23.3":
-  version: 4.23.3
-  resolution: "@agora-js/media@npm:4.23.3"
+"@agora-js/media@npm:4.24.3":
+  version: 4.24.3
+  resolution: "@agora-js/media@npm:4.24.3"
   dependencies:
-    "@agora-js/report": 4.23.3
-    "@agora-js/shared": 4.23.3
+    "@agora-js/report": 4.24.3
+    "@agora-js/shared": 4.24.3
     agora-rte-extension: ^1.2.4
-    axios: ^1.8.3
+    axios: ^1.13.6
     webrtc-adapter: 8.2.0
-  checksum: 8a29dc0b9da608b408d33d935e4c8a24acfc5b0a324d298f5863ddfa4758df1372711f397fa7c6d63a222dc3c8cf667960e9defca43759456735d34bd6f0452d
+  checksum: b521b15a10795756a0d67198e0184bf97cba3ce131ed0feb4ddff16da8ddef8f6f725afd11779882ce49f0bf39a25845f60b5b34e8749a53689a87d80ef57ffd
   languageName: node
   linkType: hard
 
-"@agora-js/report@npm:4.23.3":
-  version: 4.23.3
-  resolution: "@agora-js/report@npm:4.23.3"
+"@agora-js/protocol@npm:4.24.3":
+  version: 4.24.3
+  resolution: "@agora-js/protocol@npm:4.24.3"
   dependencies:
-    "@agora-js/shared": 4.23.3
-    axios: ^1.8.3
-  checksum: 83a6b486c6e3b07c2e5a6ad91833a5c79f69f28831458fd0f2272aa3a1e82894324b7768cf7384e39f99f12a9797a1a765e7005855229d145c7013f34990db4e
+    "@agora-js/media": 4.24.3
+    "@agora-js/report": 4.24.3
+    "@agora-js/shared": 4.24.3
+    "@bufbuild/protobuf": ^2.9.0
+    "@types/pako": ^2.0.0
+    pako: ^2.1.0
+  checksum: 59b918a84745c764f4eef7b38a999a7fc58158981c2dece2526795616bdfc69a77ce887836b6ebf31a2808877078e45ca198ea3b5a36d7b478e6da960285e2a1
   languageName: node
   linkType: hard
 
-"@agora-js/shared@npm:4.23.3":
-  version: 4.23.3
-  resolution: "@agora-js/shared@npm:4.23.3"
+"@agora-js/report@npm:4.24.3":
+  version: 4.24.3
+  resolution: "@agora-js/report@npm:4.24.3"
   dependencies:
-    axios: ^1.8.3
+    "@agora-js/shared": 4.24.3
+    axios: ^1.13.6
+  checksum: 9a37c6c523919b0c57ecb96e7e040de391b2423144b6d19bf3b49e180296cbeb93907eda61c2666010d573b4ebe71da7feba635d242c13bfead6a6c2dedabb4d
+  languageName: node
+  linkType: hard
+
+"@agora-js/shared@npm:4.24.3":
+  version: 4.24.3
+  resolution: "@agora-js/shared@npm:4.24.3"
+  dependencies:
+    axios: ^1.13.6
     ua-parser-js: ^0.7.34
-  checksum: 6b4a3e38088620b17796ae2bbbfdb35188cded6f24289bbf55f1b0f4608d51f25b988ab9f863b16d61e0e991d7366900a246dec4b9ae53f4a7026168dd6cffd5
+  checksum: ec706c1639549dff8c9af8ed7889f713d9ab3609fa378b670af3f8e86603474e31ba06d2c31722889411b14757a713a189969006fdb5edc4e41f051e0e08ee8a
   languageName: node
   linkType: hard
 
@@ -1702,6 +1716,13 @@ __metadata:
   version: 6.0.4
   resolution: "@braintree/sanitize-url@npm:6.0.4"
   checksum: f5ec6048973722ea1c46ae555d2e9eb848d7fa258994f8ea7d6db9514ee754ea3ef344ef71b3696d486776bcb839f3124e79f67c6b5b2814ed2da220b340627c
+  languageName: node
+  linkType: hard
+
+"@bufbuild/protobuf@npm:^2.9.0":
+  version: 2.11.0
+  resolution: "@bufbuild/protobuf@npm:2.11.0"
+  checksum: 9661e4a1e9f0d607320c788169d1604e00f7a39b5d8682d5302c8a6fa43c5758e539b5714577e6b2bc2798e7d44c52e7f5f52ec309b6292f9d143fd520e9cecf
   languageName: node
   linkType: hard
 
@@ -4842,6 +4863,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/pako@npm:^2.0.0":
+  version: 2.0.4
+  resolution: "@types/pako@npm:2.0.4"
+  checksum: 7e7b090c27cdbed4a8c21f7dfa466ad1c6b5c29afbcaaa24b35e83803d2b6b6cd552060060d8832058cf3809787baaab47a6a974b69d75a2a2dc59d21b607ee8
+  languageName: node
+  linkType: hard
+
 "@types/papaparse@npm:^5.3.5":
   version: 5.3.16
   resolution: "@types/papaparse@npm:5.3.16"
@@ -5801,20 +5829,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agora-rtc-sdk-ng@npm:^4.20.2":
-  version: 4.23.3
-  resolution: "agora-rtc-sdk-ng@npm:4.23.3"
+"agora-rtc-sdk-ng@npm:^4.24.3":
+  version: 4.24.3
+  resolution: "agora-rtc-sdk-ng@npm:4.24.3"
   dependencies:
-    "@agora-js/media": 4.23.3
-    "@agora-js/report": 4.23.3
-    "@agora-js/shared": 4.23.3
+    "@agora-js/media": 4.24.3
+    "@agora-js/protocol": 4.24.3
+    "@agora-js/report": 4.24.3
+    "@agora-js/shared": 4.24.3
     agora-rte-extension: ^1.2.4
-    axios: ^1.8.3
+    axios: ^1.13.6
     formdata-polyfill: ^4.0.7
     pako: ^2.1.0
     ua-parser-js: ^0.7.34
     webrtc-adapter: 8.2.0
-  checksum: fefa8d2038a883b4242093db0938f7b95cfa742d4ef1ae77ce750e52f9120387ba9ab4d326da826082e75b56e2943040f7e2bd18d359860689dad0ea56004f52
+  checksum: 76aa799dd39fb791f24d40a1b72c30f0eb994860c57abb53f6d807bc613b0796d5e99b42fa04a6a7becce4cb031f27677ffad7e70844f3bb720e0c012008376d
   languageName: node
   linkType: hard
 
@@ -5825,10 +5854,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agora-rtm-sdk@npm:^1.5.1":
-  version: 1.5.1
-  resolution: "agora-rtm-sdk@npm:1.5.1"
-  checksum: b7518664df7c63a8910d400c48660301da2536bccb2f2d55dc8daa074a8441ceb62c7987e97fd447fd76da5fb5285d44fff03f4c2e78bca78890fa3d62981947
+"agora-rtm-sdk@npm:^2.2.4":
+  version: 2.2.4
+  resolution: "agora-rtm-sdk@npm:2.2.4"
+  peerDependencies:
+    agora-rtc-sdk-ng: 4.23.0
+  checksum: 39d6f9dcd7609a858562068d103f40327635b8b92ca1fb7bc1f05d37916ad66fa9816da846b40498ce39f73661a4b2013157e260a6e195dbc9a95a88b504ce20
   languageName: node
   linkType: hard
 
@@ -6391,7 +6422,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.7.4, axios@npm:^1.7.7, axios@npm:^1.8.3":
+"axios@npm:^1.13.6":
+  version: 1.15.1
+  resolution: "axios@npm:1.15.1"
+  dependencies:
+    follow-redirects: ^1.15.11
+    form-data: ^4.0.5
+    proxy-from-env: ^2.1.0
+  checksum: 5195540056a14b54cb85aa0d22aa672afda6317dd36d4d04f4e257da935c9f27404fb5abc6dd07c9c5fd6489b9763b5623e2b2da926999015e82321119da71eb
+  languageName: node
+  linkType: hard
+
+"axios@npm:^1.7.4, axios@npm:^1.7.7":
   version: 1.9.0
   resolution: "axios@npm:1.9.0"
   dependencies:
@@ -10586,6 +10628,16 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
+"follow-redirects@npm:^1.15.11":
+  version: 1.16.0
+  resolution: "follow-redirects@npm:1.16.0"
+  peerDependenciesMeta:
+    debug:
+      optional: true
+  checksum: e90dce4607b1f6b8b9883287f912585573c19088209ad82341d550a795b4ba514522b73b1b340cf618279df27975cd46504d09149be60291ba6767384c1fd8f8
+  languageName: node
+  linkType: hard
+
 "for-each@npm:^0.3.3, for-each@npm:^0.3.5":
   version: 0.3.5
   resolution: "for-each@npm:0.3.5"
@@ -10628,6 +10680,19 @@ coolshapes-react@lowcoder-org/coolshapes-react:
     es-set-tostringtag: ^2.1.0
     mime-types: ^2.1.12
   checksum: e887298b22c13c7c9c5a8ba3716f295a479a13ca78bfd855ef11cbce1bcf22bc0ae2062e94808e21d46e5c667664a1a1a8a7f57d7040193c1fefbfb11af58aab
+  languageName: node
+  linkType: hard
+
+"form-data@npm:^4.0.5":
+  version: 4.0.5
+  resolution: "form-data@npm:4.0.5"
+  dependencies:
+    asynckit: ^0.4.0
+    combined-stream: ^1.0.8
+    es-set-tostringtag: ^2.1.0
+    hasown: ^2.0.2
+    mime-types: ^2.1.12
+  checksum: af8328413c16d0cded5fccc975a44d227c5120fd46a9e81de8acf619d43ed838414cc6d7792195b30b248f76a65246949a129a4dadd148721948f90cd6d4fb69
   languageName: node
   linkType: hard
 
@@ -13923,8 +13988,8 @@ coolshapes-react@lowcoder-org/coolshapes-react:
     "@fullcalendar/timeline": ^6.1.6
     "@types/react": 18
     "@types/react-dom": 18
-    agora-rtc-sdk-ng: ^4.20.2
-    agora-rtm-sdk: ^1.5.1
+    agora-rtc-sdk-ng: ^4.24.3
+    agora-rtm-sdk: ^2.2.4
     big.js: ^6.2.1
     echarts-extension-gmap: ^1.6.0
     echarts-gl: ^2.0.9
@@ -16894,6 +16959,13 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   languageName: node
   linkType: hard
 
+"proxy-from-env@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "proxy-from-env@npm:2.1.0"
+  checksum: b106ad790f26d47ba4791af3fe8cba5c8d35d85020119c82c05b413eb11b3ab97d2393ecaed51bca97c2788fa256408283dfeb4d970b2ebcae6702310f064e7e
+  languageName: node
+  linkType: hard
+
 "prr@npm:~0.0.0":
   version: 0.0.0
   resolution: "prr@npm:0.0.0"
@@ -19329,9 +19401,9 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   linkType: hard
 
 "sdp@npm:^3.0.2":
-  version: 3.2.0
-  resolution: "sdp@npm:3.2.0"
-  checksum: 227885bddab9a5845e56ae184ff51e43ec7bc155e7f1ed2f17ca1b012e6767011d5bd01b6c4064ded8e3b6f6bf3c9b26b2cf754b9c8662285988ed27b54f37b1
+  version: 3.2.2
+  resolution: "sdp@npm:3.2.2"
+  checksum: a3160deec2ac4c10d083fcc44058e0c3d5a083ba4310d9283d6eeca086ea934ca5155dfa7cc9ad16e1a4bc653d30e98dac4c48bf2ed886f4322f7a8ffae767f6
   languageName: node
   linkType: hard
 
@@ -21223,11 +21295,11 @@ coolshapes-react@lowcoder-org/coolshapes-react:
   linkType: hard
 
 "ua-parser-js@npm:^0.7.34":
-  version: 0.7.40
-  resolution: "ua-parser-js@npm:0.7.40"
+  version: 0.7.41
+  resolution: "ua-parser-js@npm:0.7.41"
   bin:
     ua-parser-js: script/cli.js
-  checksum: c8f69573c336cbf0f4341e7fe93a8d7082acf39dba4e135b704f06ad240f585d4b38fb44fd3cad92c97a015128e9fe2e653b39c3b6c0919f8a8af3be02d79cc2
+  checksum: c14ea0ba52585f0c363375b30d511d972bf1842855b6d6f4a411e6a27c936c7eb1f96e53e2d321fe3c587f0420677dcabd8977622be71da51edc8521e595b9b9
   languageName: node
   linkType: hard
 

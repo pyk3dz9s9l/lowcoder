@@ -33,7 +33,6 @@ import {
   MeetingEventHandlerControl,
 } from "lowcoder-sdk";
 import { default as CloseOutlined } from "@ant-design/icons/CloseOutlined";
-import type { JSONValue } from "../../../../lowcoder/src/util/jsonTypes";
 // import { default as Button } from "antd/es/button";
 
 const EventOptions = [closeEvent] as const;
@@ -51,7 +50,7 @@ import AgoraRTC, {
   type ILocalVideoTrack,
 } from "agora-rtc-sdk-ng";
 
-import type { RtmChannel, RtmClient } from "agora-rtm-sdk";
+import AgoraRtmSdk, { RTMEvents } from "agora-rtm-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { ResizeHandle } from "react-resizable";
 import { v4 as uuidv4 } from "uuid";
@@ -81,8 +80,19 @@ let audioTrack: IMicrophoneAudioTrack;
 let videoTrack: ICameraVideoTrack;
 let screenShareStream: ILocalVideoTrack;
 let userId: UID | null | undefined;
-let rtmChannelResponse: RtmChannel;
-let rtmClient: RtmClient;
+let rtmClient: InstanceType<typeof AgoraRtmSdk.RTM> | undefined;
+/** MESSAGE channel name subscribed after login (same as RTC channel / meeting name). */
+let rtmSubscribedChannelName: string | null = null;
+/** RTM channel payload: sync local mic/camera to other clients (setEnabled may not fire user-unpublished). */
+const RTM_MEETING_USER_STATE = "meetingUserState" as const;
+
+const rtmMessageSinkRef: {
+  current: null | ((event: RTMEvents.MessageEvent) => void);
+} = { current: null };
+
+function onRtmMessage(event: RTMEvents.MessageEvent) {
+  rtmMessageSinkRef.current?.(event);
+}
 // const ButtonStyle = styledm(Button)`
 //   position: absolute;
 //   left: 0;
@@ -169,7 +179,27 @@ const leaveChannel = async () => {
     await turnOnMicrophone(false);
   }
   await client.leave();
-  await rtmChannelResponse.leave();
+  if (rtmClient && rtmSubscribedChannelName) {
+    try {
+      await rtmClient.unsubscribe(rtmSubscribedChannelName);
+    } catch {
+      /* ignore */
+    }
+    rtmSubscribedChannelName = null;
+  }
+  if (rtmClient) {
+    try {
+      rtmClient.removeEventListener("message", onRtmMessage);
+    } catch {
+      /* ignore */
+    }
+    try {
+      await rtmClient.logout();
+    } catch {
+      /* ignore */
+    }
+    rtmClient = undefined;
+  }
 };
 
 const publishVideo = async (
@@ -178,32 +208,49 @@ const publishVideo = async (
   rtmToken: string,
   rtcToken: string
 ) => {
-  await turnOnCamera(true);
   await client.join(appId, channel, rtcToken, userId);
+  await turnOnCamera(true);
   await client.publish(videoTrack);
   await rtmInit(appId, userId, rtmToken, channel);
 };
 
 const sendMessageRtm = (message: any) => {
-  rtmChannelResponse.sendMessage({ text: JSON.stringify(message) });
+  if (!rtmClient || !rtmSubscribedChannelName) return;
+  void rtmClient
+    .publish(rtmSubscribedChannelName, JSON.stringify(message))
+    .catch(() => {});
 };
 
+function broadcastLocalMeetingUserState(payload: {
+  user: string;
+  audiostatus: boolean;
+  streamingVideo: boolean;
+  speaking?: boolean;
+}) {
+  sendMessageRtm({
+    type: RTM_MEETING_USER_STATE,
+    time: Date.now(),
+    user: payload.user,
+    audiostatus: payload.audiostatus,
+    streamingVideo: payload.streamingVideo,
+    speaking: payload.speaking ?? false,
+  });
+}
+
 const sendPeerMessageRtm = (message: any, toId: string) => {
-  rtmClient.sendMessageToPeer({ text: JSON.stringify(message) }, toId);
+  if (!rtmClient) return;
+  void rtmClient
+    .publish(String(toId), JSON.stringify(message), { channelType: "USER" })
+    .catch(() => {});
 };
 
 const rtmInit = async (appId: any, uid: any, token: any, channel: any) => {
-  const AgoraRTM = (await import("agora-rtm-sdk")).default;
-  rtmClient = AgoraRTM.createInstance(appId);
-  let options = {
-    uid: String(uid),
-    token: token ? token : null,
-  };
-  await rtmClient.login(options);
-
-  rtmChannelResponse = rtmClient.createChannel(channel);
-
-  await rtmChannelResponse.join();
+  rtmClient = new AgoraRtmSdk.RTM(String(appId), String(uid));
+  await rtmClient.login({ token: token ? String(token) : undefined });
+  const channelName = String(channel);
+  await rtmClient.subscribe(channelName);
+  rtmSubscribedChannelName = channelName;
+  rtmClient.addEventListener("message", onRtmMessage);
 };
 
 const CanvasContainerID = "__canvas_container__";
@@ -224,8 +271,8 @@ const meetingControllerChildren = {
   endCall: withDefault(BooleanStateControl, "false"),
   sharing: withDefault(BooleanStateControl, "false"),
   appId: withDefault(StringControl, trans("meeting.appid")),
-  participants: stateComp<JSONValue>([]),
-  usersScreenShared: stateComp<JSONValue>([]),
+  participants: (stateComp as any)([]) as ReturnType<typeof stateComp>,
+  usersScreenShared: (stateComp as any)([]) as ReturnType<typeof stateComp>,
   localUser: jsonObjectExposingStateControl(""),
   localUserID: withDefault(
     stringStateControl(trans("meeting.localUserID")),
@@ -237,7 +284,7 @@ const meetingControllerChildren = {
   ),
   rtmToken: stringStateControl(trans("meeting.rtmToken")),
   rtcToken: stringStateControl(trans("meeting.rtcToken")),
-  messages: stateComp<JSONValue>([]),
+  messages: (stateComp as any)([]) as ReturnType<typeof stateComp>,
 };
 
 let MeetingControllerComp = () => (
@@ -268,7 +315,12 @@ if (typeof ContainerCompBuilder === "function") {
           },
           [dispatch, isTopBom]
         );
-        const [userIds, setUserIds] = useState<any>([]);
+        const [localParticipants, setLocalParticipants] = useState<any[]>(
+          () => {
+            const p = props.participants as any;
+            return Array.isArray(p) ? [...p] : [];
+          }
+        );
         const [updateVolume, setUpdateVolume] = useState<any>({
           update: false,
           userid: null,
@@ -277,40 +329,6 @@ if (typeof ContainerCompBuilder === "function") {
         const [localUserSpeaking, setLocalUserSpeaking] = useState<any>(false);
         const [localUserVideo, setLocalUserVideo] =
           useState<IAgoraRTCRemoteUser>();
-        const [userJoined, setUserJoined] = useState<IAgoraRTCRemoteUser>();
-        const [userLeft, setUserLeft] = useState<IAgoraRTCRemoteUser>();
-
-        useEffect(() => {
-          if (userJoined) {
-            // console.log("userJoined ", userJoined);
-
-            let prevUsers: any[] = props.participants as [];
-            // console.log("prevUsers ", prevUsers);
-            let userData = {
-              user: userJoined.uid,
-              audiostatus: userJoined.hasAudio,
-              streamingVideo: true,
-            };
-            // console.log("userData ", userData);
-            setUserIds((userIds: any) => [...userIds, userData]);
-            // console.log("userIds ", userIds);
-            /* console.log(
-            "removeDuplicates ",
-            removeDuplicates(getData([...prevUsers, userData]).data, "user")
-          ); */
-            dispatch(
-              changeChildAction(
-                "participants",
-                removeDuplicates(
-                  getData([...prevUsers, userData]).data,
-                  "user"
-                ),
-                false
-              )
-            );
-          }
-        }, [userJoined]);
-
         function removeDuplicates(arr: any, prop: any) {
           const uniqueObjects = [];
           const seenValues = new Set();
@@ -326,33 +344,23 @@ if (typeof ContainerCompBuilder === "function") {
 
           return uniqueObjects;
         }
+
         useEffect(() => {
-          if (userLeft) {
-            let newUsers = userIds.filter(
-              (item: any) => item.user !== userLeft.uid
-            );
-            let hostExists = newUsers.filter((f: any) => f.host === true);
-            if (hostExists.length == 0 && newUsers.length > 0) {
-              newUsers[0].host = true;
-            }
-            setUserIds(newUsers);
-            dispatch(
-              changeChildAction(
-                "participants",
-                removeDuplicates(getData(newUsers).data, "user"),
-                false
-              )
-            );
-          }
-        }, [userLeft]);
+          dispatch(
+            changeChildAction(
+              "participants",
+              getData(localParticipants).data,
+              false
+            )
+          );
+        }, [localParticipants, dispatch]);
 
         // console.log("sharing", props.sharing);
 
         useEffect(() => {
-          if (updateVolume.userid) {
-            let prevUsers: [] = props.participants as [];
-
-            const updatedItems = prevUsers.map((userInfo: any) => {
+          if (!updateVolume.userid) return;
+          setLocalParticipants((prevUsers) =>
+            prevUsers.map((userInfo: any) => {
               if (
                 userInfo.user === updateVolume.userid &&
                 userInfo.speaking != updateVolume.update
@@ -360,27 +368,18 @@ if (typeof ContainerCompBuilder === "function") {
                 return { ...userInfo, speaking: updateVolume.update };
               }
               return userInfo;
-            });
-            dispatch(
-              changeChildAction(
-                "participants",
-                getData(updatedItems).data,
-                false
-              )
-            );
-          }
+            })
+          );
         }, [updateVolume]);
 
         useEffect(() => {
-          let prevUsers: [] = props.participants as [];
-          const updatedItems = prevUsers.map((userInfo: any) => {
-            if (userInfo.user === localUserVideo?.uid) {
-              return { ...userInfo, streamingSharing: props.sharing.value };
-            }
-            return userInfo;
-          });
-          dispatch(
-            changeChildAction("participants", getData(updatedItems).data, false)
+          setLocalParticipants((prevUsers) =>
+            prevUsers.map((userInfo: any) => {
+              if (userInfo.user === localUserVideo?.uid) {
+                return { ...userInfo, streamingSharing: props.sharing.value };
+              }
+              return userInfo;
+            })
           );
 
           let localObject = {
@@ -396,15 +395,16 @@ if (typeof ContainerCompBuilder === "function") {
         // console.log("participants ", props.participants);
 
         useEffect(() => {
-          let prevUsers: [] = props.participants as [];
-          const updatedItems = prevUsers.map((userInfo: any) => {
-            if (userInfo.user === localUserVideo?.uid) {
-              return { ...userInfo, streamingVideo: localUserVideo?.hasVideo };
-            }
-            return userInfo;
-          });
-          dispatch(
-            changeChildAction("participants", getData(updatedItems).data, false)
+          setLocalParticipants((prevUsers) =>
+            prevUsers.map((userInfo: any) => {
+              if (userInfo.user === localUserVideo?.uid) {
+                return {
+                  ...userInfo,
+                  streamingVideo: localUserVideo?.hasVideo,
+                };
+              }
+              return userInfo;
+            })
           );
         }, [localUserVideo?.hasVideo]);
 
@@ -429,58 +429,107 @@ if (typeof ContainerCompBuilder === "function") {
         }, [localUserSpeaking]);
 
         useEffect(() => {
-          if (rtmChannelResponse) {
-            rtmClient.on("MessageFromPeer", function (message, peerId) {
-              setRtmMessages((prevMessages: any[]) => {
-                // Check if the messages array exceeds the maximum limit
-                if (prevMessages.length >= 500) {
-                  prevMessages.pop(); // Remove the oldest message
-                }
-                return [
-                  ...prevMessages,
-                  { peermessage: JSON.parse(message.text + ""), from: peerId },
-                ];
-              });
-            });
-
-            rtmChannelResponse.on(
-              "ChannelMessage",
-              function (message, memberId) {
+          rtmMessageSinkRef.current = (event: RTMEvents.MessageEvent) => {
+            try {
+              const raw =
+                typeof event.message === "string"
+                  ? event.message
+                  : new TextDecoder().decode(event.message);
+              const parsed = raw ? JSON.parse(raw) : null;
+              if (event.channelType === "USER") {
                 setRtmMessages((prevMessages: any[]) => {
-                  // Check if the messages array exceeds the maximum limit
-                  if (prevMessages.length >= 500) {
-                    prevMessages.pop(); // Remove the oldest message
-                  }
+                  const next = [...prevMessages];
+                  if (next.length >= 500) next.shift();
                   return [
-                    ...prevMessages,
+                    ...next,
+                    { peermessage: parsed, from: event.publisher },
+                  ];
+                });
+              } else if (
+                event.channelType === "MESSAGE" &&
+                rtmSubscribedChannelName &&
+                event.channelName === rtmSubscribedChannelName
+              ) {
+                if (
+                  parsed &&
+                  typeof parsed === "object" &&
+                  parsed.type === RTM_MEETING_USER_STATE &&
+                  parsed.user != null
+                ) {
+                  setLocalParticipants((prev) => {
+                    const uid = parsed.user;
+                    const next = prev.map((u: any) => {
+                      if (u.user == uid || String(u.user) === String(uid)) {
+                        return {
+                          ...u,
+                          audiostatus: !!parsed.audiostatus,
+                          streamingVideo:
+                            parsed.streamingVideo !== undefined
+                              ? parsed.streamingVideo
+                              : u.streamingVideo,
+                          speaking:
+                            parsed.speaking !== undefined
+                              ? parsed.speaking
+                              : u.speaking,
+                        };
+                      }
+                      return u;
+                    });
+                    return removeDuplicates(getData(next).data, "user");
+                  });
+                }
+                setRtmMessages((prevMessages: any[]) => {
+                  const next = [...prevMessages];
+                  if (next.length >= 500) next.shift();
+                  return [
+                    ...next,
                     {
-                      channelmessage: JSON.parse(message.text + ""),
-                      from: memberId,
+                      channelmessage: parsed,
+                      from: event.publisher,
                     },
                   ];
                 });
-
-                dispatch(
-                  changeChildAction(
-                    "messages",
-                    getData(rtmMessages).data,
-                    false
-                  )
-                );
               }
-            );
-          }
-        }, [rtmChannelResponse]);
+            } catch {
+              /* ignore malformed payloads */
+            }
+          };
+          return () => {
+            rtmMessageSinkRef.current = null;
+          };
+        }, []);
         useEffect(() => {
           if (client) {
             //Enable Agora to send audio bytes
             client.enableAudioVolumeIndicator();
             //user activity listeners
             client.on("user-joined", (user: IAgoraRTCRemoteUser) => {
-              setUserJoined(user);
+              const userData = {
+                user: user.uid,
+                audiostatus: user.hasAudio,
+                streamingVideo: true,
+              };
+              setLocalParticipants((prev) =>
+                removeDuplicates(
+                  getData([...prev, userData]).data,
+                  "user"
+                )
+              );
             });
             client.on("user-left", (user: IAgoraRTCRemoteUser, reason: any) => {
-              setUserLeft(user);
+              setLocalParticipants((prev) => {
+                let newUsers = prev.filter(
+                  (item: any) => item.user !== user.uid
+                );
+                const hostExists = newUsers.some((f: any) => f.host === true);
+                if (!hostExists && newUsers.length > 0) {
+                  newUsers = [
+                    { ...newUsers[0], host: true },
+                    ...newUsers.slice(1),
+                  ];
+                }
+                return removeDuplicates(getData(newUsers).data, "user");
+              });
             });
 
             //listen to user speaking,
@@ -506,7 +555,9 @@ if (typeof ContainerCompBuilder === "function") {
                 user: IAgoraRTCRemoteUser,
                 mediaType: "video" | "audio"
               ) => {
-                setLocalUserVideo(user);
+                setTimeout(() => {
+                  setLocalUserVideo(user);
+                },1000)
               }
             );
             client.on(
@@ -701,6 +752,14 @@ if (typeof ContainerCompBuilder === "function") {
         });
         await turnOnMicrophone(value);
         comp.children.audioControl.change(value);
+        if (userId != null && userId !== "") {
+          broadcastLocalMeetingUserState({
+            user: String(userId),
+            audiostatus: value,
+            streamingVideo: comp.children.videoControl.getView().value,
+            speaking: false,
+          });
+        }
       },
     },
     {
@@ -729,15 +788,24 @@ if (typeof ContainerCompBuilder === "function") {
 
         comp.children.localUser.change(localData);
         comp.children.videoControl.change(value);
+        if (userId != null && userId !== "") {
+          broadcastLocalMeetingUserState({
+            user: String(userId),
+            audiostatus: comp.children.audioControl.getView().value,
+            streamingVideo: value,
+            speaking: comp.children.localUser.getView().value.speaking,
+          });
+        }
       },
     },
     {
       method: {
         name: "startMeeting",
         description: trans("meeting.actionBtnDesc"),
-        params: [],
+        params: [{name: "userName", type: "string"}],
       },
       execute: async (comp: any, values: any) => {
+        const userName = values[0];
         /* console.log("startMeeting ", {
             // user: userId + "",
             audiostatus: false,
@@ -762,18 +830,18 @@ if (typeof ContainerCompBuilder === "function") {
             streamingVideo: true,
           }); */
 
-        comp.children.localUser.children.value.dispatch(
-          changeChildAction(
-            "localUser",
-            {
-              user: userId + "",
-              audiostatus: false,
-              speaking: false,
-              streamingVideo: true,
-            },
-            false
-          )
-        );
+        // comp.children.localUser.children.value.dispatch(
+        //   changeChildAction(
+        //     "localUser",
+        //     {
+        //       user: userId + "",
+        //       audiostatus: false,
+        //       speaking: false,
+        //       streamingVideo: true,
+        //     },
+        //     false
+        //   )
+        // );
         comp.children.videoControl.change(true);
         await publishVideo(
           comp.children.appId.getView(),
@@ -783,6 +851,14 @@ if (typeof ContainerCompBuilder === "function") {
           comp.children.rtmToken.getView().value,
           comp.children.rtcToken.getView().value
         );
+        console.log("publishVideo ", {
+          appId: comp.children.appId.getView(),
+          meetingName: comp.children.meetingName.getView().value === ""
+            ? uuidv4()
+            : comp.children.meetingName.getView().value,
+          rtmToken: comp.children.rtmToken.getView().value,
+          rtcToken: comp.children.rtcToken.getView().value,
+        });
         comp.children.meetingActive.change(true);
       },
     },
