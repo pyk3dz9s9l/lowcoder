@@ -13,7 +13,7 @@ name: Deploy SDK Webpack Bundle to Netlify
 on:
   push:
     branches:
-      - feat/deploy-sdk-bundle
+      - main
 
 permissions:
   contents: read
