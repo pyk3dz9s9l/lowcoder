@@ -26,9 +26,86 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import "@assistant-ui/styles/index.css";
 import "@assistant-ui/styles/markdown.css";
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
+import { ActionConfig, ActionExecuteParams } from "../../preLoadComp/types";
 import { configureComponentAction } from "../../preLoadComp/actions/componentConfiguration";
-import { addComponentAction, moveComponentAction, nestComponentAction, resizeComponentAction } from "../../preLoadComp/actions/componentManagement";
-import { applyThemeAction, configureAppMetaAction, setCanvasSettingsAction } from "../../preLoadComp/actions/appConfiguration";
+import {
+  addComponentAction,
+  moveComponentAction,
+  nestComponentAction,
+  resizeComponentAction,
+  deleteComponentAction,
+  renameComponentAction,
+} from "../../preLoadComp/actions/componentManagement";
+import {
+  applyThemeAction,
+  configureAppMetaAction,
+  setCanvasSettingsAction,
+  applyGlobalJSAction,
+  applyCSSAction,
+  publishAppAction,
+} from "../../preLoadComp/actions/appConfiguration";
+import { applyStyleAction } from "../../preLoadComp/actions/componentStyling";
+import { addEventHandlerAction } from "../../preLoadComp/actions/componentEvents";
+import { alignComponentAction } from "../../preLoadComp/actions/componentLayout";
+
+// ============================================================================
+// ACTION REGISTRY — maps LLM action names to their executor configs.
+// Adding a new action is one line here + one entry in actionsCatalog.ts.
+// ============================================================================
+
+const ACTION_REGISTRY: Record<string, ActionConfig> = {
+  place_component: addComponentAction,
+  nest_component: nestComponentAction,
+  move_component: moveComponentAction,
+  resize_component: resizeComponentAction,
+  delete_component: deleteComponentAction,
+  rename_component: renameComponentAction,
+  set_properties: configureComponentAction,
+  set_style: applyStyleAction,
+  set_theme: applyThemeAction,
+  set_app_metadata: configureAppMetaAction,
+  set_canvas_setting: setCanvasSettingsAction,
+  set_global_javascript: applyGlobalJSAction,
+  set_global_css: applyCSSAction,
+  publish_app: publishAppAction,
+  add_event_handler: addEventHandlerAction,
+  align_component: alignComponentAction,
+};
+
+/**
+ * Translate an LLM action object into the ActionExecuteParams shape that
+ * the legacy executor functions expect. Centralises the field-mapping so
+ * each executor doesn't need to know about the automator format.
+ */
+function buildExecuteParams(
+  actionItem: Record<string, any>,
+  editorState: any
+): ActionExecuteParams {
+  const ap = actionItem.action_parameters || {};
+
+  let actionValue = "";
+  switch (actionItem.action) {
+    case "rename_component":       actionValue = ap.new_name || ""; break;
+    case "set_style":              actionValue = JSON.stringify(ap); break;
+    case "align_component":        actionValue = ap.alignment || "center"; break;
+    case "add_event_handler":      actionValue = `${ap.event || "click"}: ${ap.action_type || "message"}`; break;
+    case "set_global_javascript":  actionValue = ap.code || ""; break;
+    case "set_global_css":         actionValue = ap.code || ""; break;
+  }
+
+  return {
+    actionKey: actionItem.action,
+    actionValue,
+    actionPayload: actionItem,
+    selectedComponent: actionItem.component || null,
+    selectedEditorComponent: actionItem.component_name || null,
+    selectedNestComponent: null,
+    editorState,
+    selectedDynamicLayoutIndex: null,
+    selectedTheme: null,
+    selectedCustomShortcutAction: null,
+  };
+}
 
 // ============================================================================
 // STYLED CONTAINER - SIMPLE FIXED STYLING FOR BOTTOM PANEL
@@ -75,6 +152,22 @@ const StyledChatContainer = styled.div<{
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+/**
+ * Append a small footer to the assistant message summarising what the
+ * Automator just did, so the human can audit at a glance.
+ */
+function formatAutomatorFooter(actionsCount: number, invalidCount: number): string {
+  if (actionsCount === 0 && invalidCount === 0) return "";
+  const parts: string[] = [];
+  if (actionsCount > 0) {
+    parts.push(`${actionsCount} action${actionsCount === 1 ? "" : "s"} executed`);
+  }
+  if (invalidCount > 0) {
+    parts.push(`${invalidCount} skipped (unsupported)`);
+  }
+  return `\n\n_— Automator: ${parts.join(", ")}_`;
+}
+
 export interface ChatPanelContainerProps {
   storage: any;
   messageHandler: AIAssistantMessageHandler;
@@ -98,139 +191,30 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const performAction = async (actions: any[]) => {
     if (!editorStateRef.current) {
-      console.error("No editorStateRef found");
+      console.error("[Automator] no editorState — skipping actions");
       return;
     }
-  
-    const comp = editorStateRef.current.getUIComp().children.comp;
-    if (!comp) {
-      console.error("No comp found");
-      return;
-    }
-    // const layout = comp.children.layout.getView();
-    // console.log("LAYOUT", layout);
-  
+
+    console.log(`[Automator] executing ${actions.length} action(s)`);
+    let executed = 0;
+
     for (const actionItem of actions) {
-      const { action, component, ...action_payload } = actionItem;
-  
-      switch (action) {
-        case "place_component":
-          await addComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "nest_component":
-          await nestComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "move_component":
-          await moveComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "resize_component":
-          await resizeComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_properties":
-          await configureComponentAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_theme":
-          await applyThemeAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_app_metadata":
-          await configureAppMetaAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_canvas_setting":
-          await setCanvasSettingsAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        default:
-          break;
+      const executor = ACTION_REGISTRY[actionItem.action];
+      if (!executor) {
+        console.warn(`[Automator] unsupported action: ${actionItem.action}`);
+        continue;
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        const params = buildExecuteParams(actionItem, editorStateRef.current);
+        await executor.execute(params);
+        executed++;
+      } catch (err) {
+        console.error(`[Automator] action "${actionItem.action}" failed:`, err);
+      }
+      await new Promise((r) => setTimeout(r, 200));
     }
+
+    console.log(`[Automator] done: ${executed}/${actions.length} succeeded`);
   };
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
@@ -274,15 +258,19 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
         conversationHistory
       );
       onMessageUpdate?.(userMessage.text);
-      
+
       if (response?.actions?.length) {
         performAction(response.actions);
       }
 
+      const actionsCount = response?.actions?.length ?? 0;
+      const invalidCount = response?.automator?.invalidActionCount ?? 0;
+      const footer = formatAutomatorFooter(actionsCount, invalidCount);
+
       await actions.addMessage(state.currentThreadId, {
         id: generateId(),
         role: "assistant",
-        text: response.content,
+        text: response.content + footer,
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -328,11 +316,19 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
         newMessages
       );
       onMessageUpdate?.(text);
-  
+
+      if (response?.actions?.length) {
+        performAction(response.actions);
+      }
+
+      const actionsCount = response?.actions?.length ?? 0;
+      const invalidCount = response?.automator?.invalidActionCount ?? 0;
+      const footer = formatAutomatorFooter(actionsCount, invalidCount);
+
       newMessages.push({
         id: generateId(),
         role: "assistant",
-        text: response.content,
+        text: response.content + footer,
         timestamp: Date.now(),
       });
       await actions.updateMessages(state.currentThreadId, newMessages);

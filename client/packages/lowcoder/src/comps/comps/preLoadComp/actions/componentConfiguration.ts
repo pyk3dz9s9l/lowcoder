@@ -1,6 +1,5 @@
 import { message } from "antd";
 import { ActionConfig, ActionExecuteParams } from "../types";
-import { getEditorComponentInfo } from "../utils";
 
 export const configureComponentAction: ActionConfig = {
   key: 'configure-components',
@@ -20,51 +19,35 @@ export const configureComponentAction: ActionConfig = {
     }
   },
   execute: async (params: ActionExecuteParams) => {
-    const { actionValue: name, actionValue, actionPayload, editorState } = params;
-    const { component_name: selectedEditorComponent, action_parameters: compProperties } = actionPayload;
-    // const { onEvent, ...compProperties } = action_parameters;
-    // const { name, ...otherProps } = actionPayload;
-    
+    const { actionPayload, editorState } = params;
+    const componentName = actionPayload?.component_name || actionPayload?.component || params.selectedEditorComponent;
+    const compProperties = actionPayload?.action_parameters;
+
+    if (!componentName) {
+      message.error("No component name provided for set_properties");
+      return;
+    }
+
+    if (!compProperties || typeof compProperties !== "object") {
+      message.error("No properties provided for set_properties");
+      return;
+    }
+
     try {
-      // const componentInfo = getEditorComponentInfo(editorState, name);
-      
-      // if (!componentInfo) {
-      //   message.error(`Component "${selectedEditorComponent}" not found`);
-      //   return;
-      // }
-
-      // const { componentKey: parentKey, items } = componentInfo;
-    
-      // if (!parentKey) {
-      //   message.error(`Parent component "${selectedEditorComponent}" not found in layout`);
-      //   return;
-      // }
-
-      // const parentItem = items[parentKey];
-      // if (!parentItem) {
-      //   message.error(`Parent component "${selectedEditorComponent}" not found in items`);
-      //   return;
-      // }
-      const parentItem = editorState.getUICompByName(selectedEditorComponent);
-      if (!parentItem) {
-        message.error(`Parent component "${selectedEditorComponent}" not found in items`);
+      const comp = editorState.getUICompByName(componentName);
+      if (!comp) {
+        message.error(`Component "${componentName}" not found`);
         return;
       }
 
-      const itemComp = parentItem.children.comp;
-      const itemData = itemComp.toJsonValue();
-      const config = {
-        ...itemData,
-        ...compProperties
-      };
+      const itemComp = comp.children.comp;
+      const config = { ...itemComp.toJsonValue(), ...compProperties };
       itemComp.dispatchChangeValueAction(config);
 
-      console.log('Configuring component:', selectedEditorComponent, 'with config:', config);
-      message.info(`Configure action for component "${selectedEditorComponent}"`);
-      
-      // TODO: Implement actual configuration logic
+      message.success(`Properties updated on "${componentName}"`);
     } catch (error) {
-      message.error('Invalid configuration format');
+      console.error("Error setting properties:", error);
+      message.error("Failed to set component properties");
     }
   }
 };

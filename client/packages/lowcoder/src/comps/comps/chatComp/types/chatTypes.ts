@@ -52,6 +52,16 @@ export interface ChatMessage {
     content: string;
     metadata?: any;
     actions?: any[];
+    /**
+     * When the Automator parses a structured `{explanation, actions}` reply
+     * we surface the parsed payload here so the UI / downstream consumers
+     * can show extra context (e.g. "3 actions scheduled").
+     */
+    automator?: {
+      isStructured: boolean;
+      explanation: string;
+      invalidActionCount: number;
+    };
   }
   
   // ============================================================================
@@ -61,6 +71,19 @@ export interface ChatMessage {
   export interface QueryHandlerConfig {
     chatQuery: string;
     dispatch: any;
+    /**
+     * Snapshot accessor for the live editor state. The handler calls this
+     * lazily on every send so it always has the *current* canvas state.
+     * Optional — when missing the Automator falls back to a context-less
+     * passthrough (legacy behaviour).
+     */
+    getEditorState?: () => any;
+    /**
+     * When false, the handler skips injecting the Automator system prompt
+     * and just forwards `messages` (the conversation history) as-is. Useful
+     * for plain ChatGPT-style queries that don't drive the canvas.
+     */
+    enableAutomator?: boolean;
   }
   
 // ============================================================================

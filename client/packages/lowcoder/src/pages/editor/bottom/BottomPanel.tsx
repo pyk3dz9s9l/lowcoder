@@ -11,9 +11,11 @@ import { connect } from "react-redux";
 import { Layers } from "constants/Layers";
 import Flex from "antd/es/flex";
 import type { MenuProps } from 'antd/es/menu';
-import { BuildOutlined, DatabaseOutlined } from "@ant-design/icons";
+import { BuildOutlined, DatabaseOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import Menu from "antd/es/menu/menu";
 import Select from "antd/es/select";
+import Switch from "antd/es/switch";
+import Tooltip from "antd/es/tooltip";
 import { AIGenerate } from "lowcoder-design";
 import { ChatPanel } from "@lowcoder-ee/comps/comps/chatComp/components/ChatPanel";
 import { EditorContext } from "comps/editorState";
@@ -65,7 +67,7 @@ const ChatTitle = styled.h3`
 const QuerySelectorWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 `;
 
 const QueryLabel = styled.span`
@@ -99,6 +101,7 @@ function Bottom(props: any) {
   const [bottomHeight, setBottomHeight] = useState(panelStyle.bottom.h);
   const [currentOption, setCurrentOption] = useState("data");
   const [selectedQuery, setSelectedQuery] = useState<string>("");
+  const [automatorEnabled, setAutomatorEnabled] = useState<boolean>(true);
 
   const editorState = useContext(EditorContext);
 
@@ -141,8 +144,30 @@ function Bottom(props: any) {
           { currentOption === "ai" && (
             <Flex style={{height: '100%', flex: 1}} vertical>
               <ChatHeader>
-                <ChatTitle>Lowcoder AI Assistant</ChatTitle>
+                <ChatTitle>Lowcoder Automator</ChatTitle>
                 <QuerySelectorWrapper>
+                  <Tooltip
+                    title={
+                      automatorEnabled
+                        ? "System prompt + live editor context will be prepended to messages."
+                        : "Raw passthrough — only the conversation history is sent to your query."
+                    }
+                  >
+                    <Flex align="center" gap={6}>
+                      <ThunderboltOutlined
+                        style={{
+                          color: automatorEnabled ? "#1677ff" : "#bbb",
+                          fontSize: 14,
+                        }}
+                      />
+                      <QueryLabel>Automator</QueryLabel>
+                      <Switch
+                        size="small"
+                        checked={automatorEnabled}
+                        onChange={setAutomatorEnabled}
+                      />
+                    </Flex>
+                  </Tooltip>
                   <QueryLabel>Query:</QueryLabel>
                   <Select
                     showSearch
@@ -159,6 +184,7 @@ function Bottom(props: any) {
               <ChatPanel
                 tableName="LC_AI"
                 chatQuery={selectedQuery}
+                enableAutomator={automatorEnabled}
               />
             </Flex>
           )}
