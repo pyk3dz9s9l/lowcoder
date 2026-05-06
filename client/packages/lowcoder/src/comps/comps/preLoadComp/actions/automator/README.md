@@ -10,7 +10,7 @@ nesting modals, and so on.
 
 ---
 
-## How the flow works
+## How the flow works (tool-calling)
 
 ```
                  ┌────────────────────────────┐
@@ -24,21 +24,20 @@ nesting modals, and so on.
    │  - lean system prompt + actions catalog            │
    │  - curated component cheatsheet                    │
    │  - conversation history                            │
+   │  - OpenAI tool definitions (execute_automator_…)   │
    └────────────┬───────────────────────────────────────┘
-                │ messages = [system, ...history]
-                │ context, system, actionsCatalog, ...
+                │ messages, tools, context, …
                 ▼
    ┌────────────────────────────────────────────────────┐
    │  YOUR Lowcoder JS query (the "model bridge")       │
-   │  e.g. forwards `messages` to an OpenAI HTTP query  │
+   │  Forwards messages + tools to an HTTP query        │
    └────────────┬───────────────────────────────────────┘
-                │ { message: { role, content } }
+                │ { message: { role, content, tool_calls } }
                 ▼
    ┌────────────────────────────────────────────────────┐
-   │ parseAutomatorResponse()                           │
-   │  - extracts JSON `{ explanation, actions }`        │
-   │  - tolerates ```json fences and prose noise        │
-   │  - validates actions against the supported set     │
+   │ parseResponse()                                    │
+   │  1. tool_calls present? → extract actions (clean)  │
+   │  2. fallback → legacy JSON text extraction          │
    └────────────┬───────────────────────────────────────┘
                 │
                 ▼
@@ -48,6 +47,12 @@ nesting modals, and so on.
    │    add/nest/move/resize/configure executors        │
    └────────────────────────────────────────────────────┘
 ```
+
+The model uses **tool calling** (function calling) instead of embedding
+JSON in its text. When the model wants to act on the canvas, it calls the
+`execute_automator_actions` tool with `{ explanation, actions }` — the API
+guarantees valid JSON. When it needs clarification, it responds with plain
+text (no tool call). No custom parsing needed.
 
 Everything is **client-side**. The only thing you wire on the backend is
 the LLM HTTP call — through a regular Lowcoder data query.
@@ -60,9 +65,6 @@ You need exactly **two queries** in your app: one HTTP query that talks to
 the LLM, and one JS query that the Automator panel calls.
 
 ### 1. The HTTP query — `llmHttp`
-
-This one talks to the LLM provider. Examples below use OpenAI; swap the URL
-and headers for Ollama / Anthropic / Together / Groq.
 
 | Field | Value |
 | --- | --- |
@@ -77,14 +79,13 @@ Body (raw JSON, with Lowcoder bindings):
 {
   "model": "gpt-4o-mini",
   "temperature": 0.2,
-  "response_format": { "type": "json_object" },
-  "messages": {{ messages.value }}
+  "messages": {{ messages.value }},
+  "tools": {{ tools.value }}
 }
 ```
 
-> Tip: `response_format: json_object` is the OpenAI-only switch that forces
-> a single JSON object reply. With Anthropic or Ollama you can drop it; the
-> Automator's parser tolerates fenced ```json blocks too.
+> The `tools` parameter tells the model about `execute_automator_actions`.
+> The model decides when to call it vs. when to respond with plain text.
 
 #### Ollama variant
 
@@ -92,20 +93,28 @@ Body (raw JSON, with Lowcoder bindings):
 {
   "model": "llama3.1",
   "stream": false,
-  "format": "json",
-  "messages": {{ messages.value }}
+  "messages": {{ messages.value }},
+  "tools": {{ tools.value }}
 }
 ```
 URL: `http://localhost:11434/api/chat`
 
 #### Anthropic variant
 
+Anthropic uses a slightly different tool format. Map the OpenAI tool
+definition to Anthropic's `tools` shape in your JS query:
+
 ```json
 {
   "model": "claude-3-5-sonnet-latest",
   "max_tokens": 4096,
   "system": "{{ system.value }}",
-  "messages": {{ messagesWithoutSystem.value }}
+  "messages": {{ messagesWithoutSystem.value }},
+  "tools": [{
+    "name": "execute_automator_actions",
+    "description": "Execute Lowcoder Automator actions on the canvas.",
+    "input_schema": {{ JSON.stringify(tools.value[0].function.parameters) }}
+  }]
 }
 ```
 URL: `https://api.anthropic.com/v1/messages`,
@@ -114,29 +123,35 @@ headers: `x-api-key: YOUR_KEY`, `anthropic-version: 2023-06-01`.
 ### 2. The JS query — `assistantBridge`
 
 This is the query you select in the Automator panel's "Query:" dropdown.
-All it does is forward the prompt to your HTTP query and unwrap the reply.
+It forwards messages + tools to your HTTP query and returns the response.
 
 ```js
 return llmHttp.run({
-  messages: messages.value,        // already includes the system prompt
-}).then((data) => ({
-  message: {
-    role: "assistant",
-    // OpenAI: data.choices[0].message.content
-    // Ollama: data.message.content
-    // Anthropic: data.content[0].text
-    content: data?.choices?.[0]?.message?.content
-          || data?.message?.content
-          || data?.content?.[0]?.text
-          || "No response from model.",
-  },
-}));
+  messages: messages.value,
+  tools: tools.value,
+}).then((data) => {
+  const msg = data?.choices?.[0]?.message;
+  return {
+    message: {
+      role: "assistant",
+      content: msg?.content || "",
+      tool_calls: msg?.tool_calls || [],
+    },
+  };
+});
 ```
 
 Now in the bottom panel, switch to **Lowcoder AI**, pick `assistantBridge`
 in the Query dropdown, and start chatting. The **Automator** toggle next to
-the dropdown controls whether the system prompt + live context is injected
-(default: ON).
+the dropdown controls whether the system prompt + live context + tools are
+injected (default: ON).
+
+### Legacy setup (still works)
+
+If you have existing queries that don't pass `tools` and rely on the model
+embedding JSON in its text content, they still work. The parser falls back
+to the old text-extraction logic automatically. But the tool-calling path
+is recommended — it's more reliable and simpler to set up.
 
 ---
 
@@ -146,11 +161,12 @@ Inside the JS query you can use any of these args:
 
 | Arg | What it is |
 | --- | --- |
-| `messages` | Final OpenAI-style message array, already prefixed with the Automator system prompt and live editor context. **The default and recommended choice.** |
+| `messages` | Final OpenAI-style message array, prefixed with the Automator system prompt and live editor context. **The default and recommended choice.** |
+| `tools` | OpenAI-compatible tool definitions array. Pass this to the HTTP body alongside `messages`. |
 | `messagesWithoutSystem` | Same array minus the leading `system` message. Use with Anthropic. |
 | `system` | The composed system prompt string by itself. |
 | `context` | The live editor snapshot (components, queries, canvas grid, selected). |
-| `actionsCatalog` | The catalog of allowed actions (so you can show it in tooltips, etc). |
+| `actionsCatalog` | The catalog of allowed actions. |
 | `componentCatalog` | The curated cheatsheet of component shapes. |
 | `prompt` | The latest user message text only. |
 | `conversationHistory` | The full ChatMessage history including IDs/timestamps. |
@@ -159,62 +175,54 @@ Inside the JS query you can use any of these args:
 
 ---
 
-## What the model is expected to return
+## What the model returns
 
-A single JSON object — no prose, no fences:
+### With tool calling (recommended)
+
+When the model wants to act, it returns a `tool_calls` array:
 
 ```json
 {
-  "explanation": "Created a basic Todo app with title, input, button and table.",
-  "actions": [
-    {
-      "action": "place_component",
-      "component": "text",
-      "component_name": "todoTitle",
-      "layout": { "x": 0, "y": 0, "w": 24, "h": 4 },
-      "action_parameters": { "text": "## My Todos", "type": "markdown" }
-    },
-    {
-      "action": "place_component",
-      "component": "input",
-      "component_name": "newTodoInput",
-      "layout": { "x": 0, "y": 4, "w": 18, "h": 6 },
-      "action_parameters": {
-        "label": { "text": "New task", "position": "row" },
-        "placeholder": "What needs doing?"
-      }
-    },
-    {
-      "action": "place_component",
-      "component": "button",
-      "component_name": "addTodoBtn",
-      "layout": { "x": 18, "y": 4, "w": 6, "h": 6 },
-      "action_parameters": { "text": "Add", "type": "primary" }
-    },
-    {
-      "action": "place_component",
-      "component": "table",
-      "component_name": "todoTable",
-      "layout": { "x": 0, "y": 10, "w": 24, "h": 30 },
-      "action_parameters": {
-        "columns": [
-          { "title": "Task",   "dataIndex": "task",   "render": { "compType": "text", "comp": { "text": "{{currentCell}}" } } },
-          { "title": "Status", "dataIndex": "status", "render": { "compType": "text", "comp": { "text": "{{currentCell}}" } } }
-        ],
-        "data": "[{\"task\":\"Buy groceries\",\"status\":\"Pending\"}]"
-      }
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "I'll create a basic Todo app with a title, input, button, and table.",
+      "tool_calls": [{
+        "id": "call_abc123",
+        "type": "function",
+        "function": {
+          "name": "execute_automator_actions",
+          "arguments": "{\"explanation\":\"Creating a Todo app...\",\"actions\":[{\"action\":\"place_component\",\"component\":\"text\",\"component_name\":\"todoTitle\",\"layout\":{\"x\":0,\"y\":0,\"w\":24,\"h\":4},\"action_parameters\":{\"text\":\"## My Todos\",\"type\":\"markdown\"}}]}"
+        }
+      }]
     }
-  ]
+  }]
 }
 ```
 
-The Automator parses this, executes every action, and shows the
-`explanation` in the chat with a small footer like
-`— Automator: 4 actions executed`.
+When the model needs clarification, it responds with just text (no tool calls):
 
-If the model says "actions: []" with a bullet-point plan, that's the
-clarification flow — you reply "go ahead" (or with corrections) and it
-returns a real action list on the next turn.
+```json
+{
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "I can build that for you. Would you like:\n- A simple table view?\n- A kanban board layout?\n\nPlease confirm and I'll proceed."
+    }
+  }]
+}
+```
+
+### Legacy (text JSON)
+
+A single JSON object in the text content:
+
+```json
+{
+  "explanation": "Created a basic Todo app.",
+  "actions": [...]
+}
+```
 
 ---
 
@@ -256,32 +264,12 @@ Adding a new action is a two-step change:
 5. Type: **`add a delete button column to the table`** → it should reuse the
    existing `todoTable` name (this is the "context awareness" win).
 6. Toggle **Automator** off → send a message → the JS query receives only
-   the raw conversation history (useful for plain ChatGPT-style flows).
+   the raw conversation history, no tools, no system prompt (useful for
+   plain ChatGPT-style flows).
 
 ---
 
-## Supported component types
-
-The component catalog (`componentCatalog.ts`) includes 30 types:
-
-`text`, `button`, `input`, `numberInput`, `textArea`, `password`, `select`,
-`checkbox`, `radio`, `switch`, `slider`, `rating`, `date`, `form`,
-`container`, `modal`, `drawer`, `table`, `listView`, `card`,
-`tabbedContainer`, `image`, `video`, `avatar`, `chart`, `progress`,
-`navigation`, `timeline`, `step`, `divider`
-
-The model can use any component type registered in Lowcoder, even if it's
-not in the catalog — the catalog just provides property hints and defaults.
-
----
-
-## Architecture (how it replaces `Latest_prompt.md`)
-
-The old `Latest_prompt.md` (4.7K lines) was pasted into n8n manually. It
-couldn't see the canvas, shipped a massive component catalog every turn,
-and duplicated rules dozens of times.
-
-The Automator splits that into small, focused modules:
+## Architecture
 
 | File | Purpose |
 | --- | --- |
@@ -289,11 +277,9 @@ The Automator splits that into small, focused modules:
 | `actionsCatalog.ts` | Machine-readable list of all supported actions |
 | `componentCatalog.ts` | Curated cheatsheet (only relevant types sent per turn) |
 | `editorSnapshot.ts` | Live context from `EditorState` (components, queries, canvas) |
-| `responseParser.ts` | Robust JSON extraction from model output |
-| `orchestrator.ts` | Assembles system + context + history into the message array |
+| `toolDefinitions.ts` | OpenAI-compatible tool definitions for function calling |
+| `responseParser.ts` | Dual-path parser: tool_calls (clean) → text fallback (legacy) |
+| `orchestrator.ts` | Assembles system + context + history + tools into the payload |
 
 `ChatPanelContainer.tsx` holds the `ACTION_REGISTRY` — a simple map from
-action names to executor functions. Adding a new action is one line there
-plus one catalog entry.
-
-The legacy `Latest_prompt.md` is kept as reference only — nothing imports it.
+action names to executor functions.

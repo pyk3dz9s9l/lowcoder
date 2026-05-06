@@ -5,7 +5,7 @@ import { routeByNameAction, executeQueryAction } from "lowcoder-core";
 import { getPromiseAfterDispatch } from "util/promiseUtils";
 import {
   buildAutomatorPayload,
-  parseAutomatorResponse,
+  parseResponse,
 } from "../../preLoadComp/actions/automator";
 
 // ============================================================================
@@ -119,11 +119,13 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
               prompt: { value: message.text },
               sessionId: { value: sessionId },
               conversationHistory: { value: history },
-              // `messages` is what the test JS query consumes — now
-              // automatically prefixed with the Automator system prompt.
               messages: { value: payload.messages },
 
-              // ---- New explicit fields for power users
+              // ---- Tool calling: the JS query should forward this to the
+              //      HTTP body so the LLM can call `execute_automator_actions`
+              tools: { value: payload.tools },
+
+              // ---- Extra fields for power users
               system: { value: payload.system },
               context: { value: payload.context },
               actionsCatalog: { value: payload.actionsCatalog },
@@ -134,18 +136,21 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
         )
       );
 
-      // The query is expected to return `{ message: { role, content } }`.
-      // We then parse the content — even if the model returned plain prose
-      // we still surface it as a normal assistant reply.
+      // The query may return tool_calls (new path) or plain content (legacy).
+      // `parseResponse` tries tool_calls first, then falls back to text JSON
+      // extraction, so old queries that haven't been updated keep working.
       const raw = result?.message ?? result ?? {};
       const content: string =
         typeof raw === "string"
           ? raw
           : typeof raw.content === "string"
           ? raw.content
-          : JSON.stringify(raw);
+          : typeof raw === "object" && !raw.tool_calls
+          ? JSON.stringify(raw)
+          : "";
+      const toolCalls: unknown[] | undefined = raw?.tool_calls;
 
-      const parsed = parseAutomatorResponse(content);
+      const parsed = parseResponse({ content, tool_calls: toolCalls });
 
       const displayText =
         parsed.isStructured && parsed.explanation

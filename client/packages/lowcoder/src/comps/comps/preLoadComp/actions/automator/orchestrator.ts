@@ -9,6 +9,7 @@ import {
 } from "./editorSnapshot";
 import { getComponentCatalog, ComponentCatalogEntry } from "./componentCatalog";
 import { composeSystemMessage } from "./systemPrompt";
+import { buildToolDefinitions, OpenAIToolDefinition } from "./toolDefinitions";
 
 /**
  * A "chat message" in the OpenAI-compatible shape (role + content). Almost
@@ -35,6 +36,8 @@ export interface OrchestratorInput {
 export interface OrchestratorOutput {
   /** Full message array including the synthesised system message. */
   messages: LLMMessage[];
+  /** OpenAI-compatible tool definitions for function calling. */
+  tools: OpenAIToolDefinition[];
   /** The composed system message string (also exposed for power users). */
   system: string;
   /** The editor context snapshot (also exposed separately). */
@@ -67,6 +70,8 @@ export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOut
     editorContext: context,
   });
 
+  const tools = withSystemPrompt ? buildToolDefinitions() : [];
+
   const messages: LLMMessage[] = [];
   if (withSystemPrompt) {
     messages.push({ role: "system", content: system });
@@ -77,6 +82,7 @@ export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOut
 
   return {
     messages,
+    tools,
     system,
     context,
     actionsCatalog: ACTIONS_CATALOG,
