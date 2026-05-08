@@ -45,7 +45,7 @@ export interface ChatMessage {
   }
 
   export interface AIAssistantMessageHandler {
-    sendMessage(message: ChatMessage, sessionId?: string, conversationHistory?: ChatMessage[]): Promise<MessageResponse>;
+    sendMessage(message: ChatMessage, sessionId: string | undefined, conversationHistory: ChatMessage[]): Promise<MessageResponse>;
   }
   
   export interface MessageResponse {
@@ -74,16 +74,8 @@ export interface ChatMessage {
     /**
      * Snapshot accessor for the live editor state. The handler calls this
      * lazily on every send so it always has the *current* canvas state.
-     * Optional — when missing the Automator falls back to a context-less
-     * passthrough (legacy behaviour).
      */
     getEditorState?: () => any;
-    /**
-     * When false, the handler skips injecting the Automator system prompt
-     * and just forwards `messages` (the conversation history) as-is. Useful
-     * for plain ChatGPT-style queries that don't drive the canvas.
-     */
-    enableAutomator?: boolean;
   }
   
 // ============================================================================

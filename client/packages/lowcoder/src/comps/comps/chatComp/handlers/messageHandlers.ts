@@ -3,10 +3,76 @@
 import { AIAssistantMessageHandler, MessageHandler, MessageResponse, QueryHandlerConfig, ChatMessage } from "../types/chatTypes";
 import { routeByNameAction, executeQueryAction } from "lowcoder-core";
 import { getPromiseAfterDispatch } from "util/promiseUtils";
-import {
-  buildAutomatorPayload,
-  parseResponse,
-} from "../../preLoadComp/actions/automator";
+import { buildAutomatorPayload } from "../../preLoadComp/actions/automator";
+
+interface AutomatorAction {
+  action: string;
+  component?: string;
+  component_name?: string;
+  parent_component_name?: string;
+  layout?: { x?: number; y?: number; w?: number; h?: number };
+  action_parameters?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+function normalizeAutomatorQueryResponse(result: any): MessageResponse {
+  const raw = result;
+
+  if (!raw || typeof raw !== "object") {
+    throw new Error("Automator query must return an object with content and actions");
+  }
+
+  if (typeof raw.content !== "string") {
+    throw new Error("Automator query response must include string content");
+  }
+
+  const actions: AutomatorAction[] = [];
+  let invalidActionCount = 0;
+
+  if (!Array.isArray(raw.actions)) {
+    throw new Error("Automator query response must include an actions array");
+  }
+
+  for (const action of raw.actions) {
+    if (action && typeof action === "object" && typeof action.action === "string") {
+      actions.push(action as AutomatorAction);
+    } else {
+      invalidActionCount++;
+    }
+  }
+
+  return {
+    content: raw.content,
+    actions,
+    metadata: raw.metadata,
+    automator: {
+      isStructured: true,
+      explanation: raw.content,
+      invalidActionCount,
+    },
+  };
+}
+
+function buildAutomatorQueryArgs(
+  message: ChatMessage,
+  sessionId: string | undefined,
+  conversationHistory: ChatMessage[],
+  payload: ReturnType<typeof buildAutomatorPayload>,
+  messagesWithoutSystem: Array<{ role: ChatMessage["role"]; content: string }>
+) {
+  return {
+    automator: {
+      value: {
+        ...payload,
+        message,
+        prompt: message.text,
+        sessionId,
+        conversationHistory,
+        messagesWithoutSystem,
+      }
+    },
+  };
+}
 
 // ============================================================================
 // QUERY HANDLER
@@ -17,12 +83,13 @@ export class QueryHandler implements MessageHandler {
 
   async sendMessage(message: ChatMessage): Promise<MessageResponse> {
     const { chatQuery, dispatch} = this.config;
-    
-    // If no query selected or dispatch unavailable, return mock response
-    if (!chatQuery || !dispatch) {
-      console.log("No query selected or dispatch unavailable, returning mock response");
-      await new Promise((res) => setTimeout(res, 500));
-      return { content: "(mock) You typed: " + message.text };
+
+    if (!chatQuery) {
+      throw new Error("Select a query before sending a message");
+    }
+
+    if (!dispatch) {
+      throw new Error("Query dispatch is unavailable");
     }
 
     try {
@@ -34,8 +101,8 @@ export class QueryHandler implements MessageHandler {
           executeQueryAction({
             // Pass the full message object so attachments are available in queries
             args: { 
-              message: { value: message }, // Full ChatMessage object with attachments
-              prompt: { value: message.text }, // Keep backward compatibility
+              message: { value: message },
+              prompt: { value: message.text },
             },
           })
         )
@@ -51,15 +118,13 @@ export class QueryHandler implements MessageHandler {
 // ============================================================================
 // AI ASSISTANT QUERY HANDLER (bottom panel)
 // ----------------------------------------------------------------------------
-// This is the heart of the Lowcoder Automator. On every send it:
-//   1. snapshots the current editor state (components, queries, canvas),
-//   2. composes a lean system prompt + actions catalog + live context,
-//   3. forwards the enriched `messages` array (and a few extras) to the
-//      user-defined Lowcoder query (typically a JS query that calls an LLM
-//      via an HTTP query),
-//   4. parses the model's text reply back into `{ explanation, actions }`,
-//   5. returns both — the chat panel renders `explanation` and dispatches
-//      `actions` against the editor.
+// This handler owns the Lowcoder side of the Automator flow:
+//   1. snapshot the current editor state,
+//   2. build the system prompt, tools, catalogs, and live context,
+//   3. pass that payload to the selected user query,
+//   4. accept the query's normalized `{ content, actions }` result.
+//
+// Provider-specific parsing belongs in the selected query/backend bridge.
 // ============================================================================
 
 export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
@@ -67,11 +132,11 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
 
   async sendMessage(
     message: ChatMessage,
-    sessionId?: string,
-    conversationHistory?: ChatMessage[]
+    sessionId: string | undefined,
+    conversationHistory: ChatMessage[]
   ): Promise<MessageResponse> {
-    const { chatQuery, dispatch, getEditorState, enableAutomator = true } = this.config;
-    const history = conversationHistory ?? [message];
+    const { chatQuery, dispatch, getEditorState } = this.config;
+    const history = conversationHistory;
 
     // Conversation history in the OpenAI {role, content} shape.
     const rawHistory = history.map((msg) => ({
@@ -79,27 +144,23 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
       content: msg.text,
     }));
 
-    // Build the Automator payload. When the editor state is unavailable
-    // (eg. mock setup) we still get a valid (empty) snapshot so the prompt
-    // is consistent.
-    const editorState = getEditorState ? getEditorState() : null;
+    if (!chatQuery) {
+      throw new Error("Select an Automator query before sending a message");
+    }
+
+    if (!dispatch) {
+      throw new Error("Automator dispatch is unavailable");
+    }
+
+    if (!getEditorState) {
+      throw new Error("Automator editor state is unavailable");
+    }
+
+    const editorState = getEditorState();
     const payload = buildAutomatorPayload({
       history: rawHistory,
       editorState,
-      withSystemPrompt: enableAutomator,
     });
-
-    if (!chatQuery || !dispatch) {
-      console.log(
-        "[Automator] No query selected or dispatch unavailable, returning mock"
-      );
-      await new Promise((res) => setTimeout(res, 300));
-      return {
-        content:
-          "(mock) Connect a query in the AI Assistant header to enable the Automator.\n\nYou typed: " +
-          message.text,
-      };
-    }
 
     try {
       console.log("[Automator] running query:", chatQuery, {
@@ -113,81 +174,28 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
         routeByNameAction(
           chatQuery,
           executeQueryAction({
-            args: {
-              // ---- Backward-compatible fields (don't break old test queries)
-              message: { value: message },
-              prompt: { value: message.text },
-              sessionId: { value: sessionId },
-              conversationHistory: { value: history },
-              messages: { value: payload.messages },
-
-              // ---- Tool calling: the JS query should forward this to the
-              //      HTTP body so the LLM can call `execute_automator_actions`
-              tools: { value: payload.tools },
-
-              // ---- Extra fields for power users
-              system: { value: payload.system },
-              context: { value: payload.context },
-              actionsCatalog: { value: payload.actionsCatalog },
-              componentCatalog: { value: payload.componentCatalog },
-              messagesWithoutSystem: { value: rawHistory },
-            },
+            args: buildAutomatorQueryArgs(
+              message,
+              sessionId,
+              history,
+              payload,
+              rawHistory
+            ),
           })
         )
       );
 
-      // The query may return tool_calls (new path) or plain content (legacy).
-      // `parseResponse` tries tool_calls first, then falls back to text JSON
-      // extraction, so old queries that haven't been updated keep working.
-      const raw = result?.message ?? result ?? {};
-      const content: string =
-        typeof raw === "string"
-          ? raw
-          : typeof raw.content === "string"
-          ? raw.content
-          : typeof raw === "object" && !raw.tool_calls
-          ? JSON.stringify(raw)
-          : "";
-      const toolCalls: unknown[] | undefined = raw?.tool_calls;
-
-      const parsed = parseResponse({ content, tool_calls: toolCalls });
-
-      const displayText =
-        parsed.isStructured && parsed.explanation
-          ? parsed.explanation
-          : content;
+      const response = normalizeAutomatorQueryResponse(result);
 
       console.log("[Automator] parsed", {
-        isStructured: parsed.isStructured,
-        actions: parsed.actions.length,
-        invalid: parsed.invalidActionCount,
+        actions: response.actions?.length ?? 0,
+        invalid: response.automator?.invalidActionCount ?? 0,
       });
 
-      return {
-        content: displayText,
-        actions: parsed.actions,
-        automator: {
-          isStructured: parsed.isStructured,
-          explanation: parsed.explanation,
-          invalidActionCount: parsed.invalidActionCount,
-        },
-      };
+      return response;
     } catch (e: any) {
       throw new Error(e?.message || "AI assistant query execution failed");
     }
-  }
-}
-
-// ============================================================================
-// MOCK HANDLER (for testing/fallbacks)
-// ============================================================================
-
-export class MockHandler implements MessageHandler {
-  constructor(private delay: number = 1000) {}
-
-  async sendMessage(message: ChatMessage): Promise<MessageResponse> {
-    await new Promise(resolve => setTimeout(resolve, this.delay));
-    return { content: `Mock response: ${message.text}` };
   }
 }
 
@@ -196,16 +204,13 @@ export class MockHandler implements MessageHandler {
 // ============================================================================
 
 export function createMessageHandler(
-  type: "query" | "mock",
+  type: "query",
   config: QueryHandlerConfig
 ): MessageHandler {
   switch (type) {
     case "query":
       return new QueryHandler(config);
-    
-    case "mock":
-      return new MockHandler();
-    
+
     default:
       throw new Error(`Unknown message handler type: ${type}`);
   }

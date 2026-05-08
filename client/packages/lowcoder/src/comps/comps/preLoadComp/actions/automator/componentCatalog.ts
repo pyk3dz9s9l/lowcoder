@@ -1,18 +1,14 @@
 // client/packages/lowcoder/src/comps/comps/preLoadComp/actions/automator/componentCatalog.ts
 
+import { uiCompRegistry, type UICompManifest } from "comps/uiCompRegistry";
+
 /**
- * Curated, *minimal* reference of the component types the model is most
- * likely to need when assembling small apps (todo, CRUD, login, dashboard).
+ * Component reference for the Automator.
  *
- * The legacy `Latest_prompt.md` shipped a 4.7K-line catalog covering every
- * component. That blew up token budgets and led the model to invent fields.
- * Here we keep just the essentials, with curated default property shapes
- * derived from the legacy doc and the live `defaultDataFn` runtime values.
- *
- * The catalog is deliberately *additive*: callers can call
- * `getComponentCatalog()` to get the default subset, or
- * `getComponentCatalog([...extra])` to inject additional types they know
- * the user wants (e.g. via UI hints).
+ * Curated entries provide known-good property examples for common components.
+ * Every registered Lowcoder component is then added from `uiCompRegistry` so
+ * the Automator can discover the full insertion panel, including newer
+ * components like Chat, Chat Box, and Chat Controller.
  */
 
 export interface ComponentCatalogEntry {
@@ -30,7 +26,131 @@ export interface ComponentCatalogEntry {
   example: Record<string, unknown>;
   /** Notes the model should heed. */
   notes?: string;
+  /** Display name shown in the Lowcoder component panel. */
+  name?: string;
+  /** English display name from the component manifest. */
+  enName?: string;
+  /** Component panel categories. Empty means hidden from normal insertion UI. */
+  categories?: readonly string[];
+  /** Short manifest description when it is serialisable. */
+  description?: string;
 }
+
+export const LOWCODER_COMPONENT_TYPES: string[] = [
+  "chart",
+  "basicChart",
+  "barChart",
+  "lineChart",
+  "pieChart",
+  "scatterChart",
+  "candleStickChart",
+  "funnelChart",
+  "gaugeChart",
+  "graphChart",
+  "heatmapChart",
+  "radarChart",
+  "sankeyChart",
+  "sunburstChart",
+  "themeriverChart",
+  "treeChart",
+  "treemapChart",
+  "openLayersGeoMap",
+  "chartsGeoMap",
+  "table",
+  "tableLite",
+  "pivotTable",
+  "mermaid",
+  "timeline",
+  "responsiveLayout",
+  "pageLayout",
+  "columnLayout",
+  "splitLayout",
+  "floatTextContainer",
+  "card",
+  "tabbedContainer",
+  "collapsibleContainer",
+  "container",
+  "listView",
+  "grid",
+  "multiTags",
+  "modal",
+  "drawer",
+  "toast",
+  "divider",
+  "navigation",
+  "step",
+  "cascader",
+  "link",
+  "floatingButton",
+  "calendar",
+  "timer",
+  "sharingcomponent",
+  "videocomponent",
+  "meeting",
+  "avatar",
+  "avatarGroup",
+  "comment",
+  "mention",
+  "chatController",
+  "chatBox",
+  "form",
+  "jsonSchemaForm",
+  "jsonEditor",
+  "jsonExplorer",
+  "richTextEditor",
+  "input",
+  "password",
+  "numberInput",
+  "textArea",
+  "autocomplete",
+  "switch",
+  "checkbox",
+  "radio",
+  "date",
+  "dateRange",
+  "time",
+  "timeRange",
+  "slider",
+  "rangeSlider",
+  "button",
+  "controlButton",
+  "dropdown",
+  "toggleButton",
+  "segmentedControl",
+  "rating",
+  "ganttChart",
+  "kanban",
+  "hillchart",
+  "bpmnEditor",
+  "progress",
+  "progressCircle",
+  "file",
+  "fileViewer",
+  "image",
+  "carousel",
+  "audio",
+  "video",
+  "shape",
+  "jsonLottie",
+  "icon",
+  "imageEditor",
+  "colorPicker",
+  "qrCode",
+  "scanner",
+  "signature",
+  "select",
+  "tour",
+  "multiSelect",
+  "tree",
+  "treeSelect",
+  "transfer",
+  "turnstileCaptcha",
+  "chat",
+  "iframe",
+  "custom",
+  "module",
+  "text",
+];
 
 const TEXT: ComponentCatalogEntry = {
   type: "text",
@@ -435,7 +555,37 @@ const RADIO: ComponentCatalogEntry = {
   },
 };
 
-const DEFAULT_CATALOG: ComponentCatalogEntry[] = [
+const CHAT: ComponentCatalogEntry = {
+  type: "chat",
+  defaultLayout: { w: 12, h: 20 },
+  required: [],
+  optional: ["chatQuery", "tableName", "placeholder"],
+  example: {
+    tableName: "LC_AI",
+    placeholder: "Ask anything...",
+  },
+  notes: "AI chat component for embedding a conversational assistant in the app.",
+};
+
+const CHAT_BOX: ComponentCatalogEntry = {
+  type: "chatBox",
+  defaultLayout: { w: 12, h: 24 },
+  required: [],
+  optional: ["messages", "controller", "placeholder"],
+  example: {},
+  notes: "Chat UI for displaying messages and sending user input. Pair with chatController for realtime typing/presence.",
+};
+
+const CHAT_CONTROLLER: ComponentCatalogEntry = {
+  type: "chatController",
+  defaultLayout: { w: 12, h: 5 },
+  required: [],
+  optional: ["roomId"],
+  example: {},
+  notes: "Realtime chat controller hook. Use with chatBox for presence and typing indicators.",
+};
+
+const CURATED_CATALOG: ComponentCatalogEntry[] = [
   TEXT,
   BUTTON,
   INPUT,
@@ -466,20 +616,120 @@ const DEFAULT_CATALOG: ComponentCatalogEntry[] = [
   TIMELINE,
   STEP,
   DIVIDER,
+  CHAT,
+  CHAT_BOX,
+  CHAT_CONTROLLER,
 ];
 
-/**
- * Returns the curated component catalog. If `onlyTypes` is provided we only
- * include those entries (useful when the user already mentioned specific
- * components and we want to keep token usage low).
- */
-export function getComponentCatalog(onlyTypes?: string[]): ComponentCatalogEntry[] {
-  if (!onlyTypes || onlyTypes.length === 0) return DEFAULT_CATALOG;
-  const set = new Set(onlyTypes);
-  const filtered = DEFAULT_CATALOG.filter((c) => set.has(c.type));
-  return filtered.length > 0 ? filtered : DEFAULT_CATALOG;
+const CURATED_BY_TYPE = new Map(CURATED_CATALOG.map((entry) => [entry.type, entry]));
+
+function serialiseDescription(description: UICompManifest["description"]): string | undefined {
+  if (typeof description === "string") return description;
+  if (typeof description === "number") return String(description);
+  return undefined;
 }
 
-export const COMPONENT_TYPES_DEFAULT: string[] = DEFAULT_CATALOG.map(
-  (c) => c.type
-);
+function fallbackEntry(type: string, manifest: UICompManifest): ComponentCatalogEntry {
+  const layout = manifest.layoutInfo ?? { w: 6, h: 5 };
+  return {
+    type,
+    name: manifest.name,
+    enName: manifest.enName,
+    categories: manifest.categories,
+    description: serialiseDescription(manifest.description),
+    isContainer: manifest.isContainer,
+    defaultLayout: {
+      w: layout.w,
+      h: layout.h,
+    },
+    required: [],
+    optional: [],
+    example: {},
+    notes:
+      "Registered Lowcoder component. Use an empty action_parameters object when no property shape is listed, or set properties afterward with set_properties.",
+  };
+}
+
+function typeOnlyFallbackEntry(type: string): ComponentCatalogEntry {
+  const curated = CURATED_BY_TYPE.get(type);
+  if (curated) return curated;
+
+  return {
+    type,
+    defaultLayout: { w: 6, h: 5 },
+    required: [],
+    optional: [],
+    example: {},
+    notes:
+      "Lowcoder component listed in comps/index.tsx. Use an empty action_parameters object when no property shape is listed, or set properties afterward with set_properties.",
+  };
+}
+
+function mergeManifestMetadata(
+  entry: ComponentCatalogEntry,
+  manifest: UICompManifest
+): ComponentCatalogEntry {
+  return {
+    ...entry,
+    name: manifest.name,
+    enName: manifest.enName,
+    categories: manifest.categories,
+    description: serialiseDescription(manifest.description),
+    isContainer: entry.isContainer ?? manifest.isContainer,
+    defaultLayout: entry.defaultLayout ?? manifest.layoutInfo ?? { w: 6, h: 5 },
+  };
+}
+
+function buildFullCatalog(): ComponentCatalogEntry[] {
+  const registryEntries = Object.entries(uiCompRegistry);
+  const registryTypes = new Set(registryEntries.map(([type]) => type));
+  const knownTypes = new Set(LOWCODER_COMPONENT_TYPES);
+
+  const listedEntries = LOWCODER_COMPONENT_TYPES.map((type) => {
+    const manifest = uiCompRegistry[type];
+    if (!manifest) return typeOnlyFallbackEntry(type);
+
+    const curated = CURATED_BY_TYPE.get(type);
+    return curated
+      ? mergeManifestMetadata(curated, manifest)
+      : fallbackEntry(type, manifest);
+  });
+
+  const extraRegistryEntries = registryEntries
+    .filter(([type]) => !knownTypes.has(type))
+    .map(([type, manifest]) => {
+      const curated = CURATED_BY_TYPE.get(type);
+      return curated
+        ? mergeManifestMetadata(curated, manifest)
+        : fallbackEntry(type, manifest);
+    });
+
+  const curatedOnlyEntries = CURATED_CATALOG.filter(
+    (entry) => !registryTypes.has(entry.type) && !knownTypes.has(entry.type)
+  );
+
+  return [...listedEntries, ...extraRegistryEntries, ...curatedOnlyEntries].sort((a, b) => {
+    const categoryA = a.categories?.[0] ?? "";
+    const categoryB = b.categories?.[0] ?? "";
+    if (categoryA !== categoryB) return categoryA.localeCompare(categoryB);
+    return (a.enName || a.name || a.type).localeCompare(b.enName || b.name || b.type);
+  });
+}
+
+/**
+ * Returns all registered Lowcoder components. If `onlyTypes` is provided we
+ * return those entries first and keep the remaining catalog afterward, so the
+ * model sees the user's requested component names without losing access to the
+ * rest of Lowcoder's palette.
+ */
+export function getComponentCatalog(onlyTypes?: string[]): ComponentCatalogEntry[] {
+  const fullCatalog = buildFullCatalog();
+  if (!onlyTypes || onlyTypes.length === 0) return fullCatalog;
+
+  const requested = new Set(onlyTypes);
+  const mentioned = fullCatalog.filter((c) => requested.has(c.type));
+  const remaining = fullCatalog.filter((c) => !requested.has(c.type));
+  return mentioned.length > 0 ? [...mentioned, ...remaining] : fullCatalog;
+}
+
+export const COMPONENT_TYPES_DEFAULT: string[] = buildFullCatalog().map((c) => c.type);

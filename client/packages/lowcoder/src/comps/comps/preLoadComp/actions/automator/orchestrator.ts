@@ -29,8 +29,6 @@ export interface OrchestratorInput {
   history: { role: "user" | "assistant"; content: string }[];
   /** Live editor state — used to build the EDITOR_CONTEXT block. */
   editorState: EditorState | null | undefined;
-  /** When false, skip injecting the system prompt entirely (raw passthrough). */
-  withSystemPrompt?: boolean;
 }
 
 export interface OrchestratorOutput {
@@ -54,12 +52,13 @@ export interface OrchestratorOutput {
  * not call the network.
  */
 export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOutput {
-  const { history, editorState, withSystemPrompt = true } = input;
+  const { history, editorState } = input;
 
   const context = buildEditorSnapshot(editorState);
 
   // Slim down the component catalog based on the *latest* user message so
-  // we keep the prompt under control.
+  // the requested components appear first. We still include the full
+  // Lowcoder registry so the Automator can add any component from the panel.
   const lastUser = [...history].reverse().find((m) => m.role === "user");
   const mentioned = inferMentionedComponentTypes(lastUser?.content ?? "");
   const componentCatalog = getComponentCatalog(mentioned);
@@ -70,12 +69,9 @@ export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOut
     editorContext: context,
   });
 
-  const tools = withSystemPrompt ? buildToolDefinitions() : [];
+  const tools = buildToolDefinitions(componentCatalog.map((component) => component.type));
 
-  const messages: LLMMessage[] = [];
-  if (withSystemPrompt) {
-    messages.push({ role: "system", content: system });
-  }
+  const messages: LLMMessage[] = [{ role: "system", content: system }];
   for (const m of history) {
     messages.push({ role: m.role, content: m.content });
   }

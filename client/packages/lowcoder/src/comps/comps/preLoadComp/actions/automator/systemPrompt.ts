@@ -11,7 +11,8 @@
  *
  * The orchestrator combines this prompt with:
  *   - the actions catalog  (what the model is allowed to emit)
- *   - the component cheatsheet (curated, small)
+ *   - the component catalog (all registered Lowcoder components, with
+ *     curated examples for common ones)
  *   - the live editor snapshot (existing components, queries, canvas grid)
  *
  * before sending it to the user-defined Lowcoder query that proxies the LLM.
@@ -53,9 +54,11 @@ Use this context to:
 # How to use the action catalog
 
 You will also see a JSON block titled "ACTIONS_CATALOG" listing the EXACT
-set of actions you may emit, with their required and optional fields. You
-MUST NOT use any action or component type that is not listed there. If
-something is not possible with the catalog, explain why in plain text.
+set of actions you may emit, with their required and optional fields. The
+"COMPONENT_CATALOG" block lists every registered Lowcoder component type you
+may place or nest. You MUST NOT use any action or component type that is not
+listed there. If something is not possible with the catalog, explain why in
+plain text.
 
 # Layout rules (short)
 

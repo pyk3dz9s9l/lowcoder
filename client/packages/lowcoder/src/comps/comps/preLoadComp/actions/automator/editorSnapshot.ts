@@ -1,6 +1,8 @@
 // client/packages/lowcoder/src/comps/comps/preLoadComp/actions/automator/editorSnapshot.ts
 
 import type { EditorState } from "@lowcoder-ee/comps/editorState";
+import { uiCompRegistry } from "comps/uiCompRegistry";
+import { LOWCODER_COMPONENT_TYPES } from "./componentCatalog";
 
 /**
  * A compact, JSON-serialisable view of the live editor state.
@@ -111,9 +113,9 @@ export function buildEditorSnapshot(editorState: EditorState | null | undefined)
 
   const settings = safe(() => editorState.getAppSettings(), {} as any);
 
-  const components: ComponentSnapshot[] = safe(
+  const components = safe<ComponentSnapshot[]>(
     () =>
-      editorState.uiCompInfoList().map((info: any) => {
+      editorState.uiCompInfoList().map((info: any): ComponentSnapshot => {
         // The layout x/y/w/h lives on the rootComp's layout map, keyed by
         // the same key as `getAllUICompMap`. We don't have a direct lookup
         // here without scanning, so we leave layout undefined for now and
@@ -124,15 +126,15 @@ export function buildEditorSnapshot(editorState: EditorState | null | undefined)
           hints: pickHints(info.data),
         };
       }),
-    [] as ComponentSnapshot[]
+    []
   );
 
   // Try to enrich with layout positions from the root grid.
   safe(() => {
-    const ui = editorState.getUIComp();
-    const comp = ui?.children?.comp;
-    const layoutObj = comp?.children?.layout?.getView?.() ?? {};
-    const items = comp?.children?.items?.children ?? {};
+    const uiComp: any = editorState.getUIComp();
+    const compChildren = uiComp?.children?.comp?.children;
+    const layoutObj = compChildren?.layout?.getView?.() ?? {};
+    const items = compChildren?.items?.children ?? {};
     const byName: Record<string, { x?: number; y?: number; w?: number; h?: number }> = {};
     for (const [key, layout] of Object.entries<any>(layoutObj)) {
       const item: any = items[key];
@@ -207,21 +209,21 @@ export function buildEditorSnapshot(editorState: EditorState | null | undefined)
  * free-form prompt. Used to slim down the component catalog we send to the
  * model so it stays under token budgets.
  *
- * Returns an empty list if no obvious match — caller should fall back to
- * the default curated catalog.
+ * Returns an empty list if no obvious match — caller should keep the full
+ * component catalog in its default registry order.
  */
 export function inferMentionedComponentTypes(prompt: string): string[] {
   if (!prompt) return [];
   const lower = prompt.toLowerCase();
-  const candidates = [
-    "text", "button", "input", "numberInput", "textArea", "password",
-    "select", "checkbox", "radio", "switch", "slider", "rating", "date",
-    "form", "container", "modal", "drawer",
-    "table", "listView", "card", "tabbedContainer",
-    "image", "video", "avatar", "chart",
-    "progress", "navigation", "timeline", "step", "divider",
-  ];
+  const registryTypes = Object.keys(uiCompRegistry);
+  const candidates = Array.from(new Set([...LOWCODER_COMPONENT_TYPES, ...registryTypes]));
   const aliases: Record<string, string> = {
+    chatbox: "chatBox",
+    "chat box": "chatBox",
+    "chat-box": "chatBox",
+    "chat controller": "chatController",
+    "chat-controller": "chatController",
+    "ai chat": "chat",
     dropdown: "select",
     "list view": "listView",
     "list-view": "listView",
@@ -243,7 +245,13 @@ export function inferMentionedComponentTypes(prompt: string): string[] {
   };
   const found = new Set<string>();
   for (const c of candidates) {
-    if (lower.includes(c.toLowerCase())) found.add(c);
+    const manifest = uiCompRegistry[c];
+    const names = [
+      c,
+      manifest?.name,
+      manifest?.enName,
+    ].filter(Boolean) as string[];
+    if (names.some((name) => lower.includes(name.toLowerCase()))) found.add(c);
   }
   for (const [alias, real] of Object.entries(aliases)) {
     if (lower.includes(alias)) found.add(real);

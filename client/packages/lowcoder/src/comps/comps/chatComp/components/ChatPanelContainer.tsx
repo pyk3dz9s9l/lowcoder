@@ -152,22 +152,6 @@ const StyledChatContainer = styled.div<{
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-/**
- * Append a small footer to the assistant message summarising what the
- * Automator just did, so the human can audit at a glance.
- */
-function formatAutomatorFooter(actionsCount: number, invalidCount: number): string {
-  if (actionsCount === 0 && invalidCount === 0) return "";
-  const parts: string[] = [];
-  if (actionsCount > 0) {
-    parts.push(`${actionsCount} action${actionsCount === 1 ? "" : "s"} executed`);
-  }
-  if (invalidCount > 0) {
-    parts.push(`${invalidCount} skipped (unsupported)`);
-  }
-  return `\n\n_— Automator: ${parts.join(", ")}_`;
-}
-
 export interface ChatPanelContainerProps {
   storage: any;
   messageHandler: AIAssistantMessageHandler;
@@ -260,17 +244,13 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       onMessageUpdate?.(userMessage.text);
 
       if (response?.actions?.length) {
-        performAction(response.actions);
+        await performAction(response.actions);
       }
-
-      const actionsCount = response?.actions?.length ?? 0;
-      const invalidCount = response?.automator?.invalidActionCount ?? 0;
-      const footer = formatAutomatorFooter(actionsCount, invalidCount);
 
       await actions.addMessage(state.currentThreadId, {
         id: generateId(),
         role: "assistant",
-        text: response.content + footer,
+        text: response.content,
         timestamp: Date.now(),
       });
     } catch (error) {
@@ -318,17 +298,13 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       onMessageUpdate?.(text);
 
       if (response?.actions?.length) {
-        performAction(response.actions);
+        await performAction(response.actions);
       }
-
-      const actionsCount = response?.actions?.length ?? 0;
-      const invalidCount = response?.automator?.invalidActionCount ?? 0;
-      const footer = formatAutomatorFooter(actionsCount, invalidCount);
 
       newMessages.push({
         id: generateId(),
         role: "assistant",
-        text: response.content + footer,
+        text: response.content,
         timestamp: Date.now(),
       });
       await actions.updateMessages(state.currentThreadId, newMessages);

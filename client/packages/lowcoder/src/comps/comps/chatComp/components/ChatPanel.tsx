@@ -18,17 +18,11 @@ import "@assistant-ui/styles/markdown.css";
 // mount time, which would defeat the whole point of context awareness).
 // ============================================================================
 
-interface ExtendedChatPanelProps extends ChatPanelProps {
-  /** When false, send conversation history without the Automator system prompt. */
-  enableAutomator?: boolean;
-}
-
 export function ChatPanel({
   tableName,
   chatQuery,
   onMessageUpdate,
-  enableAutomator = true,
-}: ExtendedChatPanelProps) {
+}: ChatPanelProps) {
   const editorState = useContext(EditorContext);
   const editorStateRef = useRef(editorState);
 
@@ -47,9 +41,8 @@ export function ChatPanel({
         chatQuery,
         dispatch: editorState?.rootComp?.dispatch,
         getEditorState: () => editorStateRef.current,
-        enableAutomator,
       }),
-    [chatQuery, editorState?.rootComp?.dispatch, enableAutomator]
+    [chatQuery, editorState?.rootComp?.dispatch]
   );
 
   return (

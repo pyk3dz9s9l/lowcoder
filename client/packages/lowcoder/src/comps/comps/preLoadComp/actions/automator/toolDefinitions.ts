@@ -14,8 +14,8 @@
  * call), which naturally replaces the old `"actions": []` convention.
  *
  * The tool definition is provider-agnostic: OpenAI, Groq, Together, and
- * Ollama all accept the same `tools` shape. Anthropic needs a small
- * remapping (documented in README.md).
+ * Ollama all accept the same `tools` shape. Other providers can map this
+ * schema in the selected query/backend bridge.
  */
 
 import { ACTIONS_CATALOG } from "./actionsCatalog";
@@ -29,7 +29,7 @@ export interface OpenAIToolDefinition {
   };
 }
 
-function buildActionItemSchema(): Record<string, unknown> {
+function buildActionItemSchema(componentTypes?: string[]): Record<string, unknown> {
   return {
     type: "object",
     properties: {
@@ -40,8 +40,9 @@ function buildActionItemSchema(): Record<string, unknown> {
       },
       component: {
         type: "string",
+        ...(componentTypes && componentTypes.length > 0 ? { enum: componentTypes } : {}),
         description:
-          "Component type (e.g. 'button', 'input', 'table'). Required for place_component and nest_component.",
+          "Component type as registered in Lowcoder. Required for place_component and nest_component.",
       },
       component_name: {
         type: "string",
@@ -78,7 +79,7 @@ function buildActionItemSchema(): Record<string, unknown> {
  * wrapper keeps the door open for future per-action tools if we want
  * tighter per-action schemas.
  */
-export function buildToolDefinitions(): OpenAIToolDefinition[] {
+export function buildToolDefinitions(componentTypes?: string[]): OpenAIToolDefinition[] {
   const actionSummary = ACTIONS_CATALOG.map(
     (a) => `  - ${a.action}: ${a.purpose}`
   ).join("\n");
@@ -109,7 +110,7 @@ export function buildToolDefinitions(): OpenAIToolDefinition[] {
             actions: {
               type: "array",
               description: "Ordered list of actions to execute on the canvas.",
-              items: buildActionItemSchema(),
+              items: buildActionItemSchema(componentTypes),
             },
           },
           required: ["explanation", "actions"],
