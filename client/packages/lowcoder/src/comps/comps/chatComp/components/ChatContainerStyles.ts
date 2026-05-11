@@ -20,6 +20,8 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   display: flex;
   height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
+  min-width: 0;
+  overflow: hidden;
 
   /* Main container styles */
   background: ${(props) => props.style?.background || "transparent"};
@@ -43,6 +45,8 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
     width: ${(props) => props.$sidebarWidth || "250px"};
     background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
     padding: 10px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .aui-thread-list-item-title {
@@ -51,9 +55,16 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* Messages Window Styles */
   .aui-thread-root {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
-    height: auto;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .aui-thread-viewport {
+    min-height: 0;
   }
 
   /* User Message Styles */

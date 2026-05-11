@@ -118,6 +118,8 @@ const StyledChatContainer = styled.div<{
   display: flex;
   height: ${(props) => (props.autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.autoHeight ? "300px" : "unset")};
+  min-width: 0;
+  overflow: hidden;
 
   p {
     margin: 0;
@@ -127,12 +129,21 @@ const StyledChatContainer = styled.div<{
     width: ${(props) => props.sidebarWidth || "250px"};
     background-color: #fff;
     padding: 10px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .aui-thread-root {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     background-color: #f9fafb;
-    height: auto;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .aui-thread-viewport {
+    min-height: 0;
   }
 
   .aui-thread-list-item {
