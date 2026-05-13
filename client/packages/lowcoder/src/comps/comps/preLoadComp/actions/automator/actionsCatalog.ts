@@ -108,7 +108,8 @@ export const ACTIONS_CATALOG: ActionCatalogEntry[] = [
   },
   {
     action: "align_component",
-    purpose: "Align a component horizontally (left, center, right).",
+    purpose:
+      "Move a component horizontally on the canvas grid (left, center, right). This positions the COMPONENT in the canvas — it does NOT change text alignment INSIDE a component. For text/content alignment, use `set_properties` with the component's `horizontalAlignment` / `verticalAlignment` layoutProperties.",
     required: ["component_name", "action_parameters"],
     example: {
       action: "align_component",
@@ -120,22 +121,32 @@ export const ACTIONS_CATALOG: ActionCatalogEntry[] = [
   // ── Properties & Styling ──────────────────────────────────────────
   {
     action: "set_properties",
-    purpose: "Update properties on an existing component, addressed by name.",
+    purpose:
+      "Update top-level properties on an existing component (text, alignment, autoHeight, type, disabled, label, options, …). Use this for behaviour and layout-style props listed in the component's `layoutProperties`. Use `set_style` for CSS-like visual props.",
     required: ["component_name", "action_parameters"],
     example: {
       action: "set_properties",
-      component_name: "submitBtn",
-      action_parameters: { text: "Save", disabled: "false" },
+      component_name: "title1",
+      action_parameters: { horizontalAlignment: "center", verticalAlignment: "center" },
     },
   },
   {
     action: "set_style",
-    purpose: "Apply visual styles (colors, spacing, borders) to a component.",
+    purpose:
+      "Apply visual styles (color, font, spacing, border, animation, …) to a component. Pass a flat object — keys are auto-routed to the matching style namespace exposed by the component (`style`, `labelStyle`, `inputFieldStyle`, `disabledStyle`, `animationStyle`, `headerStyle`, `bodyStyle`, etc.). Use `_target: '<namespace>'` only when the same key exists in multiple namespaces and you must disambiguate.",
     required: ["component_name", "action_parameters"],
+    optional: ["action_parameters._target"],
     example: {
       action: "set_style",
       component_name: "submitBtn",
-      action_parameters: { backgroundColor: "#1677ff", color: "#ffffff", borderRadius: "8px" },
+      action_parameters: {
+        background: "#1677ff",
+        text: "#ffffff",
+        radius: "8px",
+        textSize: "14px",
+        textWeight: "600",
+        padding: "8px 16px",
+      },
     },
   },
 

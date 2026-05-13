@@ -73,6 +73,73 @@ plain text.
 - Populate data-driven components (table, listView, grid) with 3+ realistic
   sample rows. Stringify JSON for the \`data\` field of \`table\`.
 
+# Styling & layout edits
+
+There are TWO families of UI edits, and each has its own action:
+
+1. **\`set_properties\`** — top-level UI / behaviour properties exposed as
+   direct children of the component. Use this for things controlled by the
+   component's own controls (alignment, autoHeight, type, label, placeholder,
+   options, disabled, hidden, loading, placement, …). For each component the
+   \`layoutProperties\` field in COMPONENT_CATALOG lists the exact keys and
+   their allowed values.
+
+2. **\`set_style\`** — visual / CSS-like properties living inside the
+   component's style namespaces (\`style\`, \`labelStyle\`, \`inputFieldStyle\`,
+   \`disabledStyle\`, \`animationStyle\`, \`headerStyle\`, \`bodyStyle\`, …).
+   Pass a flat object — keys are auto-routed to the matching namespace.
+   For each component the \`styleProperties\` field in COMPONENT_CATALOG
+   lists which keys live in which namespace.
+
+   When the same key exists in multiple namespaces (e.g. \`text\` in
+   \`labelStyle\` and \`inputFieldStyle\`) include a \`_target\` field to
+   disambiguate, e.g.
+   \`{ "_target": "labelStyle", "text": "#1677ff" }\`.
+
+   Common style-key vocabulary:
+   - text/colour: \`text\` (foreground), \`background\`, \`links\`, \`accent\`
+   - typography: \`textSize\`, \`textWeight\`, \`fontFamily\`, \`fontStyle\`,
+     \`textTransform\`, \`textDecoration\`, \`lineHeight\`
+   - box model: \`margin\`, \`padding\`, \`border\`, \`borderStyle\`,
+     \`borderWidth\`, \`radius\`, \`opacity\`, \`boxShadow\`, \`boxShadowColor\`,
+     \`rotation\`
+   - background image: \`backgroundImage\`, \`backgroundImageRepeat\`,
+     \`backgroundImageSize\`, \`backgroundImagePosition\`,
+     \`backgroundImageOrigin\`
+   - animation (in \`animationStyle\`): \`animation\`, \`animationDelay\`,
+     \`animationDuration\`, \`animationIterationCount\`
+   - disabled state (in \`disabledStyle\`): \`disabledBackground\`,
+     \`disabledText\`, \`disabledBorder\`
+
+3. **\`align_component\`** — moves the COMPONENT to the left/center/right of
+   the canvas grid. It does NOT change text or content alignment inside the
+   component. For "center the text" / "right-align this label" use
+   \`set_properties\` with \`horizontalAlignment\`.
+
+# Common UI recipes
+
+- Center text inside a Text component:
+    set_properties { horizontalAlignment: "center" }
+- Larger heading text:
+    set_style { textSize: "24px", textWeight: "700", lineHeight: "1.3" }
+- Coloured primary button:
+    set_style { background: "#1677ff", text: "#ffffff", radius: "8px",
+                padding: "8px 16px", textWeight: "600" }
+- Accent input border + larger label:
+    set_style { _target: "inputFieldStyle", border: "#1677ff",
+                borderWidth: "2px", radius: "6px" }
+    set_style { _target: "labelStyle", textSize: "14px", textWeight: "600" }
+- Soft card with shadow:
+    set_style { background: "#ffffff", radius: "12px", border: "#e5e7eb",
+                borderWidth: "1px", padding: "16px",
+                boxShadow: "0 4px 12px", boxShadowColor: "rgba(0,0,0,0.08)" }
+- Animate a component on mount:
+    set_style { animation: "fadeIn", animationDuration: "0.6s",
+                animationIterationCount: "1" }
+- Hide / disable a component:
+    set_properties { hidden: true }
+    set_properties { disabled: true }
+
 # UX defaults
 
 - Apps that show data: title (text) → filters (input/dropdown) → primary
@@ -88,6 +155,9 @@ plain text.
   \`component_name\`.
 - Component names must be unique across the app. If reusing an existing
   component referenced in EDITOR_CONTEXT, use its existing name.
+- Prefer the per-component \`layoutProperties\` / \`styleProperties\` listed in
+  COMPONENT_CATALOG over invented keys. If a property is not listed and you
+  are unsure it exists, ask the user instead of guessing.
 `.trim();
 
 /**
