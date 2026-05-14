@@ -86,7 +86,6 @@ function buildExecuteParams(
   let actionValue = "";
   switch (actionItem.action) {
     case "rename_component":       actionValue = ap.new_name || ""; break;
-    case "set_style":              actionValue = JSON.stringify(ap); break;
     case "align_component":        actionValue = ap.alignment || "center"; break;
     case "add_event_handler":      actionValue = `${ap.event || "click"}: ${ap.action_type || "message"}`; break;
     case "set_global_javascript":  actionValue = ap.code || ""; break;

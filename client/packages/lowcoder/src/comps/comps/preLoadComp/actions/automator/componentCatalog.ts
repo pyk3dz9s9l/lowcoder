@@ -33,9 +33,8 @@ export interface LayoutPropertyDescriptor {
  * Map of style namespace → list of style keys that can be passed to
  * `set_style`. Most components have a single `style` namespace; inputs and
  * containers expose several (e.g. `labelStyle`, `inputFieldStyle`,
- * `disabledStyle`, `animationStyle`). The `set_style` executor auto-routes
- * each key to the matching namespace so models can usually pass a flat object
- * without specifying `_target`.
+ * `headerStyle`, `bodyStyle`). The `set_style` executor expects values grouped
+ * by explicit namespace.
  */
 export type StylePropertyMap = Record<string, readonly string[]>;
 
@@ -71,9 +70,8 @@ export interface ComponentCatalogEntry {
   layoutProperties?: Record<string, LayoutPropertyDescriptor>;
   /**
    * Style properties grouped by style namespace, used by `set_style`.
-   * Pass these as a flat object — `set_style` routes each key automatically.
-   * Use `_target: "<namespace>"` only when the same key exists in multiple
-   * namespaces and you need to disambiguate.
+   * Pass these grouped by namespace, e.g.
+   * `{ style: { background: "#fff" }, labelStyle: { label: "#111" } }`.
    */
   styleProperties?: StylePropertyMap;
 }
@@ -99,7 +97,6 @@ const COMMON_STYLE_KEYS = [
   "margin",
   "padding",
   "lineHeight",
-  "rotation",
 ] as const;
 
 const CONTAINER_STYLE_KEYS = [
@@ -113,12 +110,6 @@ const CONTAINER_STYLE_KEYS = [
   "boxShadow",
   "boxShadowColor",
   "opacity",
-  "rotation",
-  "backgroundImage",
-  "backgroundImageRepeat",
-  "backgroundImageSize",
-  "backgroundImagePosition",
-  "backgroundImageOrigin",
 ] as const;
 
 const INPUT_LIKE_STYLE_KEYS = [
@@ -161,19 +152,6 @@ const LABEL_STYLE_KEYS = [
   "validate",
 ] as const;
 
-const ANIMATION_STYLE_KEYS = [
-  "animation",
-  "animationDelay",
-  "animationDuration",
-  "animationIterationCount",
-] as const;
-
-const DISABLED_STYLE_KEYS = [
-  "disabledBackground",
-  "disabledText",
-  "disabledBorder",
-] as const;
-
 const IMAGE_STYLE_KEYS = [
   "margin",
   "padding",
@@ -184,7 +162,6 @@ const IMAGE_STYLE_KEYS = [
   "opacity",
   "boxShadow",
   "boxShadowColor",
-  "rotation",
 ] as const;
 
 const NAVIGATION_STYLE_KEYS = [
@@ -389,7 +366,6 @@ const TEXT: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...COMMON_STYLE_KEYS, "links"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -433,8 +409,6 @@ const BUTTON: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...COMMON_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -473,8 +447,6 @@ const INPUT: ComponentCatalogEntry = {
     style: [...CONTAINER_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -509,8 +481,6 @@ const NUMBER_INPUT: ComponentCatalogEntry = {
     style: [...CONTAINER_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -544,7 +514,6 @@ const DROPDOWN: ComponentCatalogEntry = {
     style: [...COMMON_STYLE_KEYS, "accent", "validate"],
     labelStyle: [...LABEL_STYLE_KEYS],
     childrenInputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -570,7 +539,6 @@ const CHECKBOX: ComponentCatalogEntry = {
     style: [...COMMON_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS, "checkedBackground", "uncheckedBackground", "uncheckedBorder", "hoverBackground"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -606,7 +574,6 @@ const FORM: ComponentCatalogEntry = {
     headerStyle: [...CONTAINER_STYLE_KEYS],
     bodyStyle: [...CONTAINER_STYLE_KEYS],
     footerStyle: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -639,7 +606,6 @@ const CONTAINER: ComponentCatalogEntry = {
     headerStyle: [...CONTAINER_STYLE_KEYS],
     bodyStyle: [...CONTAINER_STYLE_KEYS],
     footerStyle: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -665,7 +631,6 @@ const MODAL: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -691,7 +656,6 @@ const DRAWER: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -719,7 +683,6 @@ const TABLE: ComponentCatalogEntry = {
     headerStyle: [...COMMON_STYLE_KEYS],
     rowStyle: [...COMMON_STYLE_KEYS],
     cellStyle: [...COMMON_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
   example: {
     columns: [
@@ -764,7 +727,6 @@ const LIST_VIEW: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
   example: {
     container: {},
@@ -814,7 +776,6 @@ const IMAGE: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...IMAGE_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -833,7 +794,6 @@ const DIVIDER: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...COMMON_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -858,7 +818,6 @@ const DATE: ComponentCatalogEntry = {
     style: [...COMMON_STYLE_KEYS, "accent", "validate"],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -879,7 +838,6 @@ const SWITCH: ComponentCatalogEntry = {
   styleProperties: {
     style: ["handle", "unchecked", "checked", "margin", "padding"],
     labelStyle: [...LABEL_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -915,8 +873,6 @@ const TEXT_AREA: ComponentCatalogEntry = {
     style: [...CONTAINER_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -940,8 +896,6 @@ const PASSWORD: ComponentCatalogEntry = {
     style: [...CONTAINER_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -985,7 +939,6 @@ const CHART: ComponentCatalogEntry = {
       "margin",
       "padding",
     ],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1008,7 +961,6 @@ const CARD: ComponentCatalogEntry = {
     style: [...CONTAINER_STYLE_KEYS, "IconColor", "activateColor"],
     headerStyle: [...COMMON_STYLE_KEYS],
     bodyStyle: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1033,7 +985,6 @@ const TABBED_CONTAINER: ComponentCatalogEntry = {
     headerStyle: [...COMMON_STYLE_KEYS],
     bodyStyle: [...CONTAINER_STYLE_KEYS],
     tabsStyle: [...COMMON_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1053,7 +1004,6 @@ const VIDEO: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: ["margin", "padding"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1077,7 +1027,6 @@ const AVATAR: ComponentCatalogEntry = {
     style: ["background", "fill"],
     avatarLabelStyle: [...COMMON_STYLE_KEYS],
     avatarContainerStyle: [...CONTAINER_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1093,7 +1042,6 @@ const PROGRESS: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: ["text", "textSize", "textWeight", "fontFamily", "fontStyle", "radius", "margin", "padding", "lineHeight", "track", "fill", "success"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1116,7 +1064,6 @@ const RATING: ComponentCatalogEntry = {
   styleProperties: {
     style: ["checked", "unchecked", "margin", "padding"],
     labelStyle: [...LABEL_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1140,8 +1087,6 @@ const SLIDER: ComponentCatalogEntry = {
   styleProperties: {
     style: ["fill", "thumb", "thumbBorder", "track", "margin", "padding"],
     labelStyle: [...LABEL_STYLE_KEYS],
-    disabledStyle: ["disabledFill", "disabledTrack"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1163,7 +1108,6 @@ const NAVIGATION: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...NAVIGATION_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1194,7 +1138,6 @@ const TIMELINE: ComponentCatalogEntry = {
       "padding",
       "radius",
     ],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 
@@ -1213,8 +1156,6 @@ const STEP: ComponentCatalogEntry = {
   },
   styleProperties: {
     style: [...COMMON_STYLE_KEYS],
-    disabledStyle: [...DISABLED_STYLE_KEYS],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
   example: {
     value: "1",
@@ -1265,7 +1206,6 @@ const RADIO: ComponentCatalogEntry = {
     style: [...COMMON_STYLE_KEYS],
     labelStyle: [...LABEL_STYLE_KEYS],
     inputFieldStyle: [...INPUT_LIKE_STYLE_KEYS, "checkedBackground", "uncheckedBackground", "uncheckedBorder", "hoverBackground"],
-    animationStyle: [...ANIMATION_STYLE_KEYS],
   },
 };
 

@@ -1,4 +1,5 @@
 import { message } from "antd";
+import merge from "lodash/merge";
 import { ActionConfig, ActionExecuteParams } from "../types";
 
 export const configureComponentAction: ActionConfig = {
@@ -41,7 +42,7 @@ export const configureComponentAction: ActionConfig = {
       }
 
       const itemComp = comp.children.comp;
-      const config = { ...itemComp.toJsonValue(), ...compProperties };
+      const config = merge({}, itemComp.toJsonValue(), compProperties);
       itemComp.dispatchChangeValueAction(config);
 
       message.success(`Properties updated on "${componentName}"`);

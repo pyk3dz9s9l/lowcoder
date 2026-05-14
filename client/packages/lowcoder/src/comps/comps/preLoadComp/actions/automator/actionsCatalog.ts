@@ -53,7 +53,8 @@ export const ACTIONS_CATALOG: ActionCatalogEntry[] = [
   },
   {
     action: "nest_component",
-    purpose: "Place a new component inside an existing container.",
+    purpose:
+      "Create a NEW component inside an existing container. Do not use this to move or reparent an existing component; if the requested component already exists, ask/explain instead of duplicating it.",
     required: ["component", "component_name", "parent_component_name", "layout", "action_parameters"],
     example: {
       action: "nest_component",
@@ -133,19 +134,20 @@ export const ACTIONS_CATALOG: ActionCatalogEntry[] = [
   {
     action: "set_style",
     purpose:
-      "Apply visual styles (color, font, spacing, border, animation, …) to a component. Pass a flat object — keys are auto-routed to the matching style namespace exposed by the component (`style`, `labelStyle`, `inputFieldStyle`, `disabledStyle`, `animationStyle`, `headerStyle`, `bodyStyle`, etc.). Use `_target: '<namespace>'` only when the same key exists in multiple namespaces and you must disambiguate.",
+      "Apply basic visual styles to a component. Pass an object grouped by explicit style namespace (`style`, `labelStyle`, `inputFieldStyle`, `headerStyle`, `bodyStyle`, etc.). Do not pass flat style keys and do not use animation styles.",
     required: ["component_name", "action_parameters"],
-    optional: ["action_parameters._target"],
     example: {
       action: "set_style",
       component_name: "submitBtn",
       action_parameters: {
-        background: "#1677ff",
-        text: "#ffffff",
-        radius: "8px",
-        textSize: "14px",
-        textWeight: "600",
-        padding: "8px 16px",
+        style: {
+          background: "#1677ff",
+          text: "#ffffff",
+          radius: "8px",
+          textSize: "14px",
+          textWeight: "600",
+          padding: "8px 16px",
+        },
       },
     },
   },

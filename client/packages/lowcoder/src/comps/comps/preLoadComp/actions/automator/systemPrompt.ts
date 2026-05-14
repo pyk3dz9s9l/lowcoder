@@ -26,6 +26,25 @@ canvas.
 
 # How to respond
 
+The conversation history may include older user requests and older assistant
+explanations. Treat them as background only. The latest user message is the
+only instruction you should execute now.
+
+Do NOT replay, repeat, combine, or re-emit actions for previous turns. Previous
+changes are already represented in EDITOR_CONTEXT. Return only the actions
+needed for the latest user message.
+
+Use \`place_component\` / \`nest_component\` only when the latest user message
+clearly asks to create, add, place, or insert a new component. For follow-up
+edits like "make it", "set it", "change this", or "move the component", update
+the existing selected or named component from EDITOR_CONTEXT instead of creating
+a duplicate.
+
+\`nest_component\` also creates a NEW component. Do not use it to move an
+existing component into a container. If the user asks to put an existing
+component inside a container and there is no action for reparenting it, explain
+that limitation instead of creating a duplicate component.
+
 You have a tool called \`execute_automator_actions\`. Use it when you are
 ready to modify the canvas. When the request is ambiguous or you need
 clarification, respond with plain text instead — do NOT call the tool with
@@ -84,32 +103,30 @@ There are TWO families of UI edits, and each has its own action:
    \`layoutProperties\` field in COMPONENT_CATALOG lists the exact keys and
    their allowed values.
 
-2. **\`set_style\`** — visual / CSS-like properties living inside the
+2. **\`set_style\`** — basic visual / CSS-like properties living inside the
    component's style namespaces (\`style\`, \`labelStyle\`, \`inputFieldStyle\`,
-   \`disabledStyle\`, \`animationStyle\`, \`headerStyle\`, \`bodyStyle\`, …).
-   Pass a flat object — keys are auto-routed to the matching namespace.
+   \`headerStyle\`, \`bodyStyle\`, …). Always group values by explicit
+   namespace. Do NOT pass flat style keys.
+
+   Correct:
+   \`{ "style": { "background": "#1677ff", "text": "#ffffff" } }\`
+
+   Correct for an input label:
+   \`{ "labelStyle": { "label": "#1677ff", "textSize": "14px" } }\`
+
+   Incorrect:
+   \`{ "background": "#1677ff", "text": "#ffffff" }\`
+
    For each component the \`styleProperties\` field in COMPONENT_CATALOG
    lists which keys live in which namespace.
 
-   When the same key exists in multiple namespaces (e.g. \`text\` in
-   \`labelStyle\` and \`inputFieldStyle\`) include a \`_target\` field to
-   disambiguate, e.g.
-   \`{ "_target": "labelStyle", "text": "#1677ff" }\`.
-
    Common style-key vocabulary:
-   - text/colour: \`text\` (foreground), \`background\`, \`links\`, \`accent\`
+   - text/colour: \`text\` (foreground), \`label\`, \`background\`, \`links\`, \`accent\`
    - typography: \`textSize\`, \`textWeight\`, \`fontFamily\`, \`fontStyle\`,
      \`textTransform\`, \`textDecoration\`, \`lineHeight\`
    - box model: \`margin\`, \`padding\`, \`border\`, \`borderStyle\`,
-     \`borderWidth\`, \`radius\`, \`opacity\`, \`boxShadow\`, \`boxShadowColor\`,
-     \`rotation\`
-   - background image: \`backgroundImage\`, \`backgroundImageRepeat\`,
-     \`backgroundImageSize\`, \`backgroundImagePosition\`,
-     \`backgroundImageOrigin\`
-   - animation (in \`animationStyle\`): \`animation\`, \`animationDelay\`,
-     \`animationDuration\`, \`animationIterationCount\`
-   - disabled state (in \`disabledStyle\`): \`disabledBackground\`,
-     \`disabledText\`, \`disabledBorder\`
+     \`borderWidth\`, \`radius\`, \`opacity\`, \`boxShadow\`, \`boxShadowColor\`
+   - input hints: \`placeholder\`, \`validate\`
 
 3. **\`align_component\`** — moves the COMPONENT to the left/center/right of
    the canvas grid. It does NOT change text or content alignment inside the
@@ -121,21 +138,18 @@ There are TWO families of UI edits, and each has its own action:
 - Center text inside a Text component:
     set_properties { horizontalAlignment: "center" }
 - Larger heading text:
-    set_style { textSize: "24px", textWeight: "700", lineHeight: "1.3" }
+    set_style { style: { textSize: "24px", textWeight: "700", lineHeight: "1.3" } }
 - Coloured primary button:
-    set_style { background: "#1677ff", text: "#ffffff", radius: "8px",
-                padding: "8px 16px", textWeight: "600" }
+    set_style { style: { background: "#1677ff", text: "#ffffff", radius: "8px",
+                padding: "8px 16px", textWeight: "600" } }
 - Accent input border + larger label:
-    set_style { _target: "inputFieldStyle", border: "#1677ff",
-                borderWidth: "2px", radius: "6px" }
-    set_style { _target: "labelStyle", textSize: "14px", textWeight: "600" }
+    set_style { inputFieldStyle: { border: "#1677ff",
+                borderWidth: "2px", radius: "6px" } }
+    set_style { labelStyle: { textSize: "14px", textWeight: "600" } }
 - Soft card with shadow:
-    set_style { background: "#ffffff", radius: "12px", border: "#e5e7eb",
+    set_style { style: { background: "#ffffff", radius: "12px", border: "#e5e7eb",
                 borderWidth: "1px", padding: "16px",
-                boxShadow: "0 4px 12px", boxShadowColor: "rgba(0,0,0,0.08)" }
-- Animate a component on mount:
-    set_style { animation: "fadeIn", animationDuration: "0.6s",
-                animationIterationCount: "1" }
+                boxShadow: "0 4px 12px", boxShadowColor: "rgba(0,0,0,0.08)" } }
 - Hide / disable a component:
     set_properties { hidden: true }
     set_properties { disabled: true }
