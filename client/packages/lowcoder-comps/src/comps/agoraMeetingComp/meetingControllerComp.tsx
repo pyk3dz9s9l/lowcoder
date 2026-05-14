@@ -51,7 +51,7 @@ import AgoraRTC, {
 } from "agora-rtc-sdk-ng";
 
 import AgoraRtmSdk, { RTMEvents } from "agora-rtm-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResizeHandle } from "react-resizable";
 import { v4 as uuidv4 } from "uuid";
 
@@ -85,6 +85,8 @@ let rtmClient: InstanceType<typeof AgoraRtmSdk.RTM> | undefined;
 let rtmSubscribedChannelName: string | null = null;
 /** RTM channel payload: sync local mic/camera to other clients (setEnabled may not fire user-unpublished). */
 const RTM_MEETING_USER_STATE = "meetingUserState" as const;
+/** Ask everyone on the channel to re-send meetingUserState (joiner may have missed earlier RTM). */
+const RTM_MEETING_REQUEST_PRESENCE = "meetingRequestPresence" as const;
 
 const rtmMessageSinkRef: {
   current: null | ((event: RTMEvents.MessageEvent) => void);
@@ -93,6 +95,26 @@ const rtmMessageSinkRef: {
 function onRtmMessage(event: RTMEvents.MessageEvent) {
   rtmMessageSinkRef.current?.(event);
 }
+
+/** Invokes broadcastLocalMeetingUserState with latest mic/video/name snapshot (see React effect). */
+const presenceRequestSinkRef: { current: null | (() => void) } = {
+  current: null,
+};
+
+/** Dedupe by stringified id so RTC numeric uid and RTM string uid stay one row. */
+function meetingParticipantsDedupe(arr: any[], prop: string) {
+  const byKey = new Map<string, any>();
+  for (const obj of arr) {
+    if (obj == null || obj[prop] === undefined || obj[prop] === null) {
+      continue;
+    }
+    const key = String(obj[prop]);
+    const prev = byKey.get(key);
+    byKey.set(key, prev ? { ...prev, ...obj } : { ...obj });
+  }
+  return Array.from(byKey.values());
+}
+
 // const ButtonStyle = styledm(Button)`
 //   position: absolute;
 //   left: 0;
@@ -145,8 +167,10 @@ const shareScreen = async (sharing: boolean) => {
     if (sharing === false) {
       await client.unpublish(screenShareStream);
       screenShareStream.close();
-      await client.publish(videoTrack);
-      videoTrack.play(userId + "");
+      if (videoTrack) {
+        await client.publish(videoTrack);
+        videoTrack.play(userId + "");
+      }
     } else {
       screenShareStream = await AgoraRTC.createScreenVideoTrack(
         {
@@ -154,7 +178,9 @@ const shareScreen = async (sharing: boolean) => {
         },
         "disable"
       );
-      await client.unpublish(videoTrack);
+      if (videoTrack) {
+        await client.unpublish(videoTrack);
+      }
       screenShareStream.play("share-screen");
       await client.publish(screenShareStream);
     }
@@ -202,16 +228,27 @@ const leaveChannel = async () => {
   }
 };
 
+/** Joins RTC + RTM; publishes camera only if creation succeeds (e.g. permission granted). */
 const publishVideo = async (
   appId: string,
   channel: string,
   rtmToken: string,
   rtcToken: string
-) => {
+): Promise<boolean> => {
   await client.join(appId, channel, rtcToken, userId);
-  await turnOnCamera(true);
-  await client.publish(videoTrack);
+  let videoPublished = false;
+  try {
+    await turnOnCamera(true);
+    await client.publish(videoTrack);
+    videoPublished = true;
+  } catch (error) {
+    console.warn(
+      "Meeting: camera unavailable (permission denied or no device); joining without video.",
+      error
+    );
+  }
   await rtmInit(appId, userId, rtmToken, channel);
+  return videoPublished;
 };
 
 const sendMessageRtm = (message: any) => {
@@ -226,6 +263,7 @@ function broadcastLocalMeetingUserState(payload: {
   audiostatus: boolean;
   streamingVideo: boolean;
   speaking?: boolean;
+  userName?: string;
 }) {
   sendMessageRtm({
     type: RTM_MEETING_USER_STATE,
@@ -234,6 +272,14 @@ function broadcastLocalMeetingUserState(payload: {
     audiostatus: payload.audiostatus,
     streamingVideo: payload.streamingVideo,
     speaking: payload.speaking ?? false,
+    userName: payload.userName ?? "",
+  });
+}
+
+function sendMeetingPresenceRequest() {
+  sendMessageRtm({
+    type: RTM_MEETING_REQUEST_PRESENCE,
+    time: Date.now(),
   });
 }
 
@@ -277,6 +323,10 @@ const meetingControllerChildren = {
   localUserID: withDefault(
     stringStateControl(trans("meeting.localUserID")),
     uuidv4() + ""
+  ),
+  localUserName: withDefault(
+    stringStateControl(trans("meeting.localUserName")),
+    ""
   ),
   meetingName: withDefault(
     stringStateControl(trans("meeting.meetingName")),
@@ -329,27 +379,79 @@ if (typeof ContainerCompBuilder === "function") {
         const [localUserSpeaking, setLocalUserSpeaking] = useState<any>(false);
         const [localUserVideo, setLocalUserVideo] =
           useState<IAgoraRTCRemoteUser>();
-        function removeDuplicates(arr: any, prop: any) {
-          const uniqueObjects = [];
-          const seenValues = new Set();
 
-          for (const obj of arr) {
-            const objValue = obj[prop];
-
-            if (!seenValues.has(objValue)) {
-              seenValues.add(objValue);
-              uniqueObjects.push(obj);
-            }
-          }
-
-          return uniqueObjects;
-        }
+        const latestMeetingBroadcastRef = useRef({
+          meetingActive: false,
+          audiostatus: false,
+          streamingVideo: false,
+          speaking: false,
+          userName: "",
+        });
 
         useEffect(() => {
+          latestMeetingBroadcastRef.current = {
+            meetingActive: !!props.meetingActive.value,
+            audiostatus: !!props.audioControl.value,
+            streamingVideo: !!props.videoControl.value,
+            speaking: !!localUserSpeaking,
+            userName: String(props.localUserName.value ?? ""),
+          };
+        }, [
+          props.meetingActive.value,
+          props.audioControl.value,
+          props.videoControl.value,
+          props.localUserName.value,
+          localUserSpeaking,
+        ]);
+
+        useEffect(() => {
+          presenceRequestSinkRef.current = () => {
+            const snap = latestMeetingBroadcastRef.current;
+            if (
+              !snap.meetingActive ||
+              userId == null ||
+              userId === ""
+            ) {
+              return;
+            }
+            broadcastLocalMeetingUserState({
+              user: String(userId),
+              audiostatus: snap.audiostatus,
+              streamingVideo: snap.streamingVideo,
+              speaking: snap.speaking,
+              userName: snap.userName,
+            });
+          };
+          return () => {
+            presenceRequestSinkRef.current = null;
+          };
+        }, []);
+
+        useEffect(() => {
+          if (
+            !props.meetingActive.value ||
+            userId == null ||
+            userId === ""
+          ) {
+            return;
+          }
+          if (!rtmClient || !rtmSubscribedChannelName) {
+            return;
+          }
+          sendMeetingPresenceRequest();
+        }, [props.meetingActive.value]);
+
+        useEffect(() => {
+          const exposed =
+            userId != null && userId !== ""
+              ? localParticipants.filter(
+                  (u: any) => String(u.user) !== String(userId)
+                )
+              : localParticipants;
           dispatch(
             changeChildAction(
               "participants",
-              getData(localParticipants).data,
+              getData(exposed).data,
               false
             )
           );
@@ -362,7 +464,7 @@ if (typeof ContainerCompBuilder === "function") {
           setLocalParticipants((prevUsers) =>
             prevUsers.map((userInfo: any) => {
               if (
-                userInfo.user === updateVolume.userid &&
+                String(userInfo.user) === String(updateVolume.userid) &&
                 userInfo.speaking != updateVolume.update
               ) {
                 return { ...userInfo, speaking: updateVolume.update };
@@ -375,7 +477,10 @@ if (typeof ContainerCompBuilder === "function") {
         useEffect(() => {
           setLocalParticipants((prevUsers) =>
             prevUsers.map((userInfo: any) => {
-              if (userInfo.user === localUserVideo?.uid) {
+              if (
+                localUserVideo?.uid != null &&
+                String(userInfo.user) === String(localUserVideo.uid)
+              ) {
                 return { ...userInfo, streamingSharing: props.sharing.value };
               }
               return userInfo;
@@ -388,16 +493,20 @@ if (typeof ContainerCompBuilder === "function") {
             streamingVideo: props.videoControl.value,
             streamingSharing: props.sharing.value,
             speaking: localUserSpeaking,
+            userName: props.localUserName.value,
           };
           props.localUser.onChange(localObject);
-        }, [props.sharing.value]);
+        }, [props.sharing.value, props.localUserName.value]);
 
         // console.log("participants ", props.participants);
 
         useEffect(() => {
           setLocalParticipants((prevUsers) =>
             prevUsers.map((userInfo: any) => {
-              if (userInfo.user === localUserVideo?.uid) {
+              if (
+                localUserVideo?.uid != null &&
+                String(userInfo.user) === String(localUserVideo.uid)
+              ) {
                 return {
                   ...userInfo,
                   streamingVideo: localUserVideo?.hasVideo,
@@ -423,10 +532,24 @@ if (typeof ContainerCompBuilder === "function") {
               audiostatus: props.audioControl.value,
               streamingVideo: props.videoControl.value,
               speaking: localUserSpeaking,
+              userName: props.localUserName.value,
             };
             props.localUser.onChange(localObject);
           }
-        }, [localUserSpeaking]);
+        }, [localUserSpeaking, props.localUserName.value]);
+
+        useEffect(() => {
+          if (!props.meetingActive.value || userId == null || userId === "") {
+            return;
+          }
+          broadcastLocalMeetingUserState({
+            user: String(userId),
+            audiostatus: props.audioControl.value,
+            streamingVideo: props.videoControl.value,
+            speaking: !!props.localUser.value?.speaking,
+            userName: props.localUserName.value,
+          });
+        }, [props.localUserName.value]);
 
         useEffect(() => {
           rtmMessageSinkRef.current = (event: RTMEvents.MessageEvent) => {
@@ -453,13 +576,27 @@ if (typeof ContainerCompBuilder === "function") {
                 if (
                   parsed &&
                   typeof parsed === "object" &&
+                  parsed.type === RTM_MEETING_REQUEST_PRESENCE
+                ) {
+                  presenceRequestSinkRef.current?.();
+                }
+                if (
+                  parsed &&
+                  typeof parsed === "object" &&
                   parsed.type === RTM_MEETING_USER_STATE &&
                   parsed.user != null
                 ) {
+                  const skipParticipantsUpdate =
+                    userId != null &&
+                    userId !== "" &&
+                    String(parsed.user) === String(userId);
+                  if (!skipParticipantsUpdate) {
                   setLocalParticipants((prev) => {
                     const uid = parsed.user;
+                    let matched = false;
                     const next = prev.map((u: any) => {
-                      if (u.user == uid || String(u.user) === String(uid)) {
+                      if (String(u.user) === String(uid)) {
+                        matched = true;
                         return {
                           ...u,
                           audiostatus: !!parsed.audiostatus,
@@ -471,24 +608,59 @@ if (typeof ContainerCompBuilder === "function") {
                             parsed.speaking !== undefined
                               ? parsed.speaking
                               : u.speaking,
+                          userName:
+                            parsed.userName !== undefined
+                              ? parsed.userName
+                              : u.userName,
                         };
                       }
                       return u;
                     });
-                    return removeDuplicates(getData(next).data, "user");
+                    const merged = matched
+                      ? next
+                      : [
+                          ...next,
+                          {
+                            user: uid,
+                            audiostatus: !!parsed.audiostatus,
+                            streamingVideo:
+                              parsed.streamingVideo !== undefined
+                                ? parsed.streamingVideo
+                                : true,
+                            speaking:
+                              parsed.speaking !== undefined
+                                ? parsed.speaking
+                                : false,
+                            userName:
+                              parsed.userName !== undefined
+                                ? parsed.userName
+                                : "",
+                          },
+                        ];
+                    return meetingParticipantsDedupe(
+                      getData(merged).data,
+                      "user"
+                    );
+                  });
+                  }
+                }
+                if (
+                  parsed == null ||
+                  typeof parsed !== "object" ||
+                  parsed.type !== RTM_MEETING_REQUEST_PRESENCE
+                ) {
+                  setRtmMessages((prevMessages: any[]) => {
+                    const next = [...prevMessages];
+                    if (next.length >= 500) next.shift();
+                    return [
+                      ...next,
+                      {
+                        channelmessage: parsed,
+                        from: event.publisher,
+                      },
+                    ];
                   });
                 }
-                setRtmMessages((prevMessages: any[]) => {
-                  const next = [...prevMessages];
-                  if (next.length >= 500) next.shift();
-                  return [
-                    ...next,
-                    {
-                      channelmessage: parsed,
-                      from: event.publisher,
-                    },
-                  ];
-                });
               }
             } catch {
               /* ignore malformed payloads */
@@ -504,22 +676,44 @@ if (typeof ContainerCompBuilder === "function") {
             client.enableAudioVolumeIndicator();
             //user activity listeners
             client.on("user-joined", (user: IAgoraRTCRemoteUser) => {
+              if (
+                userId != null &&
+                userId !== "" &&
+                String(user.uid) === String(userId)
+              ) {
+                return;
+              }
               const userData = {
                 user: user.uid,
                 audiostatus: user.hasAudio,
                 streamingVideo: true,
+                userName: "",
               };
               setLocalParticipants((prev) =>
-                removeDuplicates(
+                meetingParticipantsDedupe(
                   getData([...prev, userData]).data,
                   "user"
                 )
               );
+              const snap = latestMeetingBroadcastRef.current;
+              if (
+                snap.meetingActive &&
+                userId != null &&
+                userId !== ""
+              ) {
+                broadcastLocalMeetingUserState({
+                  user: String(userId),
+                  audiostatus: snap.audiostatus,
+                  streamingVideo: snap.streamingVideo,
+                  speaking: snap.speaking,
+                  userName: snap.userName,
+                });
+              }
             });
             client.on("user-left", (user: IAgoraRTCRemoteUser, reason: any) => {
               setLocalParticipants((prev) => {
                 let newUsers = prev.filter(
-                  (item: any) => item.user !== user.uid
+                  (item: any) => String(item.user) !== String(user.uid)
                 );
                 const hostExists = newUsers.some((f: any) => f.host === true);
                 if (!hostExists && newUsers.length > 0) {
@@ -528,7 +722,10 @@ if (typeof ContainerCompBuilder === "function") {
                     ...newUsers.slice(1),
                   ];
                 }
-                return removeDuplicates(getData(newUsers).data, "user");
+                return meetingParticipantsDedupe(
+                  getData(newUsers).data,
+                  "user"
+                );
               });
             });
 
@@ -653,6 +850,9 @@ if (typeof ContainerCompBuilder === "function") {
             {children.localUserID.propertyView({
               label: trans("meeting.localUserID"),
             })}
+            {children.localUserName.propertyView({
+              label: trans("meeting.localUserName"),
+            })}
             {children.rtmToken.propertyView({
               label: trans("meeting.rtmToken"),
             })}
@@ -749,6 +949,7 @@ if (typeof ContainerCompBuilder === "function") {
           audiostatus: value,
           streamingVideo: comp.children.videoControl.getView().value,
           speaking: false,
+          userName: comp.children.localUserName.getView().value,
         });
         await turnOnMicrophone(value);
         comp.children.audioControl.change(value);
@@ -758,6 +959,7 @@ if (typeof ContainerCompBuilder === "function") {
             audiostatus: value,
             streamingVideo: comp.children.videoControl.getView().value,
             speaking: false,
+            userName: comp.children.localUserName.getView().value,
           });
         }
       },
@@ -775,8 +977,13 @@ if (typeof ContainerCompBuilder === "function") {
         let value = !comp.children.videoControl.getView().value;
         if (videoTrack) {
           videoTrack.setEnabled(value);
-        } else {
-          await turnOnCamera(value);
+        } else if (value) {
+          try {
+            await turnOnCamera(true);
+            await client.publish(videoTrack);
+          } catch {
+            value = false;
+          }
         }
         //change my local user data
         let localData = {
@@ -784,6 +991,7 @@ if (typeof ContainerCompBuilder === "function") {
           streamingVideo: value,
           audiostatus: comp.children.audioControl.getView().value,
           speaking: comp.children.localUser.getView().value.speaking,
+          userName: comp.children.localUserName.getView().value,
         };
 
         comp.children.localUser.change(localData);
@@ -794,6 +1002,7 @@ if (typeof ContainerCompBuilder === "function") {
             audiostatus: comp.children.audioControl.getView().value,
             streamingVideo: value,
             speaking: comp.children.localUser.getView().value.speaking,
+            userName: comp.children.localUserName.getView().value,
           });
         }
       },
@@ -802,48 +1011,24 @@ if (typeof ContainerCompBuilder === "function") {
       method: {
         name: "startMeeting",
         description: trans("meeting.actionBtnDesc"),
-        params: [{name: "userName", type: "string"}],
+        params: [],
       },
       execute: async (comp: any, values: any) => {
-        const userName = values[0];
+        if (comp.children.meetingActive.getView().value) return;
+        const resolvedUserName = String(
+          comp.children.localUserName.getView().value ?? ""
+        ).trim();
         /* console.log("startMeeting ", {
             // user: userId + "",
             audiostatus: false,
             speaking: false,
             streamingVideo: true,
           }); */
-        if (comp.children.meetingActive.getView().value) return;
         userId =
           comp.children.localUserID.getView().value === ""
             ? uuidv4()
             : comp.children.localUserID.getView().value;
-        comp.children.localUser.change({
-          user: userId + "",
-          audiostatus: false,
-          speaking: false,
-          streamingVideo: true,
-        });
-        /* console.log("startMeeting localUser ", {
-            user: userId + "",
-            audiostatus: false,
-            speaking: false,
-            streamingVideo: true,
-          }); */
-
-        // comp.children.localUser.children.value.dispatch(
-        //   changeChildAction(
-        //     "localUser",
-        //     {
-        //       user: userId + "",
-        //       audiostatus: false,
-        //       speaking: false,
-        //       streamingVideo: true,
-        //     },
-        //     false
-        //   )
-        // );
-        comp.children.videoControl.change(true);
-        await publishVideo(
+        const videoPublished = await publishVideo(
           comp.children.appId.getView(),
           comp.children.meetingName.getView().value === ""
             ? uuidv4()
@@ -851,6 +1036,14 @@ if (typeof ContainerCompBuilder === "function") {
           comp.children.rtmToken.getView().value,
           comp.children.rtcToken.getView().value
         );
+        comp.children.videoControl.change(videoPublished);
+        comp.children.localUser.change({
+          user: userId + "",
+          audiostatus: false,
+          speaking: false,
+          streamingVideo: videoPublished,
+          userName: resolvedUserName,
+        });
         console.log("publishVideo ", {
           appId: comp.children.appId.getView(),
           meetingName: comp.children.meetingName.getView().value === ""
@@ -858,8 +1051,18 @@ if (typeof ContainerCompBuilder === "function") {
             : comp.children.meetingName.getView().value,
           rtmToken: comp.children.rtmToken.getView().value,
           rtcToken: comp.children.rtcToken.getView().value,
+          videoPublished,
         });
         comp.children.meetingActive.change(true);
+        if (userId != null && userId !== "") {
+          broadcastLocalMeetingUserState({
+            user: String(userId),
+            audiostatus: false,
+            streamingVideo: videoPublished,
+            speaking: false,
+            userName: resolvedUserName,
+          });
+        }
       },
     },
     {
@@ -909,8 +1112,13 @@ if (typeof ContainerCompBuilder === "function") {
       },
       execute: async (comp: any, values: any) => {
         let userName: any = values[0];
+        const nameStr =
+          userName != null && String(userName).trim() !== ""
+            ? String(userName).trim()
+            : "";
+        comp.children.localUserName.change(nameStr);
         let userLocal = comp.children.localUser.getView().value;
-        comp.children.localUser.change({ ...userLocal, userName: userName });
+        comp.children.localUser.change({ ...userLocal, userName: nameStr });
       },
     },
     {
@@ -953,6 +1161,7 @@ if (typeof ContainerCompBuilder === "function") {
         comp.children.localUser.change({
           user: userId + "",
           streamingVideo: false,
+          userName: comp.children.localUserName.getView().value,
         });
       },
     },
@@ -965,6 +1174,7 @@ if (typeof ContainerCompBuilder === "function") {
     new NameConfig("meetingActive", trans("meeting.meetingActive")),
     new NameConfig("meetingName", trans("meeting.meetingName")),
     new NameConfig("localUserID", trans("meeting.localUserID")),
+    new NameConfig("localUserName", trans("meeting.localUserName")),
     new NameConfig("messages", trans("meeting.messages")),
     new NameConfig("rtmToken", trans("meeting.rtmToken")),
     new NameConfig("rtcToken", trans("meeting.rtcToken")),

@@ -103,7 +103,7 @@ const MeetingStreamView = memo(function MeetingStreamView({
       />
       <div style={profileWrapStyle}>
         <img alt="" style={imgStyle} src={profileImageUrl} />
-        <p style={{ margin: "0" }}>{userName ?? ""}</p>
+        {/* <p style={{ margin: "0" }}>{userName ?? ""}</p> */}
       </div>
     </div>
   );
