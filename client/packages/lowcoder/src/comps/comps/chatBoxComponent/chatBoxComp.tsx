@@ -1,14 +1,23 @@
 import React, { useContext } from "react";
 import { Section, sectionNames } from "lowcoder-design";
-import { UICompBuilder, withDefault } from "../../generators";
+import { UICompBuilder, withDefault, stateComp } from "../../generators";
+import { changeValueAction, multiChangeAction } from "lowcoder-core";
 import {
   NameConfig,
   NameConfigHidden,
   withExposingConfigs,
 } from "../../generators/withExposing";
-import { stringExposingStateControl } from "comps/controls/codeStateControl";
+import {
+  booleanExposingStateControl,
+  stringExposingStateControl,
+} from "comps/controls/codeStateControl";
 import { BoolControl } from "comps/controls/boolControl";
-import { StringControl, jsonArrayControl } from "comps/controls/codeControl";
+import {
+  ArrayStringControl,
+  NumberControl,
+  StringControl,
+  jsonArrayControl,
+} from "comps/controls/codeControl";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
 import { eventHandlerControl } from "comps/controls/eventHandlerControl";
 import { styleControl } from "comps/controls/styleControl";
@@ -18,7 +27,10 @@ import {
   ChatBoxSidebarStyle,
   ChatBoxHeaderStyle,
   ChatBoxMessageStyle,
-  ChatBoxInputStyle,
+  ChatBoxInputAreaStyle,
+  ChatBoxInputFieldStyle,
+  ChatBoxInputSendButtonStyle,
+  ChatBoxInputAttachButtonStyle,
 } from "comps/controls/styleControlConstants";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
@@ -27,6 +39,7 @@ import { trans } from "i18n";
 import { ChatBoxView } from "./components/ChatBoxView";
 import { ChatBoxContext } from "./ChatBoxContext";
 import type { ChatRoom, PendingRoomInvite } from "./store";
+import type { JSONObject } from "util/jsonTypes";
 
 // ─── Events ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +89,11 @@ const ChatEvents = [
     value: "inviteDecline",
     description: trans("chatBox.inviteDeclineDesc"),
   },
+  {
+    label: trans("chatBox.fileUpload"),
+    value: "fileUpload",
+    description: trans("chatBox.fileUploadDesc"),
+  },
 ] as const;
 
 // ─── Children map ────────────────────────────────────────────────────────────
@@ -90,7 +108,16 @@ const childrenMap = {
   typingUsers: jsonArrayControl([]),
   isAiThinking: withDefault(BoolControl, false),
   lastSentMessageText: stringExposingStateControl("lastSentMessageText", ""),
+  lastSentMessageTagsLlm: booleanExposingStateControl("lastSentMessageTagsLlm"),
   messageText: stringExposingStateControl("messageText", ""),
+
+  /** Same semantics as the File component: metadata per attachment (uid, name, type, size, lastModified). */
+  files: stateComp<JSONObject[]>([]),
+  /** Base64-encoded file contents (aligned with File component `value`). */
+  value: stateComp<Array<string | null>>([]),
+  allowMessageFileUpload: withDefault(BoolControl, true),
+  maxMessageFiles: withDefault(NumberControl, 10),
+  messageFileType: ArrayStringControl,
 
   // ── Rooms panel ──────────────────────────────────────────────────
   rooms: jsonArrayControl([]),
@@ -119,7 +146,10 @@ const childrenMap = {
   sidebarStyle: styleControl(ChatBoxSidebarStyle, "sidebarStyle"),
   headerStyle: styleControl(ChatBoxHeaderStyle, "headerStyle"),
   messageStyle: styleControl(ChatBoxMessageStyle, "messageStyle"),
-  inputStyle: styleControl(ChatBoxInputStyle, "inputStyle"),
+  inputAreaStyle: styleControl(ChatBoxInputAreaStyle, "inputAreaStyle"),
+  inputFieldStyle: styleControl(ChatBoxInputFieldStyle, "inputFieldStyle"),
+  inputSendButtonStyle: styleControl(ChatBoxInputSendButtonStyle, "inputSendButtonStyle"),
+  inputAttachButtonStyle: styleControl(ChatBoxInputAttachButtonStyle, "inputAttachButtonStyle"),
 };
 
 // ─── Property panel ──────────────────────────────────────────────────────────
@@ -190,6 +220,22 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.showHeader.propertyView({ label: trans("chatBox.showHeaderLabel") })}
       </Section>
 
+      <Section name={trans("chatBox.attachmentsSection")}>
+        {children.allowMessageFileUpload.propertyView({
+          label: trans("chatBox.allowMessageFileUploadLabel"),
+          tooltip: trans("chatBox.allowMessageFileUploadTooltip"),
+        })}
+        {children.maxMessageFiles.propertyView({
+          label: trans("chatBox.maxMessageFilesLabel"),
+          tooltip: trans("chatBox.maxMessageFilesTooltip"),
+        })}
+        {children.messageFileType.propertyView({
+          label: trans("chatBox.messageFileTypeLabel"),
+          placeholder: '[".png",".pdf"]',
+          tooltip: trans("chatBox.messageFileTypeTooltip"),
+        })}
+      </Section>
+
       {["logic", "both"].includes(editorMode) && (
         <Section name={sectionNames.interaction}>
           {hiddenPropertyView(children)}
@@ -214,8 +260,17 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           <Section name={trans("chatBox.messageStyleSection")}>
             {children.messageStyle.getPropertyView()}
           </Section>
-          <Section name={trans("chatBox.inputStyleSection")}>
-            {children.inputStyle.getPropertyView()}
+          <Section name={trans("chatBox.inputAreaStyleSection")}>
+            {children.inputAreaStyle.getPropertyView()}
+          </Section>
+          <Section name={trans("chatBox.inputFieldStyleSection")}>
+            {children.inputFieldStyle.getPropertyView()}
+          </Section>
+          <Section name={trans("chatBox.inputSendButtonStyleSection")}>
+            {children.inputSendButtonStyle.getPropertyView()}
+          </Section>
+          <Section name={trans("chatBox.inputAttachButtonStyleSection")}>
+            {children.inputAttachButtonStyle.getPropertyView()}
           </Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>
             {children.animationStyle.getPropertyView()}
@@ -231,7 +286,7 @@ ChatBoxPropertyView.displayName = "ChatBoxPropertyView";
 // ─── Component ───────────────────────────────────────────────────────────────
 
 let ChatBoxTmp = (function () {
-  return new UICompBuilder(childrenMap, (props) => {
+  return new UICompBuilder(childrenMap, (props, dispatch) => {
     const messages = Array.isArray(props.messages) ? props.messages : [];
     const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
@@ -241,6 +296,22 @@ let ChatBoxTmp = (function () {
       ? props.pendingInvites
       : []) as unknown as PendingRoomInvite[];
     const currentRoom = rooms.find((r) => r.id === props.currentRoomId) ?? null;
+
+    const messageFiles = Array.isArray(props.files) ? props.files : [];
+    const messageFileValues = Array.isArray(props.value) ? props.value : [];
+    const maxMsgFiles =
+      typeof props.maxMessageFiles === "number" && props.maxMessageFiles > 0
+        ? props.maxMessageFiles
+        : 100;
+
+    const clearMessageAttachments = () => {
+      dispatch(
+        multiChangeAction({
+          files: changeValueAction([], false),
+          value: changeValueAction([], false),
+        }),
+      );
+    };
 
     const contextValue = {
       messages,
@@ -257,6 +328,7 @@ let ChatBoxTmp = (function () {
       chatTitle: props.chatTitle,
       messageText: props.messageText,
       lastSentMessageText: props.lastSentMessageText,
+      lastSentMessageTagsLlm: props.lastSentMessageTagsLlm,
 
       showHeader: props.showHeader,
       showRoomsPanel: props.showRoomsPanel,
@@ -268,7 +340,26 @@ let ChatBoxTmp = (function () {
       sidebarStyle: props.sidebarStyle,
       headerStyle: props.headerStyle,
       messageStyle: props.messageStyle,
-      inputStyle: props.inputStyle,
+      inputAreaStyle: props.inputAreaStyle,
+      inputFieldStyle: props.inputFieldStyle,
+      inputSendButtonStyle: props.inputSendButtonStyle,
+      inputAttachButtonStyle: props.inputAttachButtonStyle,
+
+      allowMessageFileUpload: props.allowMessageFileUpload,
+      maxMessageFiles: maxMsgFiles,
+      messageFileType: Array.isArray(props.messageFileType) ? props.messageFileType : [],
+      messageFiles,
+      messageFileValues,
+      setMessageAttachments: (nextFiles: JSONObject[], nextValue: Array<string | null>) => {
+        dispatch(
+          multiChangeAction({
+            files: changeValueAction(nextFiles, false),
+            value: changeValueAction(nextValue, false),
+          }),
+        );
+      },
+      clearMessageAttachments,
+      onFileUploadEvent: () => props.onEvent("fileUpload"),
 
       onEvent: props.onEvent,
 
@@ -326,9 +417,15 @@ ChatBoxTmp = class extends ChatBoxTmp {
 
 export const ChatBoxComp = withExposingConfigs(ChatBoxTmp, [
   new NameConfig("chatTitle", trans("chatBox.chatTitleExposed")),
+  new NameConfig("value", trans("chatBox.messageFilesValueExposed")),
+  new NameConfig("files", trans("chatBox.messageFilesMetaExposed")),
   new NameConfig(
     "lastSentMessageText",
     trans("chatBox.lastSentMessageTextExposed"),
+  ),
+  new NameConfig(
+    "lastSentMessageTagsLlm",
+    trans("chatBox.lastSentMessageTagsLlmExposed"),
   ),
   new NameConfig("messageText", trans("chatBox.messageTextExposed")),
   new NameConfig("currentRoomId", trans("chatBox.currentRoomIdExposed")),

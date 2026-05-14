@@ -12,7 +12,11 @@ import { RoomPanel } from "./RoomPanel";
 import { CreateRoomModal } from "./CreateRoomModal";
 import { InviteUserModal } from "./InviteUserModal";
 import { useChatBox } from "../ChatBoxContext";
-import type { ChatRoom } from "../store";
+import { LLM_BOT_AUTHOR_ID, type ChatRoom } from "../store";
+import {
+  messageContainsLlmMention,
+  type MentionCandidate,
+} from "../mentionUtils";
 import { trans } from "i18n";
 
 export const ChatBoxView = React.memo(() => {
@@ -30,6 +34,49 @@ export const ChatBoxView = React.memo(() => {
       (u) => u.currentRoomId === ctx.currentRoomId && u.userId !== ctx.currentUserId,
     ).length + 1;
   }, [ctx.onlineUsers, ctx.currentRoomId, ctx.currentUserId]);
+
+  const mentionCandidates = useMemo<MentionCandidate[]>(() => {
+    const list: MentionCandidate[] = [];
+    const seen = new Set<string>();
+
+    const add = (id: string, label: string, kind: "user" | "llm") => {
+      const sid = String(id).trim();
+      if (!sid || seen.has(sid)) return;
+      seen.add(sid);
+      list.push({
+        id: sid,
+        label: String(label ?? sid).trim() || sid,
+        kind,
+      });
+    };
+
+    add(LLM_BOT_AUTHOR_ID, trans("chatBox.aiShortLabel"), "llm");
+
+    const room = ctx.currentRoom;
+    if (room?.members?.length) {
+      for (const mid of room.members) {
+        if (String(mid) === String(ctx.currentUserId)) continue;
+        const online = ctx.onlineUsers.find(
+          (u) => String(u.userId) === String(mid),
+        );
+        add(String(mid), online?.userName ?? String(mid), "user");
+      }
+    }
+
+    for (const u of ctx.onlineUsers) {
+      if (String(u.userId) === String(ctx.currentUserId)) continue;
+      if (
+        ctx.currentRoomId &&
+        u.currentRoomId != null &&
+        String(u.currentRoomId) !== String(ctx.currentRoomId)
+      ) {
+        continue;
+      }
+      add(String(u.userId), u.userName ?? String(u.userId), "user");
+    }
+
+    return list;
+  }, [ctx.currentRoom, ctx.onlineUsers, ctx.currentRoomId, ctx.currentUserId]);
 
   return (
     <Wrapper $style={ctx.style} $anim={ctx.animationStyle}>
@@ -77,14 +124,33 @@ export const ChatBoxView = React.memo(() => {
         />
 
         <InputBar
+          mentionCandidates={mentionCandidates}
+          allowMessageFileUpload={ctx.allowMessageFileUpload}
+          maxMessageFiles={ctx.maxMessageFiles}
+          messageFileType={ctx.messageFileType}
+          messageFiles={ctx.messageFiles}
+          messageFileValues={ctx.messageFileValues}
+          onAttachmentsChange={ctx.setMessageAttachments}
+          onFileUpload={ctx.onFileUploadEvent}
           onSend={(text) => {
             ctx.lastSentMessageText.onChange(text);
+            ctx.lastSentMessageTagsLlm.onChange(
+              messageContainsLlmMention(
+                text,
+                LLM_BOT_AUTHOR_ID,
+                trans("chatBox.aiShortLabel"),
+              ),
+            );
             ctx.onEvent("messageSent");
+            ctx.clearMessageAttachments();
           }}
           onStartTyping={() => ctx.onEvent("startTyping")}
           onStopTyping={() => ctx.onEvent("stopTyping")}
           onDraftChange={(text) => ctx.messageText.onChange(text)}
-          inputStyle={ctx.inputStyle}
+          inputAreaStyle={ctx.inputAreaStyle}
+          inputFieldStyle={ctx.inputFieldStyle}
+          inputSendButtonStyle={ctx.inputSendButtonStyle}
+          inputAttachButtonStyle={ctx.inputAttachButtonStyle}
         />
       </ChatPanelContainer>
 

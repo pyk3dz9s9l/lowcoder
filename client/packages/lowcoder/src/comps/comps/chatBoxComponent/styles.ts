@@ -1,10 +1,14 @@
 import styled from "styled-components";
+import { default as AntdButton } from "antd/es/button";
 import type {
   ChatBoxContainerStyleType,
   ChatBoxSidebarStyleType,
   ChatBoxHeaderStyleType,
   ChatBoxMessageStyleType,
-  ChatBoxInputStyleType,
+  ChatBoxInputAreaStyleType,
+  ChatBoxInputFieldStyleType,
+  ChatBoxInputSendButtonStyleType,
+  ChatBoxInputAttachButtonStyleType,
   AnimationStyleType,
 } from "comps/controls/styleControlConstants";
 
@@ -174,22 +178,33 @@ export const BubbleTime = styled.div<{
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
 
-export const InputBarContainer = styled.div<{ $inputStyle?: ChatBoxInputStyleType }>`
-  padding: 12px 16px;
-  border-top: 1px solid ${(p) => p.$inputStyle?.inputAreaBorder || "#eee"};
-  background: ${(p) => p.$inputStyle?.inputAreaBackground || "transparent"};
+export const InputBarContainer = styled.div<{ $areaStyle?: ChatBoxInputAreaStyleType }>`
+  margin: ${(p) => p.$areaStyle?.margin ?? "0"};
+  padding: ${(p) => p.$areaStyle?.padding || "12px 16px"};
+  border-top-width: ${(p) => p.$areaStyle?.borderWidth || "1px"};
+  border-top-style: ${(p) => p.$areaStyle?.borderStyle || "solid"};
+  border-top-color: ${(p) => p.$areaStyle?.border || "#eee"};
+  background: ${(p) => p.$areaStyle?.inputAreaBackground || "transparent"};
   display: flex;
-  gap: 8px;
-  align-items: flex-end;
+  align-items: stretch;
+  box-sizing: border-box;
+  flex-direction: column;
 `;
 
-export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxInputStyleType }>`
+export const StyledTextArea = styled.textarea<{
+  $fieldStyle?: ChatBoxInputFieldStyleType;
+  $sendStyle?: ChatBoxInputSendButtonStyleType;
+}>`
   flex: 1;
-  padding: ${(p) => p.$inputStyle?.padding || "8px 14px"};
-  border: 1px solid ${(p) => p.$inputStyle?.inputBorder || "#d9d9d9"};
-  border-radius: ${(p) => p.$inputStyle?.radius || "18px"};
-  background: ${(p) => p.$inputStyle?.inputBackground || "#fff"};
-  color: ${(p) => p.$inputStyle?.inputText || "inherit"};
+  width: 100%;
+  margin: ${(p) => p.$fieldStyle?.margin ?? "0"};
+  padding: ${(p) => p.$fieldStyle?.padding || "8px 14px"};
+  border-width: ${(p) => p.$fieldStyle?.borderWidth || "1px"};
+  border-style: ${(p) => p.$fieldStyle?.borderStyle || "solid"};
+  border-color: ${(p) => p.$fieldStyle?.border || "#d9d9d9"};
+  border-radius: ${(p) => p.$fieldStyle?.radius || "18px"};
+  background: ${(p) => p.$fieldStyle?.inputBackground || "#fff"};
+  color: ${(p) => p.$fieldStyle?.text || "inherit"};
   resize: none;
   min-height: 36px;
   max-height: 96px;
@@ -197,9 +212,216 @@ export const StyledTextArea = styled.textarea<{ $inputStyle?: ChatBoxInputStyleT
   outline: none;
   font-family: inherit;
   line-height: 1.4;
+  box-sizing: border-box;
   &:focus {
-    border-color: ${(p) => p.$inputStyle?.sendButtonBackground || "#1890ff"};
+    border-color: ${(p) => p.$sendStyle?.sendButtonBackground || "#1890ff"};
   }
+`;
+
+export const InputBarFieldWrap = styled.div<{ $fieldStyle?: ChatBoxInputFieldStyleType }>`
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  box-sizing: border-box;
+  margin: ${(p) => p.$fieldStyle?.margin ?? "0"};
+  padding: ${(p) => p.$fieldStyle?.padding ?? "10px 12px"};
+  border-width: ${(p) => p.$fieldStyle?.borderWidth ?? "1px"};
+  border-style: ${(p) => p.$fieldStyle?.borderStyle ?? "solid"};
+  border-color: ${(p) => p.$fieldStyle?.border ?? "#e5e7eb"};
+  border-radius: ${(p) => p.$fieldStyle?.radius ?? "10px"};
+  background: ${(p) => p.$fieldStyle?.inputBackground ?? "#ffffff"};
+`;
+
+export const InputBarAttachmentList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+`;
+
+export const InputBarAttachmentCard = styled.div<{ $fieldStyle?: ChatBoxInputFieldStyleType }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: min(280px, 100%);
+  padding: 8px 32px 8px 8px;
+  border-width: ${(p) => p.$fieldStyle?.borderWidth ?? "1px"};
+  border-style: ${(p) => p.$fieldStyle?.borderStyle ?? "solid"};
+  border-color: ${(p) => p.$fieldStyle?.border ?? "#e5e7eb"};
+  border-radius: 8px;
+  background: ${(p) => p.$fieldStyle?.inputBackground ?? "#fff"};
+  box-sizing: border-box;
+`;
+
+export const InputBarAttachmentThumb = styled.div`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 18px;
+`;
+
+export const InputBarAttachmentThumbImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;
+
+export const InputBarAttachmentMeta = styled.div`
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+export const InputBarAttachmentName = styled.div<{ $fieldStyle?: ChatBoxInputFieldStyleType }>`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${(p) => p.$fieldStyle?.text ?? "#374151"};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const InputBarAttachmentKind = styled.div`
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.2;
+`;
+
+export const InputBarAttachmentRemove = styled.button`
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  z-index: 1;
+
+  &:hover {
+    color: #111827;
+    border-color: #d1d5db;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+export const InputBarInputRow = styled.div<{ $fieldStyle?: ChatBoxInputFieldStyleType }>`
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+
+  .ant-upload {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  textarea::placeholder {
+    color: ${(p) => p.$fieldStyle?.inputPlaceholder || "#9ca3af"};
+    opacity: 1;
+  }
+`;
+
+export const InputBarAttachButton = styled(AntdButton).attrs({ type: "text" })<{
+  $attachStyle?: ChatBoxInputAttachButtonStyleType;
+}>`
+  &&.ant-btn.ant-btn-text {
+    margin: ${(p) => p.$attachStyle?.margin ?? "0"} !important;
+    padding: ${(p) => p.$attachStyle?.padding ?? "4px 6px"} !important;
+    border-radius: ${(p) => p.$attachStyle?.radius?.trim() || "8px"} !important;
+    border-width: ${(p) => p.$attachStyle?.borderWidth ?? "0"} !important;
+    border-style: ${(p) => p.$attachStyle?.borderStyle ?? "solid"} !important;
+    border-color: ${(p) =>
+      p.$attachStyle?.borderColor?.trim()
+        ? p.$attachStyle.borderColor
+        : "transparent"} !important;
+    color: ${(p) => p.$attachStyle?.attachButtonIcon ?? "#1f2937"} !important;
+  }
+  &&.ant-btn.ant-btn-text:not(:disabled):hover {
+    background: ${(p) => p.$attachStyle?.attachButtonHoverBackground ?? "rgba(0, 0, 0, 0.06)"} !important;
+    color: ${(p) => p.$attachStyle?.attachButtonIcon ?? "#1f2937"} !important;
+  }
+`;
+
+export const InputBarSendButton = styled(AntdButton).attrs({ type: "primary" })<{
+  $sendStyle?: ChatBoxInputSendButtonStyleType;
+}>`
+  &&.ant-btn.ant-btn-primary {
+    flex-shrink: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px;
+    min-height: 36px;
+    margin: ${(p) => p.$sendStyle?.margin ?? "0"} !important;
+    padding: ${(p) => p.$sendStyle?.padding ?? "0"} !important;
+    border-radius: ${(p) => p.$sendStyle?.radius?.trim() || "8px"} !important;
+    border-width: ${(p) => p.$sendStyle?.borderWidth ?? "1px"} !important;
+    border-style: ${(p) => p.$sendStyle?.borderStyle ?? "solid"} !important;
+    border-color: ${(p) =>
+      p.$sendStyle?.borderColor?.trim()
+        ? p.$sendStyle.borderColor
+        : p.$sendStyle?.sendButtonBackground ?? "#93c5fd"} !important;
+    background: ${(p) => p.$sendStyle?.sendButtonBackground ?? "#93c5fd"} !important;
+    color: ${(p) => p.$sendStyle?.sendButtonIcon ?? "#fff"} !important;
+    line-height: 1 !important;
+  }
+
+  &&.ant-btn.ant-btn-primary:disabled {
+    background: ${(p) => p.$sendStyle?.sendButtonBackground ?? "#93c5fd"} !important;
+    border-color: ${(p) =>
+      p.$sendStyle?.borderColor?.trim()
+        ? p.$sendStyle.borderColor
+        : p.$sendStyle?.sendButtonBackground ?? "#93c5fd"} !important;
+    color: ${(p) => p.$sendStyle?.sendButtonIcon ?? "#fff"} !important;
+    opacity: 0.45;
+  }
+`;
+
+export const MentionSpan = styled.span<{ $own?: boolean; $inAi?: boolean }>`
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0 3px;
+  display: inline;
+  color: ${(p) =>
+    p.$inAi ? "#722ed1" : p.$own ? "rgba(255, 255, 255, 0.98)" : "#0958d9"};
+  background: ${(p) =>
+    p.$inAi
+      ? "rgba(114, 46, 209, 0.12)"
+      : p.$own
+        ? "rgba(255, 255, 255, 0.18)"
+        : "rgba(9, 88, 217, 0.1)"};
 `;
 
 export const EmptyChat = styled.div`

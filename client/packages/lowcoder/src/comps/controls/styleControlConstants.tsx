@@ -2918,50 +2918,94 @@ export const ChatBoxMessageStyle = [
   },
 ] as const;
 
-export const ChatBoxInputStyle = [
-  {
-    name: "inputBackground",
-    label: trans("style.chatInputBackground"),
-    color: "#ffffff",
-  },
-  {
-    name: "inputText",
-    label: trans("style.chatInputText"),
-    depName: "inputBackground",
-    depType: DEP_TYPE.CONTRAST_TEXT,
-    transformer: contrastText,
-  },
-  {
-    name: "inputBorder",
-    label: trans("style.chatInputBorder"),
-    color: "#d9d9d9",
-  },
-  {
-    name: "radius",
-    label: trans("style.chatInputRadius"),
-    radius: "radius",
-  },
-  {
-    name: "padding",
-    label: trans("style.chatInputPadding"),
-    padding: "padding",
-  },
+export const ChatBoxInputAreaStyle = [
   {
     name: "inputAreaBackground",
     label: trans("style.chatInputAreaBackground"),
     color: "#ffffff",
   },
   {
-    name: "inputAreaBorder",
+    name: "margin",
+    label: trans("style.margin"),
+    margin: "margin",
+  },
+  {
+    name: "padding",
+    label: trans("style.chatInputAreaPadding"),
+    padding: "padding",
+  },
+  {
+    name: "borderWidth",
+    label: trans("style.borderWidth"),
+    borderWidth: "borderWidth",
+  },
+  {
+    name: "borderStyle",
+    label: trans("style.borderStyle"),
+    borderStyle: "borderStyle",
+  },
+  {
+    name: "border",
     label: trans("style.chatInputAreaBorder"),
     color: "#eeeeee",
   },
+] as const;
+
+export const ChatBoxInputFieldStyle = [
+  {
+    name: "inputBackground",
+    label: trans("style.chatInputFieldBackground"),
+    color: "#ffffff",
+  },
+  {
+    name: "margin",
+    label: trans("style.margin"),
+    margin: "margin",
+  },
+  {
+    name: "padding",
+    label: trans("style.chatInputFieldPadding"),
+    padding: "padding",
+  },
+  {
+    name: "radius",
+    label: trans("style.chatInputFieldRadius"),
+    radius: "radius",
+  },
+  {
+    name: "borderWidth",
+    label: trans("style.borderWidth"),
+    borderWidth: "borderWidth",
+  },
+  {
+    name: "borderStyle",
+    label: trans("style.borderStyle"),
+    borderStyle: "borderStyle",
+  },
+  {
+    name: "border",
+    label: trans("style.chatInputFieldBorder"),
+    color: "#e5e7eb",
+  },
+  {
+    name: "text",
+    label: trans("style.chatInputText"),
+    depName: "inputBackground",
+    depType: DEP_TYPE.CONTRAST_TEXT,
+    transformer: contrastText,
+  },
+  {
+    name: "inputPlaceholder",
+    label: trans("style.chatInputPlaceholder"),
+    color: "#9ca3af",
+  },
+] as const;
+
+export const ChatBoxInputSendButtonStyle = [
   {
     name: "sendButtonBackground",
     label: trans("style.chatSendButtonBackground"),
-    depTheme: "primary",
-    depType: DEP_TYPE.SELF,
-    transformer: toSelf,
+    color: "#93c5fd",
   },
   {
     name: "sendButtonIcon",
@@ -2970,13 +3014,89 @@ export const ChatBoxInputStyle = [
     depType: DEP_TYPE.CONTRAST_TEXT,
     transformer: contrastText,
   },
+  {
+    name: "radius",
+    label: trans("style.chatSendButtonRadius"),
+    radius: "radius",
+  },
+  {
+    name: "margin",
+    label: trans("style.margin"),
+    margin: "margin",
+  },
+  {
+    name: "padding",
+    label: trans("style.padding"),
+    padding: "padding",
+  },
+  {
+    name: "borderWidth",
+    label: trans("style.borderWidth"),
+    borderWidth: "borderWidth",
+  },
+  {
+    name: "borderStyle",
+    label: trans("style.borderStyle"),
+    borderStyle: "borderStyle",
+  },
+  {
+    name: "borderColor",
+    label: trans("style.border"),
+    color: "#93c5fd",
+  },
+] as const;
+
+export const ChatBoxInputAttachButtonStyle = [
+  {
+    name: "attachButtonIcon",
+    label: trans("style.chatAttachButtonIcon"),
+    color: "#1f2937",
+  },
+  {
+    name: "attachButtonHoverBackground",
+    label: trans("style.chatAttachButtonHoverBackground"),
+    color: "#f3f4f6",
+  },
+  {
+    name: "radius",
+    label: trans("style.chatAttachButtonRadius"),
+    radius: "radius",
+  },
+  {
+    name: "margin",
+    label: trans("style.margin"),
+    margin: "margin",
+  },
+  {
+    name: "padding",
+    label: trans("style.padding"),
+    padding: "padding",
+  },
+  {
+    name: "borderWidth",
+    label: trans("style.borderWidth"),
+    borderWidth: "borderWidth",
+  },
+  {
+    name: "borderStyle",
+    label: trans("style.borderStyle"),
+    borderStyle: "borderStyle",
+  },
+  {
+    name: "borderColor",
+    label: trans("style.border"),
+    color: "transparent",
+  },
 ] as const;
 
 export type ChatBoxContainerStyleType = StyleConfigType<typeof ChatBoxContainerStyle>;
 export type ChatBoxSidebarStyleType = StyleConfigType<typeof ChatBoxSidebarStyle>;
 export type ChatBoxHeaderStyleType = StyleConfigType<typeof ChatBoxHeaderStyle>;
 export type ChatBoxMessageStyleType = StyleConfigType<typeof ChatBoxMessageStyle>;
-export type ChatBoxInputStyleType = StyleConfigType<typeof ChatBoxInputStyle>;
+export type ChatBoxInputAreaStyleType = StyleConfigType<typeof ChatBoxInputAreaStyle>;
+export type ChatBoxInputFieldStyleType = StyleConfigType<typeof ChatBoxInputFieldStyle>;
+export type ChatBoxInputSendButtonStyleType = StyleConfigType<typeof ChatBoxInputSendButtonStyle>;
+export type ChatBoxInputAttachButtonStyleType = StyleConfigType<typeof ChatBoxInputAttachButtonStyle>;
 
 export function widthCalculator(margin: string) {
   const marginArr = margin?.trim().replace(/\s+/g, " ").split(" ") || "";

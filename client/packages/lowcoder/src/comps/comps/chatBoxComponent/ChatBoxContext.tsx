@@ -1,11 +1,15 @@
 import { createContext, useContext } from "react";
+import type { JSONObject } from "util/jsonTypes";
 import type { ChatRoom, OnlineUser, PendingRoomInvite } from "./store";
 import type {
   ChatBoxContainerStyleType,
   ChatBoxSidebarStyleType,
   ChatBoxHeaderStyleType,
   ChatBoxMessageStyleType,
-  ChatBoxInputStyleType,
+  ChatBoxInputAreaStyleType,
+  ChatBoxInputFieldStyleType,
+  ChatBoxInputSendButtonStyleType,
+  ChatBoxInputAttachButtonStyleType,
   AnimationStyleType,
 } from "comps/controls/styleControlConstants";
 
@@ -18,11 +22,17 @@ type ChatEventName =
   | "roomCreate"
   | "inviteSend"
   | "inviteAccept"
-  | "inviteDecline";
+  | "inviteDecline"
+  | "fileUpload";
 
 interface ExposedState {
   value: string;
   onChange: (v: string) => void;
+}
+
+interface BooleanExposedState {
+  value: boolean;
+  onChange: (v: boolean) => void;
 }
 
 export interface ChatBoxContextValue {
@@ -42,6 +52,8 @@ export interface ChatBoxContextValue {
   chatTitle: ExposedState;
   messageText: ExposedState;
   lastSentMessageText: ExposedState;
+  /** True when the last sent message tagged the AI (`@[…](u:__llm_bot__)`). Use to gate LLM queries. */
+  lastSentMessageTagsLlm: BooleanExposedState;
 
   // UI config
   showHeader: boolean;
@@ -54,7 +66,20 @@ export interface ChatBoxContextValue {
   sidebarStyle: ChatBoxSidebarStyleType;
   headerStyle: ChatBoxHeaderStyleType;
   messageStyle: ChatBoxMessageStyleType;
-  inputStyle: ChatBoxInputStyleType;
+  inputAreaStyle: ChatBoxInputAreaStyleType;
+  inputFieldStyle: ChatBoxInputFieldStyleType;
+  inputSendButtonStyle: ChatBoxInputSendButtonStyleType;
+  inputAttachButtonStyle: ChatBoxInputAttachButtonStyleType;
+
+  /** Message input attachments (same shape as File component `files`). */
+  allowMessageFileUpload: boolean;
+  maxMessageFiles: number;
+  messageFileType: string[];
+  messageFiles: JSONObject[];
+  messageFileValues: Array<string | null>;
+  setMessageAttachments: (files: JSONObject[], values: Array<string | null>) => void;
+  clearMessageAttachments: () => void;
+  onFileUploadEvent: () => void;
 
   // Events
   onEvent: (event: ChatEventName) => any;
