@@ -1,9 +1,6 @@
 // client/packages/lowcoder/src/comps/comps/preLoadComp/actions/automator/editorSnapshot.ts
 
 import type { EditorState } from "@lowcoder-ee/comps/editorState";
-import { uiCompRegistry } from "comps/uiCompRegistry";
-import { LOWCODER_COMPONENT_TYPES } from "./componentCatalog";
-
 /**
  * A compact, JSON-serialisable view of the live editor state.
  *
@@ -202,59 +199,4 @@ export function buildEditorSnapshot(editorState: EditorState | null | undefined)
     tempStates,
     transformers,
   };
-}
-
-/**
- * Best-effort guess of what component types the user just mentioned in a
- * free-form prompt. Used to slim down the component catalog we send to the
- * model so it stays under token budgets.
- *
- * Returns an empty list if no obvious match — caller should keep the full
- * component catalog in its default registry order.
- */
-export function inferMentionedComponentTypes(prompt: string): string[] {
-  if (!prompt) return [];
-  const lower = prompt.toLowerCase();
-  const registryTypes = Object.keys(uiCompRegistry);
-  const candidates = Array.from(new Set([...LOWCODER_COMPONENT_TYPES, ...registryTypes]));
-  const aliases: Record<string, string> = {
-    chatbox: "chatBox",
-    "chat box": "chatBox",
-    "chat-box": "chatBox",
-    "chat controller": "chatController",
-    "chat-controller": "chatController",
-    "ai chat": "chat",
-    dropdown: "select",
-    "list view": "listView",
-    "list-view": "listView",
-    "number input": "numberInput",
-    "text area": "textArea",
-    textarea: "textArea",
-    textbox: "input",
-    "text field": "input",
-    img: "image",
-    pic: "image",
-    picture: "image",
-    tabs: "tabbedContainer",
-    "tab container": "tabbedContainer",
-    "tabbed container": "tabbedContainer",
-    graph: "chart",
-    nav: "navigation",
-    navbar: "navigation",
-    stepper: "step",
-  };
-  const found = new Set<string>();
-  for (const c of candidates) {
-    const manifest = uiCompRegistry[c];
-    const names = [
-      c,
-      manifest?.name,
-      manifest?.enName,
-    ].filter(Boolean) as string[];
-    if (names.some((name) => lower.includes(name.toLowerCase()))) found.add(c);
-  }
-  for (const [alias, real] of Object.entries(aliases)) {
-    if (lower.includes(alias)) found.add(real);
-  }
-  return Array.from(found);
 }

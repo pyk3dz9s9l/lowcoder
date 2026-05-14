@@ -66,7 +66,7 @@ function buildActionItemSchema(componentTypes?: string[]): Record<string, unknow
       action_parameters: {
         type: "object",
         description:
-          "Action-specific parameters (properties, styles, event config, etc.). Shape depends on the action and component type — see the component catalog in the system prompt.",
+          "Action-specific parameters (properties, styles, event config, etc.). Shape depends on the action and component type — see AUTOMATOR_COMPONENTS in the system prompt.",
       },
     },
     required: ["action"],

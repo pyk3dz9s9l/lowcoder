@@ -2,12 +2,11 @@
 
 import type { EditorState } from "@lowcoder-ee/comps/editorState";
 import { ACTIONS_CATALOG } from "./actionsCatalog";
+import { buildEditorSnapshot, EditorSnapshot } from "./editorSnapshot";
 import {
-  buildEditorSnapshot,
-  inferMentionedComponentTypes,
-  EditorSnapshot,
-} from "./editorSnapshot";
-import { getComponentCatalog, ComponentCatalogEntry } from "./componentCatalog";
+  getAutomatorComponents,
+  type AutomatorComponentEntry,
+} from "./automatorComponents";
 import { composeSystemMessage } from "./systemPrompt";
 import { buildToolDefinitions, OpenAIToolDefinition } from "./toolDefinitions";
 
@@ -42,8 +41,8 @@ export interface OrchestratorOutput {
   context: EditorSnapshot;
   /** The actions catalog passed to the model. */
   actionsCatalog: typeof ACTIONS_CATALOG;
-  /** The (optionally trimmed) component catalog passed to the model. */
-  componentCatalog: ComponentCatalogEntry[];
+  /** The curated Automator component instructions passed to the model. */
+  automatorComponents: AutomatorComponentEntry[];
 }
 
 /**
@@ -55,21 +54,15 @@ export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOut
   const { history, editorState } = input;
 
   const context = buildEditorSnapshot(editorState);
-
-  // Slim down the component catalog based on the *latest* user message so
-  // the requested components appear first. We still include the full
-  // Lowcoder registry so the Automator can add any component from the panel.
-  const lastUser = [...history].reverse().find((m) => m.role === "user");
-  const mentioned = inferMentionedComponentTypes(lastUser?.content ?? "");
-  const componentCatalog = getComponentCatalog(mentioned);
+  const automatorComponents = getAutomatorComponents();
 
   const system = composeSystemMessage({
     actionsCatalog: ACTIONS_CATALOG,
-    componentCatalog,
+    automatorComponents,
     editorContext: context,
   });
 
-  const tools = buildToolDefinitions(componentCatalog.map((component) => component.type));
+  const tools = buildToolDefinitions(automatorComponents.map((component) => component.type));
 
   const messages: LLMMessage[] = [{ role: "system", content: system }];
   for (const m of history) {
@@ -82,6 +75,6 @@ export function buildAutomatorPayload(input: OrchestratorInput): OrchestratorOut
     system,
     context,
     actionsCatalog: ACTIONS_CATALOG,
-    componentCatalog,
+    automatorComponents,
   };
 }

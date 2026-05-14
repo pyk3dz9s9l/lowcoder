@@ -11,8 +11,7 @@
  *
  * The orchestrator combines this prompt with:
  *   - the actions catalog  (what the model is allowed to emit)
- *   - the component catalog (all registered Lowcoder components, with
- *     curated examples for common ones)
+ *   - Automator components (curated component instructions and examples)
  *   - the live editor snapshot (existing components, queries, canvas grid)
  *
  * before sending it to the user-defined Lowcoder query that proxies the LLM.
@@ -74,10 +73,10 @@ Use this context to:
 
 You will also see a JSON block titled "ACTIONS_CATALOG" listing the EXACT
 set of actions you may emit, with their required and optional fields. The
-"COMPONENT_CATALOG" block lists every registered Lowcoder component type you
+"AUTOMATOR_COMPONENTS" block lists the curated Lowcoder component types you
 may place or nest. You MUST NOT use any action or component type that is not
-listed there. If something is not possible with the catalog, explain why in
-plain text.
+listed there. If something is not possible with the available Automator
+components, explain why in plain text.
 
 # Layout rules (short)
 
@@ -100,7 +99,7 @@ There are TWO families of UI edits, and each has its own action:
    direct children of the component. Use this for things controlled by the
    component's own controls (alignment, autoHeight, type, label, placeholder,
    options, disabled, hidden, loading, placement, …). For each component the
-   \`layoutProperties\` field in COMPONENT_CATALOG lists the exact keys and
+   \`layoutProperties\` field in AUTOMATOR_COMPONENTS lists the exact keys and
    their allowed values.
 
 2. **\`set_style\`** — basic visual / CSS-like properties living inside the
@@ -117,7 +116,7 @@ There are TWO families of UI edits, and each has its own action:
    Incorrect:
    \`{ "background": "#1677ff", "text": "#ffffff" }\`
 
-   For each component the \`styleProperties\` field in COMPONENT_CATALOG
+   For each component the \`styleProperties\` field in AUTOMATOR_COMPONENTS
    lists which keys live in which namespace.
 
    Common style-key vocabulary:
@@ -164,13 +163,14 @@ There are TWO families of UI edits, and each has its own action:
 
 # Reminders
 
-- All field names match the catalog exactly (snake_case where shown).
+- All field names match the Automator component instructions exactly
+  (snake_case where shown).
 - Every action MUST include \`action\` and (when relevant) \`component\` and
   \`component_name\`.
 - Component names must be unique across the app. If reusing an existing
   component referenced in EDITOR_CONTEXT, use its existing name.
 - Prefer the per-component \`layoutProperties\` / \`styleProperties\` listed in
-  COMPONENT_CATALOG over invented keys. If a property is not listed and you
+  AUTOMATOR_COMPONENTS over invented keys. If a property is not listed and you
   are unsure it exists, ask the user instead of guessing.
 `.trim();
 
@@ -183,10 +183,10 @@ There are TWO families of UI edits, and each has its own action:
  */
 export function composeSystemMessage(args: {
   actionsCatalog: unknown;
-  componentCatalog: unknown;
+  automatorComponents: unknown;
   editorContext: unknown;
 }): string {
-  const { actionsCatalog, componentCatalog, editorContext } = args;
+  const { actionsCatalog, automatorComponents, editorContext } = args;
 
   return [
     AUTOMATOR_SYSTEM_PROMPT,
@@ -196,9 +196,9 @@ export function composeSystemMessage(args: {
     JSON.stringify(actionsCatalog, null, 2),
     "```",
     "",
-    "COMPONENT_CATALOG:",
+    "AUTOMATOR_COMPONENTS:",
     "```json",
-    JSON.stringify(componentCatalog, null, 2),
+    JSON.stringify(automatorComponents, null, 2),
     "```",
     "",
     "EDITOR_CONTEXT:",

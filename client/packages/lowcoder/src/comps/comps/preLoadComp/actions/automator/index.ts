@@ -8,13 +8,15 @@ export {
   type ActionCatalogEntry,
 } from "./actionsCatalog";
 export {
-  getComponentCatalog,
-  COMPONENT_TYPES_DEFAULT,
-  type ComponentCatalogEntry,
-} from "./componentCatalog";
+  AUTOMATOR_COMPONENTS,
+  AUTOMATOR_COMPONENT_TYPES,
+  getAutomatorComponents,
+  type AutomatorComponentEntry,
+  type AutomatorLayoutPropertyDescriptor,
+  type AutomatorStylePropertyMap,
+} from "./automatorComponents";
 export {
   buildEditorSnapshot,
-  inferMentionedComponentTypes,
   type EditorSnapshot,
   type ComponentSnapshot,
   type QuerySnapshot,

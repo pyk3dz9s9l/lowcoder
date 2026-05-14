@@ -1,341 +1,22 @@
-// client/packages/lowcoder/src/comps/comps/preLoadComp/actions/automator/componentCatalog.ts
+import type { AutomatorComponentEntry } from "./types";
+import {
+  ALIGN_HORIZONTAL,
+  AUTO_HEIGHT,
+  COMMON_STYLE_KEYS,
+  CONTAINER_STYLE_KEYS,
+  DISABLED,
+  HIDDEN,
+  IMAGE_STYLE_KEYS,
+  INPUT_LIKE_STYLE_KEYS,
+  LABEL_OBJECT,
+  LABEL_STYLE_KEYS,
+  LOADING,
+  NAVIGATION_STYLE_KEYS,
+  TEXT_HORIZONTAL_ALIGNMENT,
+  VERTICAL_ALIGNMENT,
+} from "./presets";
 
-import { uiCompRegistry, type UICompManifest } from "comps/uiCompRegistry";
-
-/**
- * Component reference for the Automator.
- *
- * Curated entries provide known-good property examples for common components.
- * Every registered Lowcoder component is then added from `uiCompRegistry` so
- * the Automator can discover the full insertion panel, including newer
- * components like Chat, Chat Box, and Chat Controller.
- */
-
-/**
- * Schema describing a top-level UI / layout property the model can set with
- * `set_properties`. These are the props that drive component behavior or
- * positional layout (text-align, vertical alignment, autoHeight, type, etc.)
- * and live as direct children of the component, NOT inside the `style`
- * namespace.
- */
-export interface LayoutPropertyDescriptor {
-  /** Human-readable hint shown to the model. */
-  description?: string;
-  /** Allowed string values when this property is a fixed enum. */
-  enum?: readonly string[];
-  /** Primitive type when the value is not enum-restricted. */
-  type?: "string" | "number" | "boolean" | "object";
-  /** Sample value the model can imitate verbatim. */
-  example?: unknown;
-}
-
-/**
- * Map of style namespace → list of style keys that can be passed to
- * `set_style`. Most components have a single `style` namespace; inputs and
- * containers expose several (e.g. `labelStyle`, `inputFieldStyle`,
- * `headerStyle`, `bodyStyle`). The `set_style` executor expects values grouped
- * by explicit namespace.
- */
-export type StylePropertyMap = Record<string, readonly string[]>;
-
-export interface ComponentCatalogEntry {
-  /** Component type as registered in `uiCompRegistry` */
-  type: string;
-  /** Whether the component can have children nested under `<name>.container`. */
-  isContainer?: boolean;
-  /** Default grid layout (w / h) for sensible initial sizing. */
-  defaultLayout: { w: number; h: number };
-  /** Required property keys for `action_parameters`. */
-  required: string[];
-  /** Optional property keys worth knowing about. */
-  optional?: string[];
-  /** Realistic example `action_parameters` payload. */
-  example: Record<string, unknown>;
-  /** Notes the model should heed. */
-  notes?: string;
-  /** Display name shown in the Lowcoder component panel. */
-  name?: string;
-  /** English display name from the component manifest. */
-  enName?: string;
-  /** Component panel categories. Empty means hidden from normal insertion UI. */
-  categories?: readonly string[];
-  /** Short manifest description when it is serialisable. */
-  description?: string;
-  /**
-   * Top-level UI / layout properties to be set with `set_properties`.
-   * Only properties controlling *behaviour or layout* (alignment, autoHeight,
-   * type, disabled, …) belong here — visual/CSS-like props live in
-   * `styleProperties` and are set with `set_style`.
-   */
-  layoutProperties?: Record<string, LayoutPropertyDescriptor>;
-  /**
-   * Style properties grouped by style namespace, used by `set_style`.
-   * Pass these grouped by namespace, e.g.
-   * `{ style: { background: "#fff" }, labelStyle: { label: "#111" } }`.
-   */
-  styleProperties?: StylePropertyMap;
-}
-
-// ── Style key presets ────────────────────────────────────────────────────────
-// Mirror the field lists from `comps/controls/styleControlConstants.tsx` so the
-// model knows what keys it can pass to `set_style`. Keep these compact — they
-// are inlined into the system prompt.
-
-const COMMON_STYLE_KEYS = [
-  "background",
-  "text",
-  "textTransform",
-  "textDecoration",
-  "textSize",
-  "textWeight",
-  "fontFamily",
-  "fontStyle",
-  "border",
-  "borderStyle",
-  "borderWidth",
-  "radius",
-  "margin",
-  "padding",
-  "lineHeight",
-] as const;
-
-const CONTAINER_STYLE_KEYS = [
-  "background",
-  "border",
-  "borderStyle",
-  "borderWidth",
-  "radius",
-  "margin",
-  "padding",
-  "boxShadow",
-  "boxShadowColor",
-  "opacity",
-] as const;
-
-const INPUT_LIKE_STYLE_KEYS = [
-  "background",
-  "boxShadow",
-  "boxShadowColor",
-  "text",
-  "textTransform",
-  "textDecoration",
-  "textSize",
-  "textWeight",
-  "fontFamily",
-  "fontStyle",
-  "border",
-  "borderStyle",
-  "borderWidth",
-  "radius",
-  "margin",
-  "padding",
-  "placeholder",
-  "accent",
-  "validate",
-] as const;
-
-const LABEL_STYLE_KEYS = [
-  "background",
-  "label",
-  "textTransform",
-  "textDecoration",
-  "textSize",
-  "textWeight",
-  "fontFamily",
-  "fontStyle",
-  "borderStyle",
-  "borderWidth",
-  "margin",
-  "padding",
-  "placeholder",
-  "accent",
-  "validate",
-] as const;
-
-const IMAGE_STYLE_KEYS = [
-  "margin",
-  "padding",
-  "border",
-  "borderStyle",
-  "borderWidth",
-  "radius",
-  "opacity",
-  "boxShadow",
-  "boxShadowColor",
-] as const;
-
-const NAVIGATION_STYLE_KEYS = [
-  "background",
-  "border",
-  "borderStyle",
-  "borderWidth",
-  "radius",
-  "margin",
-  "padding",
-  "accent",
-] as const;
-
-// ── Layout property presets ─────────────────────────────────────────────────
-
-const TEXT_HORIZONTAL_ALIGNMENT: LayoutPropertyDescriptor = {
-  description: "Horizontal text alignment inside the component.",
-  enum: ["left", "center", "right", "justify"],
-};
-
-const ALIGN_HORIZONTAL: LayoutPropertyDescriptor = {
-  description: "Horizontal alignment.",
-  enum: ["left", "center", "right"],
-};
-
-const VERTICAL_ALIGNMENT: LayoutPropertyDescriptor = {
-  description: "Vertical alignment.",
-  enum: ["flex-start", "center", "flex-end"],
-};
-
-const AUTO_HEIGHT: LayoutPropertyDescriptor = {
-  description: "Whether the component auto-sizes its height to its content.",
-  enum: ["auto", "fixed"],
-};
-
-const HIDDEN: LayoutPropertyDescriptor = {
-  description: "Hide the component at runtime.",
-  type: "boolean",
-};
-
-const DISABLED: LayoutPropertyDescriptor = {
-  description: "Disable the component at runtime.",
-  type: "boolean",
-};
-
-const LOADING: LayoutPropertyDescriptor = {
-  description: "Show a loading indicator on the component.",
-  type: "boolean",
-};
-
-const LABEL_OBJECT: LayoutPropertyDescriptor = {
-  description:
-    "Field label config: { text, position: 'row'|'column', align: 'left'|'center'|'right', width: number, hidden?: boolean, tooltip?: string }.",
-  type: "object",
-  example: { text: "Email", position: "row", align: "left" },
-};
-
-export const LOWCODER_COMPONENT_TYPES: string[] = [
-  "chart",
-  "basicChart",
-  "barChart",
-  "lineChart",
-  "pieChart",
-  "scatterChart",
-  "candleStickChart",
-  "funnelChart",
-  "gaugeChart",
-  "graphChart",
-  "heatmapChart",
-  "radarChart",
-  "sankeyChart",
-  "sunburstChart",
-  "themeriverChart",
-  "treeChart",
-  "treemapChart",
-  "openLayersGeoMap",
-  "chartsGeoMap",
-  "table",
-  "tableLite",
-  "pivotTable",
-  "mermaid",
-  "timeline",
-  "responsiveLayout",
-  "pageLayout",
-  "columnLayout",
-  "splitLayout",
-  "floatTextContainer",
-  "card",
-  "tabbedContainer",
-  "collapsibleContainer",
-  "container",
-  "listView",
-  "grid",
-  "multiTags",
-  "modal",
-  "drawer",
-  "toast",
-  "divider",
-  "navigation",
-  "step",
-  "cascader",
-  "link",
-  "floatingButton",
-  "calendar",
-  "timer",
-  "sharingcomponent",
-  "videocomponent",
-  "meeting",
-  "avatar",
-  "avatarGroup",
-  "comment",
-  "mention",
-  "chatController",
-  "chatBox",
-  "form",
-  "jsonSchemaForm",
-  "jsonEditor",
-  "jsonExplorer",
-  "richTextEditor",
-  "input",
-  "password",
-  "numberInput",
-  "textArea",
-  "autocomplete",
-  "switch",
-  "checkbox",
-  "radio",
-  "date",
-  "dateRange",
-  "time",
-  "timeRange",
-  "slider",
-  "rangeSlider",
-  "button",
-  "controlButton",
-  "dropdown",
-  "toggleButton",
-  "segmentedControl",
-  "rating",
-  "ganttChart",
-  "kanban",
-  "hillchart",
-  "bpmnEditor",
-  "progress",
-  "progressCircle",
-  "file",
-  "fileViewer",
-  "image",
-  "carousel",
-  "audio",
-  "video",
-  "shape",
-  "jsonLottie",
-  "icon",
-  "imageEditor",
-  "colorPicker",
-  "qrCode",
-  "scanner",
-  "signature",
-  "select",
-  "tour",
-  "multiSelect",
-  "tree",
-  "treeSelect",
-  "transfer",
-  "turnstileCaptcha",
-  "chat",
-  "iframe",
-  "custom",
-  "module",
-  "text",
-];
-
-const TEXT: ComponentCatalogEntry = {
+const TEXT: AutomatorComponentEntry = {
   type: "text",
   defaultLayout: { w: 12, h: 4 },
   required: ["text"],
@@ -369,7 +50,7 @@ const TEXT: ComponentCatalogEntry = {
   },
 };
 
-const BUTTON: ComponentCatalogEntry = {
+const BUTTON: AutomatorComponentEntry = {
   type: "button",
   defaultLayout: { w: 6, h: 5 },
   required: ["text"],
@@ -412,7 +93,7 @@ const BUTTON: ComponentCatalogEntry = {
   },
 };
 
-const INPUT: ComponentCatalogEntry = {
+const INPUT: AutomatorComponentEntry = {
   type: "input",
   defaultLayout: { w: 12, h: 6 },
   required: ["label", "placeholder"],
@@ -450,7 +131,7 @@ const INPUT: ComponentCatalogEntry = {
   },
 };
 
-const NUMBER_INPUT: ComponentCatalogEntry = {
+const NUMBER_INPUT: AutomatorComponentEntry = {
   type: "numberInput",
   defaultLayout: { w: 12, h: 6 },
   required: ["label"],
@@ -484,7 +165,7 @@ const NUMBER_INPUT: ComponentCatalogEntry = {
   },
 };
 
-const DROPDOWN: ComponentCatalogEntry = {
+const DROPDOWN: AutomatorComponentEntry = {
   type: "select",
   defaultLayout: { w: 12, h: 6 },
   required: ["label", "options", "value"],
@@ -517,7 +198,7 @@ const DROPDOWN: ComponentCatalogEntry = {
   },
 };
 
-const CHECKBOX: ComponentCatalogEntry = {
+const CHECKBOX: AutomatorComponentEntry = {
   type: "checkbox",
   defaultLayout: { w: 8, h: 5 },
   required: ["label"],
@@ -542,7 +223,7 @@ const CHECKBOX: ComponentCatalogEntry = {
   },
 };
 
-const FORM: ComponentCatalogEntry = {
+const FORM: AutomatorComponentEntry = {
   type: "form",
   isContainer: true,
   defaultLayout: { w: 12, h: 30 },
@@ -577,7 +258,7 @@ const FORM: ComponentCatalogEntry = {
   },
 };
 
-const CONTAINER: ComponentCatalogEntry = {
+const CONTAINER: AutomatorComponentEntry = {
   type: "container",
   isContainer: true,
   defaultLayout: { w: 12, h: 20 },
@@ -609,7 +290,7 @@ const CONTAINER: ComponentCatalogEntry = {
   },
 };
 
-const MODAL: ComponentCatalogEntry = {
+const MODAL: AutomatorComponentEntry = {
   type: "modal",
   isContainer: true,
   defaultLayout: { w: 12, h: 40 },
@@ -634,7 +315,7 @@ const MODAL: ComponentCatalogEntry = {
   },
 };
 
-const DRAWER: ComponentCatalogEntry = {
+const DRAWER: AutomatorComponentEntry = {
   type: "drawer",
   isContainer: true,
   defaultLayout: { w: 12, h: 40 },
@@ -659,7 +340,7 @@ const DRAWER: ComponentCatalogEntry = {
   },
 };
 
-const TABLE: ComponentCatalogEntry = {
+const TABLE: AutomatorComponentEntry = {
   type: "table",
   defaultLayout: { w: 24, h: 30 },
   required: ["columns", "data"],
@@ -705,7 +386,7 @@ const TABLE: ComponentCatalogEntry = {
     "`data` MUST be a stringified JSON array. Use {{currentCell}} in render unless told otherwise.",
 };
 
-const LIST_VIEW: ComponentCatalogEntry = {
+const LIST_VIEW: AutomatorComponentEntry = {
   type: "listView",
   isContainer: true,
   defaultLayout: { w: 24, h: 30 },
@@ -738,7 +419,7 @@ const LIST_VIEW: ComponentCatalogEntry = {
     "container is the per-item template. Nest item components directly under '<listViewName>.container' (flat). Do NOT use body/header/footer.",
 };
 
-const IMAGE: ComponentCatalogEntry = {
+const IMAGE: AutomatorComponentEntry = {
   type: "image",
   defaultLayout: { w: 8, h: 12 },
   required: ["src"],
@@ -779,7 +460,7 @@ const IMAGE: ComponentCatalogEntry = {
   },
 };
 
-const DIVIDER: ComponentCatalogEntry = {
+const DIVIDER: AutomatorComponentEntry = {
   type: "divider",
   defaultLayout: { w: 24, h: 2 },
   required: [],
@@ -797,7 +478,7 @@ const DIVIDER: ComponentCatalogEntry = {
   },
 };
 
-const DATE: ComponentCatalogEntry = {
+const DATE: AutomatorComponentEntry = {
   type: "date",
   defaultLayout: { w: 12, h: 6 },
   required: ["label"],
@@ -821,7 +502,7 @@ const DATE: ComponentCatalogEntry = {
   },
 };
 
-const SWITCH: ComponentCatalogEntry = {
+const SWITCH: AutomatorComponentEntry = {
   type: "switch",
   defaultLayout: { w: 6, h: 5 },
   required: ["label"],
@@ -841,7 +522,7 @@ const SWITCH: ComponentCatalogEntry = {
   },
 };
 
-const TEXT_AREA: ComponentCatalogEntry = {
+const TEXT_AREA: AutomatorComponentEntry = {
   type: "textArea",
   defaultLayout: { w: 12, h: 8 },
   required: ["label"],
@@ -876,7 +557,7 @@ const TEXT_AREA: ComponentCatalogEntry = {
   },
 };
 
-const PASSWORD: ComponentCatalogEntry = {
+const PASSWORD: AutomatorComponentEntry = {
   type: "password",
   defaultLayout: { w: 12, h: 6 },
   required: ["label"],
@@ -899,7 +580,7 @@ const PASSWORD: ComponentCatalogEntry = {
   },
 };
 
-const CHART: ComponentCatalogEntry = {
+const CHART: AutomatorComponentEntry = {
   type: "chart",
   defaultLayout: { w: 12, h: 20 },
   required: ["chartType", "data"],
@@ -942,7 +623,7 @@ const CHART: ComponentCatalogEntry = {
   },
 };
 
-const CARD: ComponentCatalogEntry = {
+const CARD: AutomatorComponentEntry = {
   type: "card",
   isContainer: true,
   defaultLayout: { w: 8, h: 15 },
@@ -964,7 +645,7 @@ const CARD: ComponentCatalogEntry = {
   },
 };
 
-const TABBED_CONTAINER: ComponentCatalogEntry = {
+const TABBED_CONTAINER: AutomatorComponentEntry = {
   type: "tabbedContainer",
   isContainer: true,
   defaultLayout: { w: 24, h: 30 },
@@ -988,7 +669,7 @@ const TABBED_CONTAINER: ComponentCatalogEntry = {
   },
 };
 
-const VIDEO: ComponentCatalogEntry = {
+const VIDEO: AutomatorComponentEntry = {
   type: "video",
   defaultLayout: { w: 12, h: 15 },
   required: ["src"],
@@ -1007,7 +688,7 @@ const VIDEO: ComponentCatalogEntry = {
   },
 };
 
-const AVATAR: ComponentCatalogEntry = {
+const AVATAR: AutomatorComponentEntry = {
   type: "avatar",
   defaultLayout: { w: 6, h: 6 },
   required: ["icon", "iconSize"],
@@ -1030,7 +711,7 @@ const AVATAR: ComponentCatalogEntry = {
   },
 };
 
-const PROGRESS: ComponentCatalogEntry = {
+const PROGRESS: AutomatorComponentEntry = {
   type: "progress",
   defaultLayout: { w: 12, h: 4 },
   required: ["value"],
@@ -1045,7 +726,7 @@ const PROGRESS: ComponentCatalogEntry = {
   },
 };
 
-const RATING: ComponentCatalogEntry = {
+const RATING: AutomatorComponentEntry = {
   type: "rating",
   defaultLayout: { w: 8, h: 5 },
   required: ["label"],
@@ -1067,7 +748,7 @@ const RATING: ComponentCatalogEntry = {
   },
 };
 
-const SLIDER: ComponentCatalogEntry = {
+const SLIDER: AutomatorComponentEntry = {
   type: "slider",
   defaultLayout: { w: 12, h: 5 },
   required: ["label"],
@@ -1090,7 +771,7 @@ const SLIDER: ComponentCatalogEntry = {
   },
 };
 
-const NAVIGATION: ComponentCatalogEntry = {
+const NAVIGATION: AutomatorComponentEntry = {
   type: "navigation",
   defaultLayout: { w: 24, h: 5 },
   required: ["items"],
@@ -1111,7 +792,7 @@ const NAVIGATION: ComponentCatalogEntry = {
   },
 };
 
-const TIMELINE: ComponentCatalogEntry = {
+const TIMELINE: AutomatorComponentEntry = {
   type: "timeline",
   defaultLayout: { w: 12, h: 15 },
   required: ["value"],
@@ -1141,7 +822,7 @@ const TIMELINE: ComponentCatalogEntry = {
   },
 };
 
-const STEP: ComponentCatalogEntry = {
+const STEP: AutomatorComponentEntry = {
   type: "step",
   defaultLayout: { w: 24, h: 6 },
   required: ["value", "options"],
@@ -1174,7 +855,7 @@ const STEP: ComponentCatalogEntry = {
   notes: "Step values must be numbers starting from 1.",
 };
 
-const RADIO: ComponentCatalogEntry = {
+const RADIO: AutomatorComponentEntry = {
   type: "radio",
   defaultLayout: { w: 12, h: 5 },
   required: ["label", "options"],
@@ -1209,7 +890,7 @@ const RADIO: ComponentCatalogEntry = {
   },
 };
 
-const CHAT: ComponentCatalogEntry = {
+const CHAT: AutomatorComponentEntry = {
   type: "chat",
   defaultLayout: { w: 12, h: 20 },
   required: [],
@@ -1221,7 +902,7 @@ const CHAT: ComponentCatalogEntry = {
   notes: "AI chat component for embedding a conversational assistant in the app.",
 };
 
-const CHAT_BOX: ComponentCatalogEntry = {
+const CHAT_BOX: AutomatorComponentEntry = {
   type: "chatBox",
   defaultLayout: { w: 12, h: 24 },
   required: [],
@@ -1230,7 +911,7 @@ const CHAT_BOX: ComponentCatalogEntry = {
   notes: "Chat UI for displaying messages and sending user input. Pair with chatController for realtime typing/presence.",
 };
 
-const CHAT_CONTROLLER: ComponentCatalogEntry = {
+const CHAT_CONTROLLER: AutomatorComponentEntry = {
   type: "chatController",
   defaultLayout: { w: 12, h: 5 },
   required: [],
@@ -1239,7 +920,7 @@ const CHAT_CONTROLLER: ComponentCatalogEntry = {
   notes: "Realtime chat controller hook. Use with chatBox for presence and typing indicators.",
 };
 
-const CURATED_CATALOG: ComponentCatalogEntry[] = [
+export const AUTOMATOR_COMPONENTS: AutomatorComponentEntry[] = [
   TEXT,
   BUTTON,
   INPUT,
@@ -1275,115 +956,3 @@ const CURATED_CATALOG: ComponentCatalogEntry[] = [
   CHAT_CONTROLLER,
 ];
 
-const CURATED_BY_TYPE = new Map(CURATED_CATALOG.map((entry) => [entry.type, entry]));
-
-function serialiseDescription(description: UICompManifest["description"]): string | undefined {
-  if (typeof description === "string") return description;
-  if (typeof description === "number") return String(description);
-  return undefined;
-}
-
-function fallbackEntry(type: string, manifest: UICompManifest): ComponentCatalogEntry {
-  const layout = manifest.layoutInfo ?? { w: 6, h: 5 };
-  return {
-    type,
-    name: manifest.name,
-    enName: manifest.enName,
-    categories: manifest.categories,
-    description: serialiseDescription(manifest.description),
-    isContainer: manifest.isContainer,
-    defaultLayout: {
-      w: layout.w,
-      h: layout.h,
-    },
-    required: [],
-    optional: [],
-    example: {},
-    notes:
-      "Registered Lowcoder component. Use an empty action_parameters object when no property shape is listed, or set properties afterward with set_properties.",
-  };
-}
-
-function typeOnlyFallbackEntry(type: string): ComponentCatalogEntry {
-  const curated = CURATED_BY_TYPE.get(type);
-  if (curated) return curated;
-
-  return {
-    type,
-    defaultLayout: { w: 6, h: 5 },
-    required: [],
-    optional: [],
-    example: {},
-    notes:
-      "Lowcoder component listed in comps/index.tsx. Use an empty action_parameters object when no property shape is listed, or set properties afterward with set_properties.",
-  };
-}
-
-function mergeManifestMetadata(
-  entry: ComponentCatalogEntry,
-  manifest: UICompManifest
-): ComponentCatalogEntry {
-  return {
-    ...entry,
-    name: manifest.name,
-    enName: manifest.enName,
-    categories: manifest.categories,
-    description: serialiseDescription(manifest.description),
-    isContainer: entry.isContainer ?? manifest.isContainer,
-    defaultLayout: entry.defaultLayout ?? manifest.layoutInfo ?? { w: 6, h: 5 },
-  };
-}
-
-function buildFullCatalog(): ComponentCatalogEntry[] {
-  const registryEntries = Object.entries(uiCompRegistry);
-  const registryTypes = new Set(registryEntries.map(([type]) => type));
-  const knownTypes = new Set(LOWCODER_COMPONENT_TYPES);
-
-  const listedEntries = LOWCODER_COMPONENT_TYPES.map((type) => {
-    const manifest = uiCompRegistry[type];
-    if (!manifest) return typeOnlyFallbackEntry(type);
-
-    const curated = CURATED_BY_TYPE.get(type);
-    return curated
-      ? mergeManifestMetadata(curated, manifest)
-      : fallbackEntry(type, manifest);
-  });
-
-  const extraRegistryEntries = registryEntries
-    .filter(([type]) => !knownTypes.has(type))
-    .map(([type, manifest]) => {
-      const curated = CURATED_BY_TYPE.get(type);
-      return curated
-        ? mergeManifestMetadata(curated, manifest)
-        : fallbackEntry(type, manifest);
-    });
-
-  const curatedOnlyEntries = CURATED_CATALOG.filter(
-    (entry) => !registryTypes.has(entry.type) && !knownTypes.has(entry.type)
-  );
-
-  return [...listedEntries, ...extraRegistryEntries, ...curatedOnlyEntries].sort((a, b) => {
-    const categoryA = a.categories?.[0] ?? "";
-    const categoryB = b.categories?.[0] ?? "";
-    if (categoryA !== categoryB) return categoryA.localeCompare(categoryB);
-    return (a.enName || a.name || a.type).localeCompare(b.enName || b.name || b.type);
-  });
-}
-
-/**
- * Returns all registered Lowcoder components. If `onlyTypes` is provided we
- * return those entries first and keep the remaining catalog afterward, so the
- * model sees the user's requested component names without losing access to the
- * rest of Lowcoder's palette.
- */
-export function getComponentCatalog(onlyTypes?: string[]): ComponentCatalogEntry[] {
-  const fullCatalog = buildFullCatalog();
-  if (!onlyTypes || onlyTypes.length === 0) return fullCatalog;
-
-  const requested = new Set(onlyTypes);
-  const mentioned = fullCatalog.filter((c) => requested.has(c.type));
-  const remaining = fullCatalog.filter((c) => !requested.has(c.type));
-  return mentioned.length > 0 ? [...mentioned, ...remaining] : fullCatalog;
-}
-
-export const COMPONENT_TYPES_DEFAULT: string[] = buildFullCatalog().map((c) => c.type);
