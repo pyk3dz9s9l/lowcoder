@@ -207,7 +207,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       } catch (err) {
         console.error(`[Automator] action "${actionItem.action}" failed:`, err);
       }
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 500));
     }
 
     console.log(`[Automator] done: ${executed}/${actions.length} succeeded`);
