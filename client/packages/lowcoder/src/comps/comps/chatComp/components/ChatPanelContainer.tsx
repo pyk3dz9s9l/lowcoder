@@ -47,6 +47,7 @@ import {
 import { applyStyleAction } from "../../preLoadComp/actions/componentStyling";
 import { addEventHandlerAction } from "../../preLoadComp/actions/componentEvents";
 import { alignComponentAction } from "../../preLoadComp/actions/componentLayout";
+import { deleteQueryAction } from "../../preLoadComp/actions/queryManagement";
 
 // ============================================================================
 // ACTION REGISTRY — maps LLM action names to their executor configs.
@@ -59,6 +60,7 @@ const ACTION_REGISTRY: Record<string, ActionConfig> = {
   move_component: moveComponentAction,
   resize_component: resizeComponentAction,
   delete_component: deleteComponentAction,
+  delete_query: deleteQueryAction,
   rename_component: renameComponentAction,
   set_properties: configureComponentAction,
   set_style: applyStyleAction,

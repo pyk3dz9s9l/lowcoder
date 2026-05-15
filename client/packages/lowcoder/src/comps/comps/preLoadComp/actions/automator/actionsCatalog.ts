@@ -17,6 +17,7 @@ export type AutomatorActionName =
   | "move_component"
   | "resize_component"
   | "delete_component"
+  | "delete_query"
   | "rename_component"
   | "set_properties"
   | "set_style"
@@ -95,6 +96,16 @@ export const ACTIONS_CATALOG: ActionCatalogEntry[] = [
     example: {
       action: "delete_component",
       component_name: "oldButton",
+    },
+  },
+  {
+    action: "delete_query",
+    purpose:
+      "Delete an existing bottom-panel data query by name. This action only needs the query name and does not read the query configuration or body.",
+    required: ["query_name"],
+    example: {
+      action: "delete_query",
+      query_name: "getUsers",
     },
   },
   {

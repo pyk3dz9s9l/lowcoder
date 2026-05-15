@@ -87,7 +87,7 @@ export const addComponentAction: ActionConfig = {
         comp: compInitialValue,
       };
 
-      const currentLayout = uiComp.children.comp.children.layout.getView();
+      const currentLayout = simpleContainer.children.layout.getView();
       const layoutInfo = manifest?.layoutInfo || defaultLayout(selectedComponent as UICompType);
       
       let itemPos = 0;
@@ -107,7 +107,7 @@ export const addComponentAction: ActionConfig = {
       };
 
       await getPromiseAfterDispatch(
-        uiComp.children.comp.dispatch,
+        simpleContainer.dispatch,
         wrapActionExtraInfo(
           multiChangeAction({
             layout: changeValueAction({

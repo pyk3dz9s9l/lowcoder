@@ -17,6 +17,7 @@ import log from "loglevel";
 import { JSLibraryTree } from "components/JSLibraryTree";
 import { fetchJSLibrary } from "util/jsLibraryUtils";
 import { RunAndClearable } from "./types";
+import { runScript } from "./utils";
 
 export class LibsCompBase extends list(SimpleStringControl) implements RunAndClearable<string[]> {
   success: Record<string, boolean> = {};
@@ -118,15 +119,12 @@ export class ScriptComp extends CodeTextControl implements RunAndClearable<strin
     if (!code) {
       return;
     }
-    // Import runScript from utils to avoid circular dependency
-    const { runScript } = require("./utils");
     runScript(code, this.runInHost);
   }
 
   async run(id: string, externalScript: string = "", runInHost: boolean = false) {
     this.runInHost = runInHost;
     if (externalScript) {
-      const { runScript } = require("./utils");
       runScript(externalScript, runInHost);
     }
     this.runPreloadScript();

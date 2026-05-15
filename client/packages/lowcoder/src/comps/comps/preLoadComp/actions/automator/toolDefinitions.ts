@@ -48,6 +48,10 @@ function buildActionItemSchema(componentTypes?: string[]): Record<string, unknow
         type: "string",
         description: "Unique name for the component on the canvas.",
       },
+      query_name: {
+        type: "string",
+        description: "Name of the bottom-panel data query. Required for delete_query.",
+      },
       parent_component_name: {
         type: "string",
         description:
@@ -92,7 +96,7 @@ export function buildToolDefinitions(componentTypes?: string[]): OpenAIToolDefin
         description: [
           "Execute one or more Lowcoder Automator actions on the canvas.",
           "Call this tool when you want to place, configure, style, move,",
-          "resize, delete, or otherwise modify components in the app.",
+          "resize, delete, or otherwise modify components or queries in the app.",
           "Do NOT call this tool when you need clarification — just respond",
           "with text instead.",
           "",
