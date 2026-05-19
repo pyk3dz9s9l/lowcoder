@@ -18,6 +18,7 @@ export interface StyledChatContainerProps {
 
 export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   display: flex;
+  align-items: stretch;
   height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
   min-width: 0;
@@ -42,6 +43,7 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* Sidebar Styles */
   .aui-thread-list-root {
+    align-self: stretch;
     width: ${(props) => props.$sidebarWidth || "250px"};
     background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
     padding: 10px;
@@ -56,14 +58,16 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   /* Messages Window Styles */
   .aui-thread-root {
     flex: 1 1 auto;
+    align-self: stretch;
     min-width: 0;
     min-height: 0;
     background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
-    height: 100%;
+    height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
     overflow: hidden;
   }
 
   .aui-thread-viewport {
+    flex: 1 1 auto;
     min-height: 0;
   }
 
