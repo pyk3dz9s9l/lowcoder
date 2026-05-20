@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "./tooltip";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
-import { TooltipIconButton } from "../assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../tooltip-icon-button";
 
 // ============================================================================
 // STYLED COMPONENTS
@@ -290,8 +290,7 @@ const AttachmentUI: FC = () => {
       case "file":
         return "File";
       default:
-        const _exhaustiveCheck: never = type;
-        throw new Error(`Unknown attachment type: ${_exhaustiveCheck}`);
+        return "File";
     }
   });
   

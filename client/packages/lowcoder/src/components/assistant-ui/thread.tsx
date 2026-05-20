@@ -16,15 +16,15 @@ import {
     PencilIcon,
     SendHorizontalIcon,
   } from "lucide-react";
-  import { cn } from "../../utils/cn";
+  import { cn } from "./utils/cn";
   
-  import { Button } from "../ui/button";
+  import { Button } from "./ui/button";
   import { MarkdownText } from "./markdown-text";
   import { TooltipIconButton } from "./tooltip-icon-button";
   import { Spin, Flex } from "antd";
   import { LoadingOutlined } from "@ant-design/icons";
   import styled from "styled-components";
-import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } from "../ui/attachment";
+import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } from "./ui/attachment";
   const SimpleANTDLoader = () => {
     const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
     

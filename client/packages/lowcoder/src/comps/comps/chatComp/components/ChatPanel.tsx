@@ -7,9 +7,6 @@ import { AIAssistantQueryHandler } from "../handlers/messageHandlers";
 import { ChatPanelProps } from "../types/chatTypes";
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
 
-import "@assistant-ui/styles/index.css";
-import "@assistant-ui/styles/markdown.css";
-
 // ============================================================================
 // CHAT PANEL - SIMPLIFIED BOTTOM PANEL (QUERY-BASED + AUTOMATOR)
 // ----------------------------------------------------------------------------

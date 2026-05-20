@@ -10,8 +10,8 @@ import {
   TextContentPart,
   ThreadUserContentPart
 } from "@assistant-ui/react";
-import { Thread } from "./assistant-ui/thread";
-import { ThreadList } from "./assistant-ui/thread-list";
+import { Thread } from "components/assistant-ui/thread";
+import { ThreadList } from "components/assistant-ui/thread-list";
 import { 
   ChatProvider,
   useChatContext, 
@@ -23,8 +23,6 @@ import styled from "styled-components";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
-import "@assistant-ui/styles/index.css";
-import "@assistant-ui/styles/markdown.css";
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
 import { ActionConfig, ActionExecuteParams } from "../../preLoadComp/types";
 import { configureComponentAction } from "../../preLoadComp/actions/componentConfiguration";

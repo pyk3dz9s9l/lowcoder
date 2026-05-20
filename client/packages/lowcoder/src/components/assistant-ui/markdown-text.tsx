@@ -11,7 +11,7 @@ import { FC, memo, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { TooltipIconButton } from "./tooltip-icon-button";
-import { cn } from "../../utils/cn";
+import { cn } from "./utils/cn";
 
 const MarkdownTextImpl = () => {
   return (

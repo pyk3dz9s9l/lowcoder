@@ -11,8 +11,8 @@ import {
   TextContentPart,
   ThreadUserContentPart
 } from "@assistant-ui/react";
-import { Thread } from "./assistant-ui/thread";
-import { ThreadList } from "./assistant-ui/thread-list";
+import { Thread } from "components/assistant-ui/thread";
+import { ThreadList } from "components/assistant-ui/thread-list";
 import { 
   useChatContext, 
   RegularThreadData, 
