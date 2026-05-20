@@ -31,9 +31,8 @@ import {
 } from "comps/controls/styleControlConstants";
 import { AnimationStyle } from "comps/controls/styleControlConstants";
 
-// !IMPORTANT: NEW PACKAGE OF AUI NO LONGER NEED 
- //import "@assistant-ui/styles/index.css";
-// import "@assistant-ui/styles/markdown.css";
+// Assistant UI layout is styled locally with AntD and styled-components.
+// Markdown-specific styles are imported by components/assistant-ui/markdown-text.tsx.
 
 // ============================================================================
 // CHAT-SPECIFIC EVENTS

@@ -1,15 +1,10 @@
-import { ComponentPropsWithoutRef, forwardRef } from "react";
+import { forwardRef } from "react";
+import { Tooltip } from "antd";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
-import { Button } from "./ui/button";
+import { Button, type ButtonProps } from "./ui/button";
 import { cn } from "./utils/cn";
 
-export type TooltipIconButtonProps = ComponentPropsWithoutRef<typeof Button> & {
+export type TooltipIconButtonProps = ButtonProps & {
   tooltip: string;
   side?: "top" | "bottom" | "left" | "right";
 };
@@ -17,80 +12,35 @@ export type TooltipIconButtonProps = ComponentPropsWithoutRef<typeof Button> & {
 export const TooltipIconButton = forwardRef<
   HTMLButtonElement,
   TooltipIconButtonProps
->(({ children, tooltip, side = "bottom", className, ...rest }, ref) => {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            {...rest}
-            className={cn("", className)}
-            ref={ref}
-          >
-            {children}
-            <span className="aui-sr-only">{tooltip}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side={side}>{tooltip}</TooltipContent>
+>(
+  (
+    {
+      children,
+      tooltip,
+      side = "bottom",
+      className,
+      variant = "ghost",
+      size = "icon-sm",
+      "aria-label": ariaLabel,
+      ...rest
+    },
+    ref,
+  ) => {
+    return (
+      <Tooltip title={tooltip} placement={side}>
+        <Button
+          {...rest}
+          ref={ref}
+          variant={variant}
+          size={size}
+          className={cn("aui-tooltip-icon-button", className)}
+          aria-label={ariaLabel ?? tooltip}
+        >
+          {children}
+        </Button>
       </Tooltip>
-    </TooltipProvider>
-  );
-});
+    );
+  },
+);
 
 TooltipIconButton.displayName = "TooltipIconButton";
-
-
-
-//================= NEW AUI COMPONENTS ==================
-
-
-// "use client";
-
-// import { type ComponentPropsWithRef, forwardRef } from "react";
-// import { Slot } from "radix-ui";
-
-// import {
-//   Tooltip,
-//   TooltipContent,
-//   TooltipProvider,
-//   TooltipTrigger,
-// } from "@/components/ui/tooltip";
-// import { Button } from "@/components/ui/button";
-// import { cn } from "@/lib/utils";
-
-// export type TooltipIconButtonProps = ComponentPropsWithRef<typeof Button> & {
-//   tooltip: string;
-//   side?: "top" | "bottom" | "left" | "right";
-// };
-
-// export const TooltipIconButton = forwardRef<
-//   HTMLButtonElement,
-//   TooltipIconButtonProps
-// >(({ children, tooltip, side = "bottom", className, ...rest }, ref) => {
-//   return (
-//     <TooltipProvider delayDuration={0}>
-//       <Tooltip>
-//         <TooltipTrigger asChild>
-//           <Button
-//             variant="ghost"
-//             size="icon"
-//             {...rest}
-//             className={cn("aui-button-icon size-6 p-1", className)}
-//             ref={ref}
-//           >
-//             <Slot.Slottable>{children}</Slot.Slottable>
-//             <span className="aui-sr-only sr-only">{tooltip}</span>
-//           </Button>
-//         </TooltipTrigger>
-//         <TooltipContent side={side}>{tooltip}</TooltipContent>
-//       </Tooltip>
-//     </TooltipProvider>
-//   );
-// });
-
-// TooltipIconButton.displayName = "TooltipIconButton";
-
-
-// =================ENDS here ==================

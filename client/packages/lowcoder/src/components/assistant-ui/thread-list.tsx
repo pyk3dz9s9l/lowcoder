@@ -1,262 +1,221 @@
-import type { FC } from "react";
-import { useState } from "react";
+import { Button } from "./ui/button";
 import {
+  AuiIf,
+  ThreadListItemMorePrimitive,
   ThreadListItemPrimitive,
   ThreadListPrimitive,
-  useThreadListItem,
 } from "@assistant-ui/react";
-import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { TooltipIconButton } from "./tooltip-icon-button";
-import { useThreadListItemRuntime } from "@assistant-ui/react";
-import { Button, Flex, Input } from "antd";
+import {
+  ArchiveIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { trans } from "i18n";
-
+import type { FC } from "react";
 import styled from "styled-components";
 
-const StyledPrimaryButton = styled(Button)`
-  // padding: 20px;
-  // margin-bottom: 20px;
+const StyledThreadListRoot = styled(ThreadListPrimitive.Root)`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 `;
 
+const SkeletonStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const SkeletonRow = styled.div`
+  align-items: center;
+  display: flex;
+  height: 36px;
+  padding: 0 12px;
+`;
+
+const SkeletonBar = styled.div`
+  background: #eef0f3;
+  border-radius: 4px;
+  height: 16px;
+  width: 100%;
+`;
+
+const StyledNewThreadButton = styled(Button)`
+  justify-content: flex-start;
+  width: 100%;
+`;
+
+const StyledThreadListItem = styled(ThreadListItemPrimitive.Root)`
+  align-items: center;
+  border-radius: 8px;
+  display: flex;
+  gap: 6px;
+  height: 36px;
+  min-width: 0;
+  transition: background-color 0.2s ease;
+
+  &:hover,
+  &:focus-within,
+  &[data-active],
+  &[data-active="true"] {
+    background: #f3f4f6;
+  }
+
+  .aui-thread-list-item-more {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover .aui-thread-list-item-more,
+  &:focus-within .aui-thread-list-item-more,
+  &[data-active] .aui-thread-list-item-more,
+  &[data-active="true"] .aui-thread-list-item-more {
+    opacity: 1;
+  }
+`;
+
+const StyledThreadListTrigger = styled(ThreadListItemPrimitive.Trigger)`
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #1f2937;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-size: 14px;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  text-align: left;
+`;
+
+const ThreadTitle = styled.span`
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StyledMenuContent = styled(ThreadListItemMorePrimitive.Content)`
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  min-width: 144px;
+  padding: 4px;
+  z-index: 1000;
+`;
+
+const StyledMenuItem = styled(ThreadListItemMorePrimitive.Item)<{
+  $danger?: boolean;
+}>`
+  align-items: center;
+  border-radius: 6px;
+  color: ${(props) => (props.$danger ? "#cf1322" : "#1f2937")};
+  cursor: pointer;
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+  outline: none;
+  padding: 7px 8px;
+
+  &:hover,
+  &:focus {
+    background: ${(props) => (props.$danger ? "#fff1f0" : "#f3f4f6")};
+  }
+
+  svg {
+    height: 16px;
+    width: 16px;
+  }
+`;
+
+const ThreadListSkeleton: FC = () => {
+  return (
+    <SkeletonStack>
+      {Array.from({ length: 5 }, (_, i) => (
+        <SkeletonRow key={i} role="status" aria-label="Loading threads">
+          <SkeletonBar />
+        </SkeletonRow>
+      ))}
+    </SkeletonStack>
+  );
+};
 
 export const ThreadList: FC = () => {
   return (
-    <ThreadListPrimitive.Root className="aui-root aui-thread-list-root">
+    <StyledThreadListRoot className="aui-root aui-thread-list-root">
       <ThreadListNew />
-      <Flex vertical style={{flex: 1, overflow: 'auto', gap: 4}}>
-        <ThreadListItems />
-      </Flex>
-    </ThreadListPrimitive.Root>
+      <AuiIf condition={(s) => s.threads.isLoading}>
+        <ThreadListSkeleton />
+      </AuiIf>
+      <AuiIf condition={(s) => !s.threads.isLoading}>
+        <ThreadListPrimitive.Items>
+          {() => <ThreadListItem />}
+        </ThreadListPrimitive.Items>
+      </AuiIf>
+    </StyledThreadListRoot>
   );
 };
 
 const ThreadListNew: FC = () => {
   return (
     <ThreadListPrimitive.New asChild>
-      <StyledPrimaryButton size="middle" type="primary" icon={<PlusIcon size={16}/>}>
+      <StyledNewThreadButton variant="default">
+        <PlusIcon />
         {trans("chat.newThread")}
-      </StyledPrimaryButton>
+      </StyledNewThreadButton>
     </ThreadListPrimitive.New>
   );
 };
 
-const ThreadListItems: FC = () => {
-  return <ThreadListPrimitive.Items components={{ ThreadListItem }} />;
-};
-
 const ThreadListItem: FC = () => {
-  const [editing, setEditing] = useState(false);
-  
   return (
-    <ThreadListItemPrimitive.Root className="aui-thread-list-item">
-      <ThreadListItemPrimitive.Trigger className="aui-thread-list-item-trigger">
-        {editing ? (
-          <ThreadListItemEditInput 
-            onFinish={() => setEditing(false)} 
-          />
-        ) : (
-          <ThreadListItemTitle />
-        )}
-      </ThreadListItemPrimitive.Trigger>
-      <ThreadListItemRename 
-        onStartEdit={() => setEditing(true)} 
-        editing={editing}
-      />
-      <ThreadListItemDelete />
-    </ThreadListItemPrimitive.Root>
+    <StyledThreadListItem className="aui-thread-list-item">
+      <StyledThreadListTrigger className="aui-thread-list-item-trigger">
+        <ThreadTitle className="aui-thread-list-item-title">
+          <ThreadListItemPrimitive.Title fallback={trans("chat.newChatTitle")} />
+        </ThreadTitle>
+      </StyledThreadListTrigger>
+      <ThreadListItemMore />
+    </StyledThreadListItem>
   );
 };
 
-const ThreadListItemTitle: FC = () => {
+const ThreadListItemMore: FC = () => {
   return (
-    <p className="aui-thread-list-item-title" style={{margin: 0}}>
-      <ThreadListItemPrimitive.Title fallback={trans("chat.newChatTitle")} />
-    </p>
+    <ThreadListItemMorePrimitive.Root>
+      <ThreadListItemMorePrimitive.Trigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="aui-thread-list-item-more"
+          aria-label="More thread options"
+        >
+          <MoreHorizontalIcon />
+        </Button>
+      </ThreadListItemMorePrimitive.Trigger>
+      <StyledMenuContent side="bottom" align="start">
+        <ThreadListItemPrimitive.Archive asChild>
+          <StyledMenuItem>
+            <ArchiveIcon />
+            Archive
+          </StyledMenuItem>
+        </ThreadListItemPrimitive.Archive>
+        <ThreadListItemPrimitive.Delete asChild>
+          <StyledMenuItem $danger>
+            <TrashIcon />
+            Delete
+          </StyledMenuItem>
+        </ThreadListItemPrimitive.Delete>
+      </StyledMenuContent>
+    </ThreadListItemMorePrimitive.Root>
   );
 };
-
-const ThreadListItemDelete: FC = () => {
-  return (
-    <ThreadListItemPrimitive.Delete asChild>
-      <TooltipIconButton
-        className="aui-thread-list-item-delete"
-        variant="ghost"
-        tooltip="Delete thread"
-      >
-        <Trash2Icon />
-      </TooltipIconButton>
-    </ThreadListItemPrimitive.Delete>
-  );
-};
-
-
-
-const ThreadListItemEditInput: FC<{ onFinish: () => void }> = ({ onFinish }) => {
-  const threadItem = useThreadListItem();
-  const threadRuntime = useThreadListItemRuntime();
-  
-  const currentTitle = threadItem?.title || trans("chat.newChatTitle");
-  
-  const handleRename = async (newTitle: string) => {
-    if (!newTitle.trim() || newTitle === currentTitle){
-      onFinish();
-      return;
-    }
-    
-    try {
-      await threadRuntime.rename(newTitle);
-      onFinish();
-    } catch (error) {
-      console.error("Failed to rename thread:", error);
-    }
-  };
-
-  return (
-    <Input
-      size="small"
-      defaultValue={currentTitle}
-      onBlur={(e) => handleRename(e.target.value)}
-      onPressEnter={(e) => handleRename((e.target as HTMLInputElement).value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onFinish();
-      }}
-      autoFocus
-      style={{ fontSize: '14px', padding: '2px 8px' }}
-    />
-  );
-};
-
-
-const ThreadListItemRename: FC<{ onStartEdit: () => void; editing: boolean }> = ({ 
-  onStartEdit, 
-  editing 
-}) => {
-  if (editing) return null;
-
-  return (
-    <TooltipIconButton
-      variant="ghost"
-      tooltip="Rename thread"
-      onClick={onStartEdit}
-    >
-      <PencilIcon />
-    </TooltipIconButton>
-  );
-};
-  
-
-
-// ================ NEW AUI COMPONENTS ================
-
-// import { Button } from "@/components/ui/button";
-// import { Skeleton } from "@/components/ui/skeleton";
-// import {
-//   AuiIf,
-//   ThreadListItemMorePrimitive,
-//   ThreadListItemPrimitive,
-//   ThreadListPrimitive,
-// } from "@assistant-ui/react";
-// import {
-//   ArchiveIcon,
-//   MoreHorizontalIcon,
-//   PlusIcon,
-//   TrashIcon,
-// } from "lucide-react";
-// import type { FC } from "react";
-
-// export const ThreadList: FC = () => {
-//   return (
-//     <ThreadListPrimitive.Root className="aui-root aui-thread-list-root flex flex-col gap-1">
-//       <ThreadListNew />
-//       <AuiIf condition={(s) => s.threads.isLoading}>
-//         <ThreadListSkeleton />
-//       </AuiIf>
-//       <AuiIf condition={(s) => !s.threads.isLoading}>
-//         <ThreadListPrimitive.Items>
-//           {() => <ThreadListItem />}
-//         </ThreadListPrimitive.Items>
-//       </AuiIf>
-//     </ThreadListPrimitive.Root>
-//   );
-// };
-
-// const ThreadListNew: FC = () => {
-//   return (
-//     <ThreadListPrimitive.New asChild>
-//       <Button
-//         variant="outline"
-//         className="aui-thread-list-new h-9 justify-start gap-2 rounded-lg px-3 text-sm hover:bg-muted data-active:bg-muted"
-//       >
-//         <PlusIcon className="size-4" />
-//         New Thread
-//       </Button>
-//     </ThreadListPrimitive.New>
-//   );
-// };
-
-// const ThreadListSkeleton: FC = () => {
-//   return (
-//     <div className="flex flex-col gap-1">
-//       {Array.from({ length: 5 }, (_, i) => (
-//         <div
-//           key={i}
-//           role="status"
-//           aria-label="Loading threads"
-//           className="aui-thread-list-skeleton-wrapper flex h-9 items-center px-3"
-//         >
-//           <Skeleton className="aui-thread-list-skeleton h-4 w-full" />
-//         </div>
-//       ))}
-//     </div>
-//   );
-// };
-
-// const ThreadListItem: FC = () => {
-//   return (
-//     <ThreadListItemPrimitive.Root className="aui-thread-list-item group flex h-9 items-center gap-2 rounded-lg transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none data-active:bg-muted">
-//       <ThreadListItemPrimitive.Trigger className="aui-thread-list-item-trigger flex h-full min-w-0 flex-1 items-center px-3 text-start text-sm">
-//         <span className="aui-thread-list-item-title min-w-0 flex-1 truncate">
-//           <ThreadListItemPrimitive.Title fallback="New Chat" />
-//         </span>
-//       </ThreadListItemPrimitive.Trigger>
-//       <ThreadListItemMore />
-//     </ThreadListItemPrimitive.Root>
-//   );
-// };
-
-// const ThreadListItemMore: FC = () => {
-//   return (
-//     <ThreadListItemMorePrimitive.Root>
-//       <ThreadListItemMorePrimitive.Trigger asChild>
-//         <Button
-//           variant="ghost"
-//           size="icon"
-//           className="aui-thread-list-item-more me-2 size-7 p-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:bg-accent data-[state=open]:opacity-100 group-data-active:opacity-100"
-//         >
-//           <MoreHorizontalIcon className="size-4" />
-//           <span className="sr-only">More options</span>
-//         </Button>
-//       </ThreadListItemMorePrimitive.Trigger>
-//       <ThreadListItemMorePrimitive.Content
-//         side="bottom"
-//         align="start"
-//         className="aui-thread-list-item-more-content z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-//       >
-//         <ThreadListItemPrimitive.Archive asChild>
-//           <ThreadListItemMorePrimitive.Item className="aui-thread-list-item-more-item flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-//             <ArchiveIcon className="size-4" />
-//             Archive
-//           </ThreadListItemMorePrimitive.Item>
-//         </ThreadListItemPrimitive.Archive>
-//         <ThreadListItemPrimitive.Delete asChild>
-//           <ThreadListItemMorePrimitive.Item className="aui-thread-list-item-more-item flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-destructive text-sm outline-none hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive">
-//             <TrashIcon className="size-4" />
-//             Delete
-//           </ThreadListItemMorePrimitive.Item>
-//         </ThreadListItemPrimitive.Delete>
-//       </ThreadListItemMorePrimitive.Content>
-//     </ThreadListItemMorePrimitive.Root>
-//   );
-// };
-
-// =========== ENDS HERE =========

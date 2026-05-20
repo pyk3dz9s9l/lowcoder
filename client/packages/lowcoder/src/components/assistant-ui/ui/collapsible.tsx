@@ -1,37 +1,45 @@
-// TODO: this is a temporary component for the AUI components
-// we should use ANTD components instead if possible
+"use client";
 
+import { forwardRef } from "react";
+import { Collapsible as CollapsiblePrimitive } from "radix-ui";
 
-"use client"
+const Collapsible = forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.Root>
+>((props, ref) => {
+  return <CollapsiblePrimitive.Root ref={ref} data-slot="collapsible" {...props} />;
+});
 
-import { Collapsible as CollapsiblePrimitive } from "radix-ui"
+Collapsible.displayName = "Collapsible";
 
-function Collapsible({
-  ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
-}
-
-function CollapsibleTrigger({
-  ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
+const CollapsibleTrigger = forwardRef<
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleTrigger>
+>((props, ref) => {
   return (
     <CollapsiblePrimitive.CollapsibleTrigger
+      ref={ref}
       data-slot="collapsible-trigger"
       {...props}
     />
-  )
-}
+  );
+});
 
-function CollapsibleContent({
-  ...props
-}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
+CollapsibleTrigger.displayName = "CollapsibleTrigger";
+
+const CollapsibleContent = forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleContent>
+>((props, ref) => {
   return (
     <CollapsiblePrimitive.CollapsibleContent
+      ref={ref}
       data-slot="collapsible-content"
       {...props}
     />
-  )
-}
+  );
+});
 
-export { Collapsible, CollapsibleTrigger, CollapsibleContent }
+CollapsibleContent.displayName = "CollapsibleContent";
+
+export { Collapsible, CollapsibleTrigger, CollapsibleContent };

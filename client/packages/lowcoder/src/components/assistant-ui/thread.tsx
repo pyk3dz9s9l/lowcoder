@@ -1,794 +1,839 @@
 import {
-    ActionBarPrimitive,
-    BranchPickerPrimitive,
-    ComposerPrimitive,
-    MessagePrimitive,
-    ThreadPrimitive,
-  } from "@assistant-ui/react";
-  import { useMemo, type FC } from "react";
-  import { trans } from "i18n";
-  import {
-    ArrowDownIcon,
-    CheckIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    CopyIcon,
-    PencilIcon,
-    SendHorizontalIcon,
-  } from "lucide-react";
-  import { cn } from "./utils/cn";
-  
-  import { Button } from "./ui/button";
-  import { MarkdownText } from "./markdown-text";
-  import { TooltipIconButton } from "./tooltip-icon-button";
-  import { Spin, Flex } from "antd";
-  import { LoadingOutlined } from "@ant-design/icons";
-  import styled from "styled-components";
-import { ComposerAddAttachment, ComposerAttachments, UserMessageAttachments } from "./ui/attachment";
-  const SimpleANTDLoader = () => {
-    const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
-    
-    return (
-      <div style={{ textAlign: 'left', width: '100%' }}>
-        <Flex align="center" gap={12} style={{ paddingLeft: '16px' }}>
-          <Spin indicator={antIcon} size="small" />
-          <span style={{ color: '#666', fontSize: '14px' }}>Working on it...</span>
-        </Flex>
-      </div>
-    );
-  };
+  ActionBarMorePrimitive,
+  ActionBarPrimitive,
+  AuiIf,
+  BranchPickerPrimitive,
+  ComposerPrimitive,
+  ErrorPrimitive,
+  getMcpAppFromToolPart,
+  MessagePrimitive,
+  ThreadPrimitive,
+  useAuiState,
+} from "@assistant-ui/react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  DownloadIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  RefreshCwIcon,
+  SquareIcon,
+} from "lucide-react";
+import { type FC } from "react";
+import { Flex, Spin } from "antd";
+import { LoadingOutlined } from "@ant-design/icons";
+import styled from "styled-components";
+import { trans } from "i18n";
 
-  const StyledThreadRoot = styled(ThreadPrimitive.Root)`
-  /* Hide entire assistant message container when it contains running status */
+import {
+  ComposerAddAttachment,
+  ComposerAttachments,
+  UserMessageAttachments,
+} from "./ui/attachment";
+import { MarkdownText } from "./markdown-text";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningRoot,
+  ReasoningText,
+  ReasoningTrigger,
+} from "./reasoning";
+import {
+  ToolGroupContent,
+  ToolGroupRoot,
+  ToolGroupTrigger,
+} from "./tool-group";
+import { ToolFallback } from "./tool-fallback";
+import { TooltipIconButton } from "./tooltip-icon-button";
+import { Button } from "./ui/button";
+
+
+interface ThreadProps {
+  placeholder?: string;
+  showAttachments?: boolean;
+}
+
+const StyledThreadRoot = styled(ThreadPrimitive.Root)`
+  background: #f9fafb;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+
+  .aui-thread-viewport {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  .aui-thread-layout {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    margin: 0 auto;
+    max-width: var(--thread-max-width);
+    min-height: 0;
+    padding: 16px;
+    width: 100%;
+  }
+
+  .aui-message-group {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .aui-message-group:empty {
+    display: none;
+  }
+
+  .aui-thread-welcome-root {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    margin: auto 0;
+  }
+
+  .aui-thread-welcome-center {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .aui-thread-welcome-message {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 16px;
+    width: 100%;
+  }
+
+  .aui-thread-welcome-message-inner {
+    color: #111827;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 28px;
+    margin: 0;
+  }
+
+  .aui-thread-welcome-suggestions {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    padding-bottom: 16px;
+    width: 100%;
+  }
+
+  .aui-thread-welcome-suggestion {
+    align-items: flex-start;
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 16px;
+    color: #1f2937;
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 14px;
+    gap: 4px;
+    min-height: 44px;
+    padding: 10px 14px;
+    text-align: left;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+    width: 100%;
+  }
+
+  .aui-thread-welcome-suggestion:hover {
+    background: #f3f4f6;
+    border-color: #bfbfbf;
+  }
+
+  .aui-thread-welcome-suggestion-text-1 {
+    font-weight: 500;
+  }
+
+  .aui-thread-viewport-footer {
+    background: linear-gradient(180deg, rgba(249, 250, 251, 0), #f9fafb 24px);
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+    overflow: visible;
+    padding-bottom: 16px;
+    padding-top: 24px;
+    position: sticky;
+    z-index: 2;
+  }
+
+  .aui-thread-scroll-to-bottom {
+    align-self: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  }
+
+  .aui-composer-root {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+  }
+
+  .aui-composer-shell {
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: var(--composer-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--composer-padding);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+    width: 100%;
+  }
+
+  .aui-composer-shell:focus-within {
+    border-color: #1677ff;
+    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+  }
+
+  .aui-composer-input {
+    background: transparent;
+    border: 0;
+    color: #1f2937;
+    font-size: 14px;
+    line-height: 22px;
+    max-height: 128px;
+    min-height: 40px;
+    outline: 0;
+    padding: 4px 6px;
+    resize: none;
+    width: 100%;
+  }
+
+  .aui-composer-input::placeholder {
+    color: #8c8c8c;
+  }
+
+  .aui-composer-action-wrapper {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    min-height: 32px;
+  }
+
+  .aui-composer-add-attachment,
+  .aui-composer-send,
+  .aui-composer-cancel {
+    border-radius: 50%;
+  }
+
+  .aui-assistant-message-root {
+    margin: 0 auto;
+    max-width: var(--thread-max-width);
+    position: relative;
+    width: 100%;
+  }
+
+  .aui-assistant-message-content {
+    color: #1f2937;
+    font-size: 14px;
+    line-height: 24px;
+    padding: 0 8px;
+    word-break: break-word;
+  }
+
+  .aui-assistant-message-footer {
+    align-items: center;
+    display: flex;
+    margin-left: 8px;
+    min-height: 28px;
+  }
+
+  .aui-assistant-action-bar-root {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+    color: #6b7280;
+  }
+
+  .aui-action-bar-more-content {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    min-width: 144px;
+    padding: 4px;
+    z-index: 1000;
+  }
+
+  .aui-action-bar-more-item {
+    align-items: center;
+    border-radius: 6px;
+    color: #1f2937;
+    cursor: pointer;
+    display: flex;
+    font-size: 14px;
+    gap: 8px;
+    outline: none;
+    padding: 7px 8px;
+  }
+
+  .aui-action-bar-more-item:hover,
+  .aui-action-bar-more-item:focus {
+    background: #f3f4f6;
+  }
+
+  .aui-user-message-root {
+    animation: none;
+    display: grid;
+    grid-template-columns: minmax(72px, 1fr) auto;
+    grid-auto-rows: auto;
+    gap: 8px 0;
+    margin: 0 auto;
+    max-width: var(--thread-max-width);
+    padding: 0 8px;
+    width: 100%;
+  }
+
+  .aui-user-message-content-wrapper {
+    grid-column-start: 2;
+    min-width: 0;
+    position: relative;
+  }
+
+  .aui-user-message-content {
+    background: #e5e7eb;
+    border-radius: 16px;
+    color: #111827;
+    font-size: 14px;
+    line-height: 22px;
+    padding: 10px 16px;
+    word-break: break-word;
+  }
+
+  .aui-user-action-bar-wrapper {
+    padding-right: 8px;
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .aui-user-action-bar-root {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .aui-user-branch-picker {
+    grid-column: 1 / -1;
+    grid-row-start: 3;
+    justify-content: flex-end;
+  }
+
+  .aui-edit-composer-wrapper {
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px;
+  }
+
+  .aui-edit-composer-root {
+    align-self: flex-end;
+    background: #e5e7eb;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    width: 100%;
+  }
+
+  .aui-edit-composer-input {
+    background: transparent;
+    border: 0;
+    color: #111827;
+    font-size: 14px;
+    min-height: 56px;
+    outline: 0;
+    padding: 16px;
+    resize: none;
+    width: 100%;
+  }
+
+  .aui-edit-composer-footer {
+    align-items: center;
+    align-self: flex-end;
+    display: flex;
+    gap: 8px;
+    margin: 0 12px 12px;
+  }
+
+  .aui-branch-picker-root {
+    align-items: center;
+    color: #6b7280;
+    display: inline-flex;
+    font-size: 12px;
+    gap: 4px;
+    margin-left: -8px;
+    margin-right: 8px;
+  }
+
+  .aui-branch-picker-state {
+    font-weight: 500;
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .aui-tooltip-icon-button svg,
+  .aui-button svg {
+    height: 16px;
+    width: 16px;
+  }
+
   .aui-assistant-message-root:has([data-status="running"]) {
     display: none;
   }
-  
-  /* Fallback for older browsers that don't support :has() */
+
   .aui-assistant-message-content [data-status="running"] {
     display: none;
   }
 `;
 
-  
-  interface ThreadProps {
-    placeholder?: string;
-    showAttachments?: boolean;
-  }
-  
-  export const Thread: FC<ThreadProps> = ({ 
-    placeholder = trans("chat.composerPlaceholder"),
-    showAttachments = true 
-  }) => {
-    // Stable component reference so React doesn't unmount/remount on every render
-    const UserMessageComponent = useMemo<FC>(() => {
-      const Wrapper: FC = () => <UserMessage showAttachments={showAttachments} />;
-      Wrapper.displayName = "UserMessage";
-      return Wrapper;
-    }, [showAttachments]);
+const SimpleANTDLoader = () => {
+  const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
-    return (
-      <StyledThreadRoot
-        className="aui-root aui-thread-root"
-        style={{
-          ["--thread-max-width" as string]: "42rem",
-        }}
+  return (
+    <div style={{ textAlign: "left", width: "100%" }}>
+      <Flex align="center" gap={12} style={{ paddingLeft: "16px" }}>
+        <Spin indicator={antIcon} size="small" />
+        <span style={{ color: "#666", fontSize: "14px" }}>
+          Working on it...
+        </span>
+      </Flex>
+    </div>
+  );
+};
+
+export const Thread: FC<ThreadProps> = ({
+  placeholder = trans("chat.composerPlaceholder"),
+  showAttachments = true,
+}) => {
+  return (
+    <StyledThreadRoot
+      className="aui-root aui-thread-root"
+      style={{
+        ["--thread-max-width" as string]: "44rem",
+        ["--composer-radius" as string]: "24px",
+        ["--composer-padding" as string]: "10px",
+      }}
+    >
+      <ThreadPrimitive.Viewport
+        turnAnchor="top"
+        data-slot="aui_thread-viewport"
+        className="aui-thread-viewport"
       >
-        <ThreadPrimitive.Viewport className="aui-thread-viewport">
-          <ThreadWelcome />
-  
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage: UserMessageComponent,
-              EditComposer: EditComposer,
-              AssistantMessage: AssistantMessage,
-            }}
-          />
+        <div className="aui-thread-layout">
+          <AuiIf condition={(s) => s.thread.isEmpty}>
+            <ThreadWelcome />
+          </AuiIf>
+
+          <div
+            data-slot="aui_message-group"
+            className="aui-message-group"
+          >
+            <ThreadPrimitive.Messages>
+              {() => <ThreadMessage showAttachments={showAttachments} />}
+            </ThreadPrimitive.Messages>
+          </div>
 
           <ThreadPrimitive.If running>
             <SimpleANTDLoader />
           </ThreadPrimitive.If>
-  
-          <ThreadPrimitive.If empty={false}>
-            <div className="aui-thread-viewport-spacer" />
-          </ThreadPrimitive.If>
-  
-          <div className="aui-thread-viewport-footer">
+
+          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer">
             <ThreadScrollToBottom />
-            <Composer placeholder={placeholder} showAttachments={showAttachments} />
-          </div>
-        </ThreadPrimitive.Viewport>
-      </StyledThreadRoot>
-    );
-  };
-  
-  const ThreadScrollToBottom: FC = () => {
-    return (
-      <ThreadPrimitive.ScrollToBottom asChild>
-        <TooltipIconButton
-          tooltip="Scroll to bottom"
-          variant="outline"
-          className="aui-thread-scroll-to-bottom"
-        >
-          <ArrowDownIcon />
-        </TooltipIconButton>
-      </ThreadPrimitive.ScrollToBottom>
-    );
-  };
-  
-  const ThreadWelcome: FC = () => {
-    return (
-      <ThreadPrimitive.Empty>
-        <div className="aui-thread-welcome-root">
-          <div className="aui-thread-welcome-center">
-            <p className="aui-thread-welcome-message">
-              {trans("chat.welcomeMessage")}
-            </p>
-          </div>
-          <ThreadWelcomeSuggestions />
+            <Composer
+              placeholder={placeholder}
+              showAttachments={showAttachments}
+            />
+          </ThreadPrimitive.ViewportFooter>
         </div>
-      </ThreadPrimitive.Empty>
-    );
-  };
-  
-  const ThreadWelcomeSuggestions: FC = () => {
-    return (
-      <div className="aui-thread-welcome-suggestions">
+      </ThreadPrimitive.Viewport>
+    </StyledThreadRoot>
+  );
+};
+
+const ThreadMessage: FC<{ showAttachments?: boolean }> = ({
+  showAttachments = true,
+}) => {
+  const role = useAuiState((s) => s.message.role);
+  const isEditing = useAuiState((s) => s.message.composer.isEditing);
+
+  if (isEditing) return <EditComposer />;
+  if (role === "user") return <UserMessage showAttachments={showAttachments} />;
+  return <AssistantMessage />;
+};
+
+const ThreadScrollToBottom: FC = () => {
+  return (
+    <ThreadPrimitive.ScrollToBottom asChild>
+      <TooltipIconButton
+        tooltip="Scroll to bottom"
+        variant="outline"
+        className="aui-thread-scroll-to-bottom"
+      >
+        <ArrowDownIcon />
+      </TooltipIconButton>
+    </ThreadPrimitive.ScrollToBottom>
+  );
+};
+
+const ThreadWelcome: FC = () => {
+  return (
+    <div className="aui-thread-welcome-root">
+      <div className="aui-thread-welcome-center">
+        <div className="aui-thread-welcome-message">
+          <h1 className="aui-thread-welcome-message-inner">
+            {trans("chat.welcomeMessage")}
+          </h1>
+        </div>
+      </div>
+      <ThreadSuggestions />
+    </div>
+  );
+};
+
+const ThreadSuggestions: FC = () => {
+  return (
+    <div className="aui-thread-welcome-suggestions">
+      <div className="aui-thread-welcome-suggestion-display">
         <ThreadPrimitive.Suggestion
           className="aui-thread-welcome-suggestion"
           prompt={trans("chat.suggestionWeather")}
           method="replace"
           autoSend
         >
-          <span className="aui-thread-welcome-suggestion-text">
+          <span className="aui-thread-welcome-suggestion-text-1">
             {trans("chat.suggestionWeather")}
           </span>
         </ThreadPrimitive.Suggestion>
+      </div>
+      <div className="aui-thread-welcome-suggestion-display">
         <ThreadPrimitive.Suggestion
           className="aui-thread-welcome-suggestion"
           prompt={trans("chat.suggestionAssistant")}
           method="replace"
           autoSend
         >
-          <span className="aui-thread-welcome-suggestion-text">
+          <span className="aui-thread-welcome-suggestion-text-1">
             {trans("chat.suggestionAssistant")}
           </span>
         </ThreadPrimitive.Suggestion>
       </div>
-    );
-  };
-  
-  const Composer: FC<{ placeholder?: string; showAttachments?: boolean }> = ({ 
-    placeholder = trans("chat.composerPlaceholder"),
-    showAttachments = true 
-  }) => {
-    return (
-      <ComposerPrimitive.Root className="aui-composer-root">
-        {showAttachments && (
-          <>
-            <ComposerAttachments />
-            <ComposerAddAttachment />
-          </>
-        )}
-        <ComposerPrimitive.Input
-          rows={1}
-          autoFocus
-          placeholder={placeholder}
-          className="aui-composer-input"
-        />
-        <ComposerAction />
-      </ComposerPrimitive.Root>
-    );
-  };
-  
-  const ComposerAction: FC = () => {
-    return (
-      <>
-        <ThreadPrimitive.If running={false}>
-          <ComposerPrimitive.Send asChild>
-            <TooltipIconButton
-              tooltip="Send"
-              variant="default"
-              className="aui-composer-send"
-            >
-              <SendHorizontalIcon />
-            </TooltipIconButton>
-          </ComposerPrimitive.Send>
-        </ThreadPrimitive.If>
-        <ThreadPrimitive.If running>
-          <ComposerPrimitive.Cancel asChild>
-            <TooltipIconButton
-              tooltip="Cancel"
-              variant="default"
-              className="aui-composer-cancel"
-            >
-              <CircleStopIcon />
-            </TooltipIconButton>
-          </ComposerPrimitive.Cancel>
-        </ThreadPrimitive.If>
-      </>
-    );
-  };
-  
-  const UserMessage: FC<{ showAttachments?: boolean }> = ({ showAttachments = true }) => {
-    return (
-      <MessagePrimitive.Root className="aui-user-message-root">
-        <UserActionBar />
-        {showAttachments && <UserMessageAttachments />}
-  
-        <div className="aui-user-message-content">
-          <MessagePrimitive.Content />
+    </div>
+  );
+};
+
+const Composer: FC<{ placeholder?: string; showAttachments?: boolean }> = ({
+  placeholder = trans("chat.composerPlaceholder"),
+  showAttachments = true,
+}) => {
+  return (
+    <ComposerPrimitive.Root className="aui-composer-root">
+      <ComposerPrimitive.AttachmentDropzone asChild>
+        <div
+          data-slot="aui_composer-shell"
+          className="aui-composer-shell"
+        >
+          {showAttachments && <ComposerAttachments />}
+          <ComposerPrimitive.Input
+            placeholder={placeholder}
+            className="aui-composer-input"
+            rows={1}
+            autoFocus
+            aria-label="Message input"
+          />
+          <ComposerAction showAttachments={showAttachments} />
         </div>
-  
-        <BranchPicker className="aui-user-branch-picker" />
-      </MessagePrimitive.Root>
-    );
-  };
-  
-  const UserActionBar: FC = () => {
-    return (
-      <ActionBarPrimitive.Root
-        hideWhenRunning
-        autohide="not-last"
-        className="aui-user-action-bar-root"
-      >
-        <ActionBarPrimitive.Edit asChild>
-          <TooltipIconButton tooltip="Edit">
-            <PencilIcon />
+      </ComposerPrimitive.AttachmentDropzone>
+    </ComposerPrimitive.Root>
+  );
+};
+
+const ComposerAction: FC<{ showAttachments?: boolean }> = ({
+  showAttachments = true,
+}) => {
+  return (
+    <div className="aui-composer-action-wrapper">
+      {showAttachments ? <ComposerAddAttachment /> : <span />}
+      <AuiIf condition={(s) => !s.thread.isRunning}>
+        <ComposerPrimitive.Send asChild>
+          <TooltipIconButton
+            tooltip="Send message"
+            side="bottom"
+            type="button"
+            variant="default"
+            size="icon"
+            className="aui-composer-send"
+            aria-label="Send message"
+          >
+            <ArrowUpIcon className="aui-composer-send-icon" />
           </TooltipIconButton>
-        </ActionBarPrimitive.Edit>
-      </ActionBarPrimitive.Root>
-    );
-  };
-  
-  const EditComposer: FC = () => {
-    return (
+        </ComposerPrimitive.Send>
+      </AuiIf>
+      <AuiIf condition={(s) => s.thread.isRunning}>
+        <ComposerPrimitive.Cancel asChild>
+          <Button
+            type="button"
+            variant="default"
+            size="icon"
+            className="aui-composer-cancel"
+            aria-label="Stop generating"
+          >
+            <SquareIcon className="aui-composer-cancel-icon" />
+          </Button>
+        </ComposerPrimitive.Cancel>
+      </AuiIf>
+    </div>
+  );
+};
+
+const MessageError: FC = () => {
+  return (
+    <MessagePrimitive.Error>
+      <ErrorPrimitive.Root className="aui-message-error-root">
+        <ErrorPrimitive.Message className="aui-message-error-message" />
+      </ErrorPrimitive.Root>
+    </MessagePrimitive.Error>
+  );
+};
+
+const AssistantMessage: FC = () => {
+  return (
+    <MessagePrimitive.Root
+      data-slot="aui_assistant-message-root"
+      data-role="assistant"
+      className="aui-assistant-message-root"
+    >
+      <div
+        data-slot="aui_assistant-message-content"
+        className="aui-assistant-message-content"
+      >
+        <MessagePrimitive.GroupedParts
+          groupBy={(part) => {
+            if (part.type === "reasoning")
+              return ["group-chainOfThought", "group-reasoning"];
+            if (part.type === "tool-call") {
+              if (getMcpAppFromToolPart(part)) return null;
+              return ["group-chainOfThought", "group-tool"];
+            }
+            return null;
+          }}
+        >
+          {({ part, children }) => {
+            switch (part.type) {
+              case "group-chainOfThought":
+                return <div data-slot="aui_chain-of-thought">{children}</div>;
+              case "group-reasoning": {
+                const running = part.status.type === "running";
+                return (
+                  <ReasoningRoot defaultOpen={running}>
+                    <ReasoningTrigger active={running} />
+                    <ReasoningContent aria-busy={running}>
+                      <ReasoningText>{children}</ReasoningText>
+                    </ReasoningContent>
+                  </ReasoningRoot>
+                );
+              }
+              case "group-tool":
+                return (
+                  <ToolGroupRoot>
+                    <ToolGroupTrigger
+                      count={part.indices.length}
+                      active={part.status.type === "running"}
+                    />
+                    <ToolGroupContent>{children}</ToolGroupContent>
+                  </ToolGroupRoot>
+                );
+              case "text":
+                return <MarkdownText />;
+              case "reasoning":
+                return <Reasoning {...part} />;
+              case "tool-call":
+                return part.toolUI ?? <ToolFallback {...part} />;
+              default:
+                return null;
+            }
+          }}
+        </MessagePrimitive.GroupedParts>
+        <MessageError />
+      </div>
+
+      <div
+        data-slot="aui_assistant-message-footer"
+        className="aui-assistant-message-footer"
+      >
+        <BranchPicker />
+        <AssistantActionBar />
+      </div>
+    </MessagePrimitive.Root>
+  );
+};
+
+const AssistantActionBar: FC = () => {
+  return (
+    <ActionBarPrimitive.Root
+      hideWhenRunning
+      autohide="not-last"
+      className="aui-assistant-action-bar-root"
+    >
+      <ActionBarPrimitive.Copy asChild>
+        <TooltipIconButton tooltip="Copy">
+          <AuiIf condition={(s) => s.message.isCopied}>
+            <CheckIcon />
+          </AuiIf>
+          <AuiIf condition={(s) => !s.message.isCopied}>
+            <CopyIcon />
+          </AuiIf>
+        </TooltipIconButton>
+      </ActionBarPrimitive.Copy>
+      <ActionBarPrimitive.Reload asChild>
+        <TooltipIconButton tooltip="Refresh">
+          <RefreshCwIcon />
+        </TooltipIconButton>
+      </ActionBarPrimitive.Reload>
+      <ActionBarMorePrimitive.Root>
+        <ActionBarMorePrimitive.Trigger asChild>
+          <TooltipIconButton
+            tooltip="More"
+            className="aui-action-bar-more-trigger"
+          >
+            <MoreHorizontalIcon />
+          </TooltipIconButton>
+        </ActionBarMorePrimitive.Trigger>
+        <ActionBarMorePrimitive.Content
+          side="bottom"
+          align="start"
+          className="aui-action-bar-more-content"
+        >
+          <ActionBarPrimitive.ExportMarkdown asChild>
+            <ActionBarMorePrimitive.Item className="aui-action-bar-more-item">
+              <DownloadIcon />
+              Export as Markdown
+            </ActionBarMorePrimitive.Item>
+          </ActionBarPrimitive.ExportMarkdown>
+        </ActionBarMorePrimitive.Content>
+      </ActionBarMorePrimitive.Root>
+    </ActionBarPrimitive.Root>
+  );
+};
+
+const UserMessage: FC<{ showAttachments?: boolean }> = ({
+  showAttachments = true,
+}) => {
+  return (
+    <MessagePrimitive.Root
+      data-slot="aui_user-message-root"
+      className="aui-user-message-root"
+      data-role="user"
+    >
+      {showAttachments && <UserMessageAttachments />}
+
+      <div className="aui-user-message-content-wrapper">
+        <div className="aui-user-message-content">
+          <MessagePrimitive.Parts />
+        </div>
+        <div className="aui-user-action-bar-wrapper">
+          <UserActionBar />
+        </div>
+      </div>
+
+      <BranchPicker
+        data-slot="aui_user-branch-picker"
+        className="aui-user-branch-picker"
+      />
+    </MessagePrimitive.Root>
+  );
+};
+
+const UserActionBar: FC = () => {
+  return (
+    <ActionBarPrimitive.Root
+      hideWhenRunning
+      autohide="not-last"
+      className="aui-user-action-bar-root"
+    >
+      <ActionBarPrimitive.Edit asChild>
+        <TooltipIconButton tooltip="Edit" className="aui-user-action-edit">
+          <PencilIcon />
+        </TooltipIconButton>
+      </ActionBarPrimitive.Edit>
+    </ActionBarPrimitive.Root>
+  );
+};
+
+const EditComposer: FC = () => {
+  return (
+    <MessagePrimitive.Root
+      data-slot="aui_edit-composer-wrapper"
+      className="aui-edit-composer-wrapper"
+    >
       <ComposerPrimitive.Root className="aui-edit-composer-root">
-        <ComposerPrimitive.Input className="aui-edit-composer-input" />
-  
+        <ComposerPrimitive.Input
+          className="aui-edit-composer-input"
+          autoFocus
+        />
         <div className="aui-edit-composer-footer">
           <ComposerPrimitive.Cancel asChild>
             <Button variant="ghost">Cancel</Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-            <Button>Send</Button>
+            <Button>Update</Button>
           </ComposerPrimitive.Send>
         </div>
       </ComposerPrimitive.Root>
-    );
-  };
-  
-  const AssistantMessage: FC = () => {
-    return (
-      <MessagePrimitive.Root className="aui-assistant-message-root">
-        <div className="aui-assistant-message-content">
-          <MessagePrimitive.Content components={{ Text: MarkdownText }} />
-        </div>
-  
-        <AssistantActionBar />
-  
-        <BranchPicker className="aui-assistant-branch-picker" />
-      </MessagePrimitive.Root>
-    );
-  };
-  
-  const AssistantActionBar: FC = () => {
-    return (
-      <ActionBarPrimitive.Root
-        hideWhenRunning
-        autohide="not-last"
-        autohideFloat="single-branch"
-        className="aui-assistant-action-bar-root"
-      >
-        <ActionBarPrimitive.Copy asChild>
-          <TooltipIconButton tooltip="Copy">
-            <MessagePrimitive.If copied>
-              <CheckIcon />
-            </MessagePrimitive.If>
-            <MessagePrimitive.If copied={false}>
-              <CopyIcon />
-            </MessagePrimitive.If>
-          </TooltipIconButton>
-        </ActionBarPrimitive.Copy>
-      </ActionBarPrimitive.Root>
-    );
-  };
-  
-  const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
-    className,
-    ...rest
-  }) => {
-    return (
-      <BranchPickerPrimitive.Root
-        hideWhenSingleBranch
-        className={cn("aui-branch-picker-root", className)}
-        {...rest}
-      >
-        <BranchPickerPrimitive.Previous asChild>
-          <TooltipIconButton tooltip="Previous">
-            <ChevronLeftIcon />
-          </TooltipIconButton>
-        </BranchPickerPrimitive.Previous>
-        <span className="aui-branch-picker-state">
-          <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
-        </span>
-        <BranchPickerPrimitive.Next asChild>
-          <TooltipIconButton tooltip="Next">
-            <ChevronRightIcon />
-          </TooltipIconButton>
-        </BranchPickerPrimitive.Next>
-      </BranchPickerPrimitive.Root>
-    );
-  };
-  
-  const CircleStopIcon = () => {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 16 16"
-        fill="currentColor"
-        width="16"
-        height="16"
-      >
-        <rect width="10" height="10" x="3" y="3" rx="2" />
-      </svg>
-    );
-  };
+    </MessagePrimitive.Root>
+  );
+};
 
-
-
-
-  // =============================NEW ASSISTANT UI COMPONENTS
-  
-  // import {
-  //   ComposerAddAttachment,
-  //   ComposerAttachments,
-  //   UserMessageAttachments,
-  // } from "@/components/assistant-ui/attachment";
-  // import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-  // import {
-  //   Reasoning,
-  //   ReasoningContent,
-  //   ReasoningRoot,
-  //   ReasoningText,
-  //   ReasoningTrigger,
-  // } from "@/components/assistant-ui/reasoning";
-  // import {
-  //   ToolGroupContent,
-  //   ToolGroupRoot,
-  //   ToolGroupTrigger,
-  // } from "@/components/assistant-ui/tool-group";
-  // import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
-  // import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
-  // import { Button } from "@/components/ui/button";
-  // import { cn } from "@/lib/utils";
-  // import {
-  //   ActionBarMorePrimitive,
-  //   ActionBarPrimitive,
-  //   AuiIf,
-  //   BranchPickerPrimitive,
-  //   ComposerPrimitive,
-  //   ErrorPrimitive,
-  //   getMcpAppFromToolPart,
-  //   MessagePrimitive,
-  //   SuggestionPrimitive,
-  //   ThreadPrimitive,
-  //   useAuiState,
-  // } from "@assistant-ui/react";
-  // import {
-  //   ArrowDownIcon,
-  //   ArrowUpIcon,
-  //   CheckIcon,
-  //   ChevronLeftIcon,
-  //   ChevronRightIcon,
-  //   CopyIcon,
-  //   DownloadIcon,
-  //   MoreHorizontalIcon,
-  //   PencilIcon,
-  //   RefreshCwIcon,
-  //   SquareIcon,
-  // } from "lucide-react";
-  // import type { FC } from "react";
-  
-  // export const Thread: FC = () => {
-  //   return (
-  //     <ThreadPrimitive.Root
-  //       className="aui-root aui-thread-root @container flex h-full flex-col bg-background"
-  //       style={{
-  //         ["--thread-max-width" as string]: "44rem",
-  //         ["--composer-radius" as string]: "24px",
-  //         ["--composer-padding" as string]: "10px",
-  //       }}
-  //     >
-  //       <ThreadPrimitive.Viewport
-  //         turnAnchor="top"
-  //         data-slot="aui_thread-viewport"
-  //         className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
-  //       >
-  //         <div className="mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-4 pt-4">
-  //           <AuiIf condition={(s) => s.thread.isEmpty}>
-  //             <ThreadWelcome />
-  //           </AuiIf>
-  
-  //           <div
-  //             data-slot="aui_message-group"
-  //             className="mb-10 flex flex-col gap-y-8 empty:hidden"
-  //           >
-  //             <ThreadPrimitive.Messages>
-  //               {() => <ThreadMessage />}
-  //             </ThreadPrimitive.Messages>
-  //           </div>
-  
-  //           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
-  //             <ThreadScrollToBottom />
-  //             <Composer />
-  //           </ThreadPrimitive.ViewportFooter>
-  //         </div>
-  //       </ThreadPrimitive.Viewport>
-  //     </ThreadPrimitive.Root>
-  //   );
-  // };
-  
-  // const ThreadMessage: FC = () => {
-  //   const role = useAuiState((s) => s.message.role);
-  //   const isEditing = useAuiState((s) => s.message.composer.isEditing);
-  
-  //   if (isEditing) return <EditComposer />;
-  //   if (role === "user") return <UserMessage />;
-  //   return <AssistantMessage />;
-  // };
-  
-  // const ThreadScrollToBottom: FC = () => {
-  //   return (
-  //     <ThreadPrimitive.ScrollToBottom asChild>
-  //       <TooltipIconButton
-  //         tooltip="Scroll to bottom"
-  //         variant="outline"
-  //         className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:border-border dark:bg-background dark:hover:bg-accent"
-  //       >
-  //         <ArrowDownIcon />
-  //       </TooltipIconButton>
-  //     </ThreadPrimitive.ScrollToBottom>
-  //   );
-  // };
-  
-  // const ThreadWelcome: FC = () => {
-  //   return (
-  //     <div className="aui-thread-welcome-root my-auto flex grow flex-col">
-  //       <div className="aui-thread-welcome-center flex w-full grow flex-col items-center justify-center">
-  //         <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4">
-  //           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both font-semibold text-2xl duration-200">
-  //             Hello there!
-  //           </h1>
-  //           <p className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-muted-foreground text-xl delay-75 duration-200">
-  //             How can I help you today?
-  //           </p>
-  //         </div>
-  //       </div>
-  //       <ThreadSuggestions />
-  //     </div>
-  //   );
-  // };
-  
-  // const ThreadSuggestions: FC = () => {
-  //   return (
-  //     <div className="aui-thread-welcome-suggestions grid w-full @md:grid-cols-2 gap-2 pb-4">
-  //       <ThreadPrimitive.Suggestions>
-  //         {() => <ThreadSuggestionItem />}
-  //       </ThreadPrimitive.Suggestions>
-  //     </div>
-  //   );
-  // };
-  
-  // const ThreadSuggestionItem: FC = () => {
-  //   return (
-  //     <div className="aui-thread-welcome-suggestion-display fade-in slide-in-from-bottom-2 @md:nth-[n+3]:block nth-[n+3]:hidden animate-in fill-mode-both duration-200">
-  //       <SuggestionPrimitive.Trigger send asChild>
-  //         <Button
-  //           variant="ghost"
-  //           className="aui-thread-welcome-suggestion h-auto w-full @md:flex-col flex-wrap items-start justify-start gap-1 rounded-3xl border bg-background px-4 py-3 text-start text-sm transition-colors hover:bg-muted"
-  //         >
-  //           <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1 font-medium" />
-  //           <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 text-muted-foreground empty:hidden" />
-  //         </Button>
-  //       </SuggestionPrimitive.Trigger>
-  //     </div>
-  //   );
-  // };
-  
-  // const Composer: FC = () => {
-  //   return (
-  //     <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
-  //       <ComposerPrimitive.AttachmentDropzone asChild>
-  //         <div
-  //           data-slot="aui_composer-shell"
-  //           className="flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
-  //         >
-  //           <ComposerAttachments />
-  //           <ComposerPrimitive.Input
-  //             placeholder="Send a message..."
-  //             className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
-  //             rows={1}
-  //             autoFocus
-  //             aria-label="Message input"
-  //           />
-  //           <ComposerAction />
-  //         </div>
-  //       </ComposerPrimitive.AttachmentDropzone>
-  //     </ComposerPrimitive.Root>
-  //   );
-  // };
-  
-  // const ComposerAction: FC = () => {
-  //   return (
-  //     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
-  //       <ComposerAddAttachment />
-  //       <AuiIf condition={(s) => !s.thread.isRunning}>
-  //         <ComposerPrimitive.Send asChild>
-  //           <TooltipIconButton
-  //             tooltip="Send message"
-  //             side="bottom"
-  //             type="button"
-  //             variant="default"
-  //             size="icon"
-  //             className="aui-composer-send size-8 rounded-full"
-  //             aria-label="Send message"
-  //           >
-  //             <ArrowUpIcon className="aui-composer-send-icon size-4" />
-  //           </TooltipIconButton>
-  //         </ComposerPrimitive.Send>
-  //       </AuiIf>
-  //       <AuiIf condition={(s) => s.thread.isRunning}>
-  //         <ComposerPrimitive.Cancel asChild>
-  //           <Button
-  //             type="button"
-  //             variant="default"
-  //             size="icon"
-  //             className="aui-composer-cancel size-8 rounded-full"
-  //             aria-label="Stop generating"
-  //           >
-  //             <SquareIcon className="aui-composer-cancel-icon size-3 fill-current" />
-  //           </Button>
-  //         </ComposerPrimitive.Cancel>
-  //       </AuiIf>
-  //     </div>
-  //   );
-  // };
-  
-  // const MessageError: FC = () => {
-  //   return (
-  //     <MessagePrimitive.Error>
-  //       <ErrorPrimitive.Root className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
-  //         <ErrorPrimitive.Message className="aui-message-error-message line-clamp-2" />
-  //       </ErrorPrimitive.Root>
-  //     </MessagePrimitive.Error>
-  //   );
-  // };
-  
-  // const AssistantMessage: FC = () => {
-  //   // reserves space for action bar and compensates with `-mb` for consistent msg spacing
-  //   // keeps hovered action bar from shifting layout (autohide doesn't support absolute positioning well)
-  //   // for pt-[n] use -mb-[n + 6] & min-h-[n + 6] to preserve compensation
-  //   const ACTION_BAR_PT = "pt-1.5";
-  //   const ACTION_BAR_HEIGHT = `-mb-7.5 min-h-7.5 ${ACTION_BAR_PT}`;
-  
-  //   return (
-  //     <MessagePrimitive.Root
-  //       data-slot="aui_assistant-message-root"
-  //       data-role="assistant"
-  //       className="fade-in slide-in-from-bottom-1 relative animate-in duration-150 [contain-intrinsic-size:auto_300px] [content-visibility:auto]"
-  //     >
-  //       <div
-  //         data-slot="aui_assistant-message-content"
-  //         className="wrap-break-word px-2 text-foreground leading-relaxed"
-  //       >
-  //         <MessagePrimitive.GroupedParts
-  //           groupBy={(part) => {
-  //             if (part.type === "reasoning")
-  //               return ["group-chainOfThought", "group-reasoning"];
-  //             if (part.type === "tool-call") {
-  //               if (getMcpAppFromToolPart(part)) return null;
-  //               return ["group-chainOfThought", "group-tool"];
-  //             }
-  //             return null;
-  //           }}
-  //         >
-  //           {({ part, children }) => {
-  //             switch (part.type) {
-  //               case "group-chainOfThought":
-  //                 return <div data-slot="aui_chain-of-thought">{children}</div>;
-  //               case "group-reasoning": {
-  //                 const running = part.status.type === "running";
-  //                 return (
-  //                   <ReasoningRoot defaultOpen={running}>
-  //                     <ReasoningTrigger active={running} />
-  //                     <ReasoningContent aria-busy={running}>
-  //                       <ReasoningText>{children}</ReasoningText>
-  //                     </ReasoningContent>
-  //                   </ReasoningRoot>
-  //                 );
-  //               }
-  //               case "group-tool":
-  //                 return (
-  //                   <ToolGroupRoot>
-  //                     <ToolGroupTrigger
-  //                       count={part.indices.length}
-  //                       active={part.status.type === "running"}
-  //                     />
-  //                     <ToolGroupContent>{children}</ToolGroupContent>
-  //                   </ToolGroupRoot>
-  //                 );
-  //               case "text":
-  //                 return <MarkdownText />;
-  //               case "reasoning":
-  //                 return <Reasoning {...part} />;
-  //               case "tool-call":
-  //                 return part.toolUI ?? <ToolFallback {...part} />;
-  //               default:
-  //                 return null;
-  //             }
-  //           }}
-  //         </MessagePrimitive.GroupedParts>
-  //         <MessageError />
-  //       </div>
-  
-  //       <div
-  //         data-slot="aui_assistant-message-footer"
-  //         className={cn("ms-2 flex items-center", ACTION_BAR_HEIGHT)}
-  //       >
-  //         <BranchPicker />
-  //         <AssistantActionBar />
-  //       </div>
-  //     </MessagePrimitive.Root>
-  //   );
-  // };
-  
-  // const AssistantActionBar: FC = () => {
-  //   return (
-  //     <ActionBarPrimitive.Root
-  //       hideWhenRunning
-  //       autohide="not-last"
-  //       className="aui-assistant-action-bar-root col-start-3 row-start-2 -ms-1 flex gap-1 text-muted-foreground"
-  //     >
-  //       <ActionBarPrimitive.Copy asChild>
-  //         <TooltipIconButton tooltip="Copy">
-  //           <AuiIf condition={(s) => s.message.isCopied}>
-  //             <CheckIcon />
-  //           </AuiIf>
-  //           <AuiIf condition={(s) => !s.message.isCopied}>
-  //             <CopyIcon />
-  //           </AuiIf>
-  //         </TooltipIconButton>
-  //       </ActionBarPrimitive.Copy>
-  //       <ActionBarPrimitive.Reload asChild>
-  //         <TooltipIconButton tooltip="Refresh">
-  //           <RefreshCwIcon />
-  //         </TooltipIconButton>
-  //       </ActionBarPrimitive.Reload>
-  //       <ActionBarMorePrimitive.Root>
-  //         <ActionBarMorePrimitive.Trigger asChild>
-  //           <TooltipIconButton
-  //             tooltip="More"
-  //             className="data-[state=open]:bg-accent"
-  //           >
-  //             <MoreHorizontalIcon />
-  //           </TooltipIconButton>
-  //         </ActionBarMorePrimitive.Trigger>
-  //         <ActionBarMorePrimitive.Content
-  //           side="bottom"
-  //           align="start"
-  //           className="aui-action-bar-more-content z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-  //         >
-  //           <ActionBarPrimitive.ExportMarkdown asChild>
-  //             <ActionBarMorePrimitive.Item className="aui-action-bar-more-item flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-  //               <DownloadIcon className="size-4" />
-  //               Export as Markdown
-  //             </ActionBarMorePrimitive.Item>
-  //           </ActionBarPrimitive.ExportMarkdown>
-  //         </ActionBarMorePrimitive.Content>
-  //       </ActionBarMorePrimitive.Root>
-  //     </ActionBarPrimitive.Root>
-  //   );
-  // };
-  
-  // const UserMessage: FC = () => {
-  //   return (
-  //     <MessagePrimitive.Root
-  //       data-slot="aui_user-message-root"
-  //       className="fade-in slide-in-from-bottom-1 grid animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-2 duration-150 [contain-intrinsic-size:auto_60px] [content-visibility:auto] [&:where(>*)]:col-start-2"
-  //       data-role="user"
-  //     >
-  //       <UserMessageAttachments />
-  
-  //       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-  //         <div className="aui-user-message-content wrap-break-word peer rounded-2xl bg-muted px-4 py-2.5 text-foreground empty:hidden">
-  //           <MessagePrimitive.Parts />
-  //         </div>
-  //         <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">
-  //           <UserActionBar />
-  //         </div>
-  //       </div>
-  
-  //       <BranchPicker
-  //         data-slot="aui_user-branch-picker"
-  //         className="col-span-full col-start-1 row-start-3 -me-1 justify-end"
-  //       />
-  //     </MessagePrimitive.Root>
-  //   );
-  // };
-  
-  // const UserActionBar: FC = () => {
-  //   return (
-  //     <ActionBarPrimitive.Root
-  //       hideWhenRunning
-  //       autohide="not-last"
-  //       className="aui-user-action-bar-root flex flex-col items-end"
-  //     >
-  //       <ActionBarPrimitive.Edit asChild>
-  //         <TooltipIconButton tooltip="Edit" className="aui-user-action-edit p-4">
-  //           <PencilIcon />
-  //         </TooltipIconButton>
-  //       </ActionBarPrimitive.Edit>
-  //     </ActionBarPrimitive.Root>
-  //   );
-  // };
-  
-  // const EditComposer: FC = () => {
-  //   return (
-  //     <MessagePrimitive.Root
-  //       data-slot="aui_edit-composer-wrapper"
-  //       className="flex flex-col px-2"
-  //     >
-  //       <ComposerPrimitive.Root className="aui-edit-composer-root ms-auto flex w-full max-w-[85%] flex-col rounded-2xl bg-muted">
-  //         <ComposerPrimitive.Input
-  //           className="aui-edit-composer-input min-h-14 w-full resize-none bg-transparent p-4 text-foreground text-sm outline-none"
-  //           autoFocus
-  //         />
-  //         <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center gap-2 self-end">
-  //           <ComposerPrimitive.Cancel asChild>
-  //             <Button variant="ghost" size="sm">
-  //               Cancel
-  //             </Button>
-  //           </ComposerPrimitive.Cancel>
-  //           <ComposerPrimitive.Send asChild>
-  //             <Button size="sm">Update</Button>
-  //           </ComposerPrimitive.Send>
-  //         </div>
-  //       </ComposerPrimitive.Root>
-  //     </MessagePrimitive.Root>
-  //   );
-  // };
-  
-  // const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
-  //   className,
-  //   ...rest
-  // }) => {
-  //   return (
-  //     <BranchPickerPrimitive.Root
-  //       hideWhenSingleBranch
-  //       className={cn(
-  //         "aui-branch-picker-root -ms-2 me-2 inline-flex items-center text-muted-foreground text-xs",
-  //         className,
-  //       )}
-  //       {...rest}
-  //     >
-  //       <BranchPickerPrimitive.Previous asChild>
-  //         <TooltipIconButton tooltip="Previous">
-  //           <ChevronLeftIcon />
-  //         </TooltipIconButton>
-  //       </BranchPickerPrimitive.Previous>
-  //       <span className="aui-branch-picker-state font-medium">
-  //         <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
-  //       </span>
-  //       <BranchPickerPrimitive.Next asChild>
-  //         <TooltipIconButton tooltip="Next">
-  //           <ChevronRightIcon />
-  //         </TooltipIconButton>
-  //       </BranchPickerPrimitive.Next>
-  //     </BranchPickerPrimitive.Root>
-  //   );
-  // };
-
-
-  // ============================ENDS
-  
+const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
+  className,
+  ...rest
+}) => {
+  return (
+    <BranchPickerPrimitive.Root
+      hideWhenSingleBranch
+      className={className ? `aui-branch-picker-root ${className}` : "aui-branch-picker-root"}
+      {...rest}
+    >
+      <BranchPickerPrimitive.Previous asChild>
+        <TooltipIconButton tooltip="Previous">
+          <ChevronLeftIcon />
+        </TooltipIconButton>
+      </BranchPickerPrimitive.Previous>
+      <span className="aui-branch-picker-state">
+        <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
+      </span>
+      <BranchPickerPrimitive.Next asChild>
+        <TooltipIconButton tooltip="Next">
+          <ChevronRightIcon />
+        </TooltipIconButton>
+      </BranchPickerPrimitive.Next>
+    </BranchPickerPrimitive.Root>
+  );
+};
