@@ -3,7 +3,7 @@ import type {
     PendingAttachment,
     CompleteAttachment,
     Attachment,
-    ThreadUserContentPart
+    ThreadUserMessagePart
   } from "@assistant-ui/react";
 import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
   
@@ -38,7 +38,7 @@ import { messageInstance } from "lowcoder-design/src/components/GlobalInstances"
     async send(attachment: PendingAttachment): Promise<CompleteAttachment> {
       const isImage = attachment.contentType?.startsWith("image/");
 
-      let content: ThreadUserContentPart[];
+      let content: ThreadUserMessagePart[];
 
       try {
         content = isImage

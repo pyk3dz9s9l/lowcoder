@@ -1,4 +1,4 @@
-import { CompleteAttachment } from "@assistant-ui/react";
+import type { CompleteAttachment } from "@assistant-ui/react";
 
 export interface ChatMessage {
     id: string;

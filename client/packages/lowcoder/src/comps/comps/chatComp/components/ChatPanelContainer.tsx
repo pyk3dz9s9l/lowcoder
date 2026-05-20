@@ -4,11 +4,14 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
-  AppendMessage,
   AssistantRuntimeProvider,
+} from "@assistant-ui/react";
+import type {
+  AppendMessage,
+  ExternalStoreThreadData,
   ExternalStoreThreadListAdapter,
-  TextContentPart,
-  ThreadUserContentPart
+  TextMessagePart,
+  ThreadUserMessagePart,
 } from "@assistant-ui/react";
 import { Thread } from "components/assistant-ui/thread";
 import { ThreadList } from "components/assistant-ui/thread-list";
@@ -212,7 +215,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
   };
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
-    const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
+    const content: ThreadUserMessagePart[] = [{ type: "text", text: message.text }];
     
     return {
       role: message.role,
@@ -222,12 +225,15 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     };
   };
 
-  const onNew = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
+  const getTextFromAppendMessage = (message: AppendMessage) => {
+    const textPart = message.content.find(
+      (part): part is TextMessagePart => part.type === "text"
     );
-  
-    const text = textPart?.text?.trim() ?? "";
+    return textPart?.text?.trim() ?? "";
+  };
+
+  const onNew = async (message: AppendMessage) => {
+    const text = getTextFromAppendMessage(message);
   
     if (!text) {
       throw new Error("Cannot send an empty message");
@@ -276,11 +282,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
   };
 
   const onEdit = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
   
     if (!text) {
       throw new Error("Cannot send an empty message");
@@ -331,10 +333,22 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     }
   };
 
+  const toExternalThreadData = <TState extends "regular" | "archived">(
+    thread: RegularThreadData | ArchivedThreadData,
+  ): ExternalStoreThreadData<TState> => ({
+    id: thread.threadId,
+    status: thread.status as TState,
+    title: thread.title,
+  });
+
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
-    threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
-    archivedThreads: state.threadList.filter((t): t is ArchivedThreadData => t.status === "archived"),
+    threads: state.threadList
+      .filter((t): t is RegularThreadData => t.status === "regular")
+      .map((thread) => toExternalThreadData<"regular">(thread)),
+    archivedThreads: state.threadList
+      .filter((t): t is ArchivedThreadData => t.status === "archived")
+      .map((thread) => toExternalThreadData<"archived">(thread)),
 
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
@@ -360,7 +374,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => actions.updateMessages(state.currentThreadId, messages),
+    setMessages: (messages) => actions.updateMessages(state.currentThreadId, [...messages]),
     convertMessage,
     isRunning,
     onNew,

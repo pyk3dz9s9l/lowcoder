@@ -4,12 +4,15 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
-  AppendMessage,
   AssistantRuntimeProvider,
-  ExternalStoreThreadListAdapter,
+} from "@assistant-ui/react";
+import type {
+  AppendMessage,
   CompleteAttachment,
-  TextContentPart,
-  ThreadUserContentPart
+  ExternalStoreThreadData,
+  ExternalStoreThreadListAdapter,
+  TextMessagePart,
+  ThreadUserMessagePart,
 } from "@assistant-ui/react";
 import { Thread } from "components/assistant-ui/thread";
 import { ThreadList } from "components/assistant-ui/thread-list";
@@ -53,7 +56,7 @@ function ChatContainerView(props: ChatCoreProps) {
   }, []);
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => {
-    const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
+    const content: ThreadUserMessagePart[] = [{ type: "text", text: message.text }];
     
     if (message.attachments && message.attachments.length > 0) {
       for (const attachment of message.attachments) {
@@ -72,12 +75,15 @@ function ChatContainerView(props: ChatCoreProps) {
     };
   };
 
-  const onNew = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
+  const getTextFromAppendMessage = (message: AppendMessage) => {
+    const textPart = message.content.find(
+      (part): part is TextMessagePart => part.type === "text"
     );
-  
-    const text = textPart?.text?.trim() ?? "";
+    return textPart?.text?.trim() ?? "";
+  };
+
+  const onNew = async (message: AppendMessage) => {
+    const text = getTextFromAppendMessage(message);
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
@@ -122,11 +128,7 @@ function ChatContainerView(props: ChatCoreProps) {
   };
 
   const onEdit = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
@@ -176,10 +178,22 @@ function ChatContainerView(props: ChatCoreProps) {
     }
   };
 
+  const toExternalThreadData = <TState extends "regular" | "archived">(
+    thread: RegularThreadData | ArchivedThreadData,
+  ): ExternalStoreThreadData<TState> => ({
+    id: thread.threadId,
+    status: thread.status as TState,
+    title: thread.title,
+  });
+
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
-    threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
-    archivedThreads: state.threadList.filter((t): t is ArchivedThreadData => t.status === "archived"),
+    threads: state.threadList
+      .filter((t): t is RegularThreadData => t.status === "regular")
+      .map((thread) => toExternalThreadData<"regular">(thread)),
+    archivedThreads: state.threadList
+      .filter((t): t is ArchivedThreadData => t.status === "archived")
+      .map((thread) => toExternalThreadData<"archived">(thread)),
 
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
@@ -209,7 +223,7 @@ function ChatContainerView(props: ChatCoreProps) {
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => actions.updateMessages(state.currentThreadId, messages),
+    setMessages: (messages) => actions.updateMessages(state.currentThreadId, [...messages]),
     convertMessage,
     isRunning,
     onNew,
