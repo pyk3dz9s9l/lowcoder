@@ -2529,9 +2529,7 @@ export const ChatMessagesStyle = [
   {
     name: "userMessageBackground",
     label: trans("style.userMessageBackground"),
-    depTheme: "primary",
-    depType: DEP_TYPE.SELF,
-    transformer: toSelf,
+    color: "#e5e7eb",
   },
   {
     name: "userMessageText",
@@ -2556,22 +2554,9 @@ export const ChatMessagesStyle = [
 
 export const ChatInputStyle = [
   {
-    name: "inputBackground",
-    label: trans("style.inputBackground"),
-    color: "#ffffff",
-  },
-  {
     name: "inputText",
     label: trans("style.inputText"),
-    depName: "inputBackground",
-    depType: DEP_TYPE.CONTRAST_TEXT,
-    transformer: contrastText,
-  },
-  {
-    name: "inputBorder",
-    label: trans("style.inputBorder"),
-    depName: "inputBackground",
-    transformer: backgroundToBorder,
+    color: "#1f2937",
   },
 ] as const;
 

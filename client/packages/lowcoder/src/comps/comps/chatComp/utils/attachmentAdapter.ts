@@ -10,7 +10,7 @@ import { messageInstance } from "lowcoder-design/src/components/GlobalInstances"
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   export const universalAttachmentAdapter: AttachmentAdapter = {
-    accept: "*/*",
+    accept: "*",
   
     async add({ file }): Promise<PendingAttachment> {
       if (file.size > MAX_FILE_SIZE) {

@@ -4,21 +4,26 @@ import {
   ThreadListItemMorePrimitive,
   ThreadListItemPrimitive,
   ThreadListPrimitive,
+  useAui,
+  useAuiState,
 } from "@assistant-ui/react";
 import {
-  ArchiveIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
   TrashIcon,
 } from "lucide-react";
 import { trans } from "i18n";
-import type { FC } from "react";
+import type { FC, KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   SkeletonBar,
   SkeletonRow,
   SkeletonStack,
   StyledMenuContent,
   StyledMenuItem,
+  StyledThreadRenameForm,
+  StyledThreadRenameInput,
   StyledNewThreadButton,
   StyledThreadListItem,
   StyledThreadListRoot,
@@ -66,19 +71,107 @@ const ThreadListNew: FC = () => {
 };
 
 const ThreadListItem: FC = () => {
+  const aui = useAui();
+  const title =
+    useAuiState((s) => s.threadListItem.title) || trans("chat.newChatTitle");
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isSavingRef = useRef(false);
+  const skipNextBlurSaveRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditing) setDraftTitle(title);
+  }, [isEditing, title]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [isEditing]);
+
+  const startEditing = useCallback(() => {
+    skipNextBlurSaveRef.current = false;
+    setDraftTitle(title);
+    setIsEditing(true);
+  }, [title]);
+
+  const cancelEditing = useCallback(() => {
+    skipNextBlurSaveRef.current = true;
+    setDraftTitle(title);
+    setIsEditing(false);
+  }, [title]);
+
+  const saveTitle = useCallback(async () => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+
+    const nextTitle = draftTitle.trim();
+
+    try {
+      if (nextTitle && nextTitle !== title) {
+        await aui.threadListItem().rename(nextTitle);
+      }
+      setIsEditing(false);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [aui, draftTitle, title]);
+
+  const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void saveTitle();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEditing();
+    }
+  };
+
   return (
     <StyledThreadListItem className="aui-thread-list-item">
-      <StyledThreadListTrigger className="aui-thread-list-item-trigger">
-        <ThreadTitle className="aui-thread-list-item-title">
-          <ThreadListItemPrimitive.Title fallback={trans("chat.newChatTitle")} />
-        </ThreadTitle>
-      </StyledThreadListTrigger>
-      <ThreadListItemMore />
+      {isEditing ? (
+        <StyledThreadRenameForm
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveTitle();
+          }}
+        >
+          <StyledThreadRenameInput
+            ref={inputRef}
+            aria-label={trans("rename")}
+            value={draftTitle}
+            onBlur={() => {
+              if (skipNextBlurSaveRef.current) {
+                skipNextBlurSaveRef.current = false;
+                return;
+              }
+
+              void saveTitle();
+            }}
+            onChange={(event) => setDraftTitle(event.target.value)}
+            onKeyDown={handleRenameKeyDown}
+          />
+        </StyledThreadRenameForm>
+      ) : (
+        <StyledThreadListTrigger className="aui-thread-list-item-trigger">
+          <ThreadTitle className="aui-thread-list-item-title">
+            <ThreadListItemPrimitive.Title
+              fallback={trans("chat.newChatTitle")}
+            />
+          </ThreadTitle>
+        </StyledThreadListTrigger>
+      )}
+      <ThreadListItemMore onRename={startEditing} />
     </StyledThreadListItem>
   );
 };
 
-const ThreadListItemMore: FC = () => {
+const ThreadListItemMore: FC<{ onRename: () => void }> = ({ onRename }) => {
   return (
     <ThreadListItemMorePrimitive.Root>
       <ThreadListItemMorePrimitive.Trigger asChild>
@@ -92,12 +185,10 @@ const ThreadListItemMore: FC = () => {
         </Button>
       </ThreadListItemMorePrimitive.Trigger>
       <StyledMenuContent side="bottom" align="start">
-        <ThreadListItemPrimitive.Archive asChild>
-          <StyledMenuItem>
-            <ArchiveIcon />
-            Archive
-          </StyledMenuItem>
-        </ThreadListItemPrimitive.Archive>
+        <StyledMenuItem onSelect={onRename}>
+          <PencilIcon />
+          {trans("rename")}
+        </StyledMenuItem>
         <ThreadListItemPrimitive.Delete asChild>
           <StyledMenuItem $danger>
             <TrashIcon />

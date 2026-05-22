@@ -73,8 +73,20 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* User Message Styles */
   .aui-user-message-content {
-    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
-    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
+    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#e5e7eb"};
+    color: ${(props) => props.$messagesStyle?.userMessageText || "#111827"};
+  }
+
+  .aui-user-message-content:empty {
+    display: none;
+  }
+
+  .aui-user-message-content img {
+    display: block;
+    height: auto;
+    max-height: 320px;
+    max-width: 100%;
+    object-fit: contain;
   }
 
   /* Assistant Message Styles */
@@ -84,11 +96,9 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   }
 
   /* Input Field Styles */
-  form.aui-composer-root {
-    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
-    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
-    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
-  }
+
+
+ 
 
   /* Send Button Styles */
   .aui-composer-send {

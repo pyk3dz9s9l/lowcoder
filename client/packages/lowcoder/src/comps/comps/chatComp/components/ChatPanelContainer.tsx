@@ -10,21 +10,28 @@ import type {
   AppendMessage,
   ExternalStoreThreadData,
   ExternalStoreThreadListAdapter,
-  TextMessagePart,
-  ThreadUserMessagePart,
 } from "@assistant-ui/react";
 import { Thread } from "components/assistant-ui/thread";
 import { ThreadList } from "components/assistant-ui/thread-list";
 import { 
   ChatProvider,
   useChatContext, 
-  RegularThreadData, 
-  ArchivedThreadData 
+  RegularThreadData,
 } from "./context/ChatContext";
 import { AIAssistantMessageHandler, ChatMessage } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
+import {
+  createAssistantErrorMessage,
+  createUserMessage,
+  generateThreadTitle,
+  getAutomatorActionsFromMessage,
+  getTextFromAppendMessage,
+  getTextFromThreadContent,
+  shouldGenerateThreadTitle,
+  toChatMessage,
+} from "../utils/assistantMessages";
 
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
 import { ActionConfig, ActionExecuteParams } from "../../preLoadComp/types";
@@ -163,8 +170,6 @@ const StyledChatContainer = styled.div<{
 // CHAT PANEL CONTAINER - DIRECT RENDERING
 // ============================================================================
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
 export interface ChatPanelContainerProps {
   storage: any;
   messageHandler: AIAssistantMessageHandler;
@@ -214,22 +219,28 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     console.log(`[Automator] done: ${executed}/${actions.length} succeeded`);
   };
 
-  const convertMessage = (message: ChatMessage): ThreadMessageLike => {
-    const content: ThreadUserMessagePart[] = [{ type: "text", text: message.text }];
-    
-    return {
-      role: message.role,
-      content,
-      id: message.id,
-      createdAt: new Date(message.timestamp),
-    };
-  };
+  const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
 
-  const getTextFromAppendMessage = (message: AppendMessage) => {
-    const textPart = message.content.find(
-      (part): part is TextMessagePart => part.type === "text"
+  const maybeGenerateThreadTitle = async (userMessage: ChatMessage) => {
+    const currentThread = state.threadList.find(
+      (thread) => thread.threadId === state.currentThreadId
     );
-    return textPart?.text?.trim() ?? "";
+    const defaultTitle = trans("chat.newChatTitle");
+
+    if (
+      !shouldGenerateThreadTitle(
+        currentThread?.title,
+        defaultTitle,
+        currentMessages.length
+      )
+    ) {
+      return;
+    }
+
+    const title = generateThreadTitle(userMessage);
+    if (!title || title === currentThread?.title) return;
+
+    await actions.updateThread(state.currentThreadId, { title });
   };
 
   const onNew = async (message: AppendMessage) => {
@@ -239,12 +250,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       throw new Error("Cannot send an empty message");
     }
   
-    const userMessage: ChatMessage = {
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-    };
+    const userMessage = createUserMessage(text);
   
     const conversationHistory = [...currentMessages, userMessage];
   
@@ -252,30 +258,28 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(
+      const assistantMessage = await messageHandler.sendMessage(
         userMessage,
         state.currentThreadId,
         conversationHistory
       );
-      onMessageUpdate?.(userMessage.text);
+      onMessageUpdate?.(getTextFromThreadContent(userMessage.content));
 
-      if (response?.actions?.length) {
-        await performAction(response.actions);
+      const automatorActions = getAutomatorActionsFromMessage(assistantMessage);
+      if (automatorActions.length) {
+        await performAction(automatorActions);
       }
 
-      await actions.addMessage(state.currentThreadId, {
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      });
+      await actions.addMessage(
+        state.currentThreadId,
+        assistantMessage
+      );
+      await maybeGenerateThreadTitle(userMessage);
     } catch (error) {
-      await actions.addMessage(state.currentThreadId, {
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      await actions.addMessage(
+        state.currentThreadId,
+        createAssistantErrorMessage(trans("chat.errorUnknown"))
+      );
     } finally {
       setIsRunning(false);
     }
@@ -291,53 +295,39 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     const index = currentMessages.findIndex((m) => m.id === message.parentId) + 1;
     const newMessages = [...currentMessages.slice(0, index)];
   
-    newMessages.push({
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-    });
+    newMessages.push(createUserMessage(text));
   
     await actions.updateMessages(state.currentThreadId, newMessages);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(
+      const assistantMessage = await messageHandler.sendMessage(
         newMessages[newMessages.length - 1],
         state.currentThreadId,
         newMessages
       );
       onMessageUpdate?.(text);
 
-      if (response?.actions?.length) {
-        await performAction(response.actions);
+      const automatorActions = getAutomatorActionsFromMessage(assistantMessage);
+      if (automatorActions.length) {
+        await performAction(automatorActions);
       }
 
-      newMessages.push({
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      });
+      newMessages.push(assistantMessage);
       await actions.updateMessages(state.currentThreadId, newMessages);
     } catch (error) {
-      newMessages.push({
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      newMessages.push(createAssistantErrorMessage(trans("chat.errorUnknown")));
       await actions.updateMessages(state.currentThreadId, newMessages);
     } finally {
       setIsRunning(false);
     }
   };
 
-  const toExternalThreadData = <TState extends "regular" | "archived">(
-    thread: RegularThreadData | ArchivedThreadData,
-  ): ExternalStoreThreadData<TState> => ({
+  const toExternalThreadData = (
+    thread: RegularThreadData,
+  ): ExternalStoreThreadData<"regular"> => ({
     id: thread.threadId,
-    status: thread.status as TState,
+    status: "regular",
     title: thread.title,
   });
 
@@ -345,10 +335,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     threadId: state.currentThreadId,
     threads: state.threadList
       .filter((t): t is RegularThreadData => t.status === "regular")
-      .map((thread) => toExternalThreadData<"regular">(thread)),
-    archivedThreads: state.threadList
-      .filter((t): t is ArchivedThreadData => t.status === "archived")
-      .map((thread) => toExternalThreadData<"archived">(thread)),
+      .map(toExternalThreadData),
 
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
@@ -363,10 +350,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       await actions.updateThread(threadId, { title: newTitle });
     },
 
-    onArchive: async (threadId) => {
-      await actions.updateThread(threadId, { status: "archived" });
-    },
-
     onDelete: async (threadId) => {
       await actions.deleteThread(threadId);
     },
@@ -374,7 +357,11 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => actions.updateMessages(state.currentThreadId, [...messages]),
+    setMessages: (messages) =>
+      actions.updateMessages(
+        state.currentThreadId,
+        messages.map(toChatMessage)
+      ),
     convertMessage,
     isRunning,
     onNew,

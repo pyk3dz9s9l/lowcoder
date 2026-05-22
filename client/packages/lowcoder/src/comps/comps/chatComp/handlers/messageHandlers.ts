@@ -1,57 +1,13 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/handlers/messageHandlers.ts
 
-import { AIAssistantMessageHandler, MessageHandler, MessageResponse, QueryHandlerConfig, ChatMessage } from "../types/chatTypes";
+import { AIAssistantMessageHandler, MessageHandler, QueryHandlerConfig, ChatMessage } from "../types/chatTypes";
 import { routeByNameAction, executeQueryAction } from "lowcoder-core";
 import { getPromiseAfterDispatch } from "util/promiseUtils";
 import { buildAutomatorPayload } from "../../preLoadComp/actions/automator";
-
-interface AutomatorAction {
-  action: string;
-  component?: string;
-  component_name?: string;
-  parent_component_name?: string;
-  layout?: { x?: number; y?: number; w?: number; h?: number };
-  action_parameters?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-
-function normalizeAutomatorQueryResponse(result: any): MessageResponse {
-  const raw = result;
-
-  if (!raw || typeof raw !== "object") {
-    throw new Error("Automator query must return an object with content and actions");
-  }
-
-  if (typeof raw.content !== "string") {
-    throw new Error("Automator query response must include string content");
-  }
-
-  const actions: AutomatorAction[] = [];
-  let invalidActionCount = 0;
-
-  if (!Array.isArray(raw.actions)) {
-    throw new Error("Automator query response must include an actions array");
-  }
-
-  for (const action of raw.actions) {
-    if (action && typeof action === "object" && typeof action.action === "string") {
-      actions.push(action as AutomatorAction);
-    } else {
-      invalidActionCount++;
-    }
-  }
-
-  return {
-    content: raw.content,
-    actions,
-    metadata: raw.metadata,
-    automator: {
-      isStructured: true,
-      explanation: raw.content,
-      invalidActionCount,
-    },
-  };
-}
+import {
+  getTextFromThreadContent,
+  toAssistantMessage,
+} from "../utils/assistantMessages";
 
 function buildAutomatorQueryArgs(
   message: ChatMessage,
@@ -65,7 +21,7 @@ function buildAutomatorQueryArgs(
       value: {
         ...payload,
         message,
-        prompt: message.text,
+        prompt: getTextFromThreadContent(message.content),
         sessionId,
         conversationHistory,
         messagesWithoutSystem,
@@ -81,7 +37,7 @@ function buildAutomatorQueryArgs(
 export class QueryHandler implements MessageHandler {
   constructor(private config: QueryHandlerConfig) {}
 
-  async sendMessage(message: ChatMessage): Promise<MessageResponse> {
+  async sendMessage(message: ChatMessage): Promise<ChatMessage> {
     const { chatQuery, dispatch} = this.config;
 
     if (!chatQuery) {
@@ -102,13 +58,13 @@ export class QueryHandler implements MessageHandler {
             // Pass the full message object so attachments are available in queries
             args: { 
               message: { value: message },
-              prompt: { value: message.text },
+              prompt: { value: getTextFromThreadContent(message.content) },
             },
           })
         )
       );
       console.log("Query result:", result);
-      return result.message
+      return toAssistantMessage(result);
     } catch (e: any) {
       throw new Error(e?.message || "Query execution failed");
     }
@@ -122,7 +78,7 @@ export class QueryHandler implements MessageHandler {
 //   1. snapshot the current editor state,
 //   2. build the system prompt, tools, catalogs, and live context,
 //   3. pass that payload to the selected user query,
-//   4. accept the query's normalized `{ content, actions }` result.
+//   4. accept an Assistant UI `ThreadMessageLike` assistant message.
 //
 // Provider-specific parsing belongs in the selected query/backend bridge.
 // ============================================================================
@@ -134,14 +90,14 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
     message: ChatMessage,
     sessionId: string | undefined,
     conversationHistory: ChatMessage[]
-  ): Promise<MessageResponse> {
+  ): Promise<ChatMessage> {
     const { chatQuery, dispatch, getEditorState } = this.config;
     const history = conversationHistory;
 
     // Conversation history in the OpenAI {role, content} shape.
     const rawHistory = history.map((msg) => ({
       role: msg.role,
-      content: msg.text,
+      content: getTextFromThreadContent(msg.content),
     }));
 
     if (!chatQuery) {
@@ -185,14 +141,7 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
         )
       );
 
-      const response = normalizeAutomatorQueryResponse(result);
-
-      console.log("[Automator] parsed", {
-        actions: response.actions?.length ?? 0,
-        invalid: response.automator?.invalidActionCount ?? 0,
-      });
-
-      return response;
+      return toAssistantMessage(result);
     } catch (e: any) {
       throw new Error(e?.message || "AI assistant query execution failed");
     }

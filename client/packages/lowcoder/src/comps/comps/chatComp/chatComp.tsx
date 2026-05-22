@@ -17,6 +17,7 @@ import { QueryHandler } from "./handlers/messageHandlers";
 import { useMemo, useRef } from "react";  
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
+import { getTextFromThreadContent } from "./utils/assistantMessages";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { styleControl } from "comps/controls/styleControl";
@@ -98,8 +99,8 @@ export function addSystemPromptToHistory(
   const formattedHistory = conversationHistory.map(msg => {
     const baseMessage = {
       role: msg.role,
-      content: msg.text,
-      timestamp: msg.timestamp
+      content: getTextFromThreadContent(msg.content),
+      timestamp: msg.createdAt.getTime()
     };
 
     // Include attachment metadata if present (for API calls and external integrations)

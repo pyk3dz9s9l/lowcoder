@@ -95,6 +95,32 @@ export const ThreadTitle = styled.span`
   white-space: nowrap;
 `;
 
+export const StyledThreadRenameForm = styled.form`
+  align-items: center;
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  padding: 0 6px;
+`;
+
+export const StyledThreadRenameInput = styled.input`
+  background: #ffffff;
+  border: 1px solid #1677ff;
+  border-radius: 6px;
+  color: #1f2937;
+  flex: 1;
+  font-size: 14px;
+  height: 28px;
+  min-width: 0;
+  outline: none;
+  padding: 0 8px;
+
+  &:focus {
+    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.14);
+  }
+`;
+
 export const StyledMenuContent = styled(ThreadListItemMorePrimitive.Content)`
   background: #ffffff;
   border: 1px solid #e5e7eb;

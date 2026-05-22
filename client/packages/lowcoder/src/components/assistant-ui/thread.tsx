@@ -14,6 +14,7 @@ import { TooltipIconButton } from "./tooltip-icon-button";
 interface ThreadProps {
   placeholder?: string;
   showAttachments?: boolean;
+  autoHeight?: boolean;
 }
 
 const SimpleANTDLoader = () => {
@@ -34,6 +35,7 @@ const SimpleANTDLoader = () => {
 export const Thread: FC<ThreadProps> = ({
   placeholder = trans("chat.composerPlaceholder"),
   showAttachments = true,
+  autoHeight = false,
 }) => {
   return (
     <StyledThreadRoot
@@ -45,7 +47,7 @@ export const Thread: FC<ThreadProps> = ({
       }}
     >
       <ThreadPrimitive.Viewport
-        turnAnchor="top"
+        turnAnchor={autoHeight ? "bottom" : "top"}
         data-slot="aui_thread-viewport"
         className="aui-thread-viewport"
       >

@@ -1,12 +1,17 @@
-import type { CompleteAttachment } from "@assistant-ui/react";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 
-export interface ChatMessage {
+export type ChatMessageContent = Exclude<ThreadMessageLike["content"], string>;
+
+export type ChatMessage = Omit<
+  ThreadMessageLike,
+  "id" | "role" | "content" | "createdAt" | "attachments"
+> & {
     id: string;
     role: "user" | "assistant";
-    text: string;
-    timestamp: number;
-    attachments?: CompleteAttachment[];
-  }
+    content: ChatMessageContent;
+    createdAt: Date;
+    attachments?: ThreadMessageLike["attachments"];
+  };
   
   export interface ChatThread {
     threadId: string;
@@ -40,28 +45,12 @@ export interface ChatMessage {
   // ============================================================================
   
   export interface MessageHandler {
-    sendMessage(message: ChatMessage, sessionId?: string): Promise<MessageResponse>;
-    // Future: sendMessageStream?(message: ChatMessage): AsyncGenerator<MessageResponse>;
+    sendMessage(message: ChatMessage, sessionId?: string): Promise<ChatMessage>;
+    // Future: sendMessageStream?(message: ChatMessage): AsyncGenerator<ChatMessage>;
   }
 
   export interface AIAssistantMessageHandler {
-    sendMessage(message: ChatMessage, sessionId: string | undefined, conversationHistory: ChatMessage[]): Promise<MessageResponse>;
-  }
-  
-  export interface MessageResponse {
-    content: string;
-    metadata?: any;
-    actions?: any[];
-    /**
-     * When the Automator parses a structured `{explanation, actions}` reply
-     * we surface the parsed payload here so the UI / downstream consumers
-     * can show extra context (e.g. "3 actions scheduled").
-     */
-    automator?: {
-      isStructured: boolean;
-      explanation: string;
-      invalidActionCount: number;
-    };
+    sendMessage(message: ChatMessage, sessionId: string | undefined, conversationHistory: ChatMessage[]): Promise<ChatMessage>;
   }
   
   // ============================================================================

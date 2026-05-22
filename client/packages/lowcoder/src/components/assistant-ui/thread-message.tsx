@@ -16,7 +16,6 @@ import {
   DownloadIcon,
   MoreHorizontalIcon,
   PencilIcon,
-  RefreshCwIcon,
 } from "lucide-react";
 import type { FC } from "react";
 
@@ -148,11 +147,6 @@ const AssistantActionBar: FC = () => {
           </AuiIf>
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
       <ActionBarMorePrimitive.Root>
         <ActionBarMorePrimitive.Trigger asChild>
           <TooltipIconButton
@@ -166,6 +160,10 @@ const AssistantActionBar: FC = () => {
           side="bottom"
           align="start"
           className="aui-action-bar-more-content"
+          style={{
+            zIndex: 999,
+            cursor: "pointer",
+          }}
         >
           <ActionBarPrimitive.ExportMarkdown asChild>
             <ActionBarMorePrimitive.Item className="aui-action-bar-more-item">

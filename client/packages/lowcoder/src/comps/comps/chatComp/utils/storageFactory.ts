@@ -2,6 +2,7 @@
 
 import alasql from "alasql";
 import { ChatMessage, ChatThread, ChatStorage } from "../types/chatTypes";
+import { getTextFromThreadContent } from "./assistantMessages";
 
 // ============================================================================
 // CLEAN STORAGE FACTORY (simplified from your existing implementation)
@@ -38,9 +39,16 @@ export function createChatStorage(tableName: string): ChatStorage {
             role STRING,
             text STRING,
             timestamp NUMBER,
-            attachments STRING
+            attachments STRING,
+            content STRING
           )
         `);
+
+        try {
+          await alasql.promise(`ALTER TABLE ${messagesTable} ADD COLUMN content STRING`);
+        } catch (error) {
+          // Existing databases may already have the AUI content column.
+        }
 
       } catch (error) {
         console.error(`Failed to initialize chat database ${dbName}:`, error);
@@ -105,8 +113,17 @@ export function createChatStorage(tableName: string): ChatStorage {
         await alasql.promise(`DELETE FROM ${messagesTable} WHERE id = ?`, [message.id]);
         
         await alasql.promise(`
-          INSERT INTO ${messagesTable} VALUES (?, ?, ?, ?, ?, ?)
-        `, [message.id, threadId, message.role, message.text, message.timestamp, JSON.stringify(message.attachments || [])]);
+          INSERT INTO ${messagesTable} (id, threadId, role, text, timestamp, attachments, content)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          message.id,
+          threadId,
+          message.role,
+          getTextFromThreadContent(message.content),
+          message.createdAt.getTime(),
+          JSON.stringify(message.attachments || []),
+          JSON.stringify(message.content),
+        ]);
       } catch (error) {
         console.error("Failed to save message:", error);
         throw error;
@@ -121,8 +138,17 @@ export function createChatStorage(tableName: string): ChatStorage {
         // Insert all messages
         for (const message of messages) {
           await alasql.promise(`
-            INSERT INTO ${messagesTable} VALUES (?, ?, ?, ?, ?, ?)
-          `, [message.id, threadId, message.role, message.text, message.timestamp, JSON.stringify(message.attachments || [])]);
+            INSERT INTO ${messagesTable} (id, threadId, role, text, timestamp, attachments, content)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [
+            message.id,
+            threadId,
+            message.role,
+            getTextFromThreadContent(message.content),
+            message.createdAt.getTime(),
+            JSON.stringify(message.attachments || []),
+            JSON.stringify(message.content),
+          ]);
         }
       } catch (error) {
         console.error("Failed to save messages:", error);
@@ -133,15 +159,15 @@ export function createChatStorage(tableName: string): ChatStorage {
     async getMessages(threadId: string) {
       try {
         const result = await alasql.promise(`
-          SELECT id, role, text, timestamp, attachments FROM ${messagesTable} 
+          SELECT id, role, text, timestamp, attachments, content FROM ${messagesTable} 
           WHERE threadId = ? ORDER BY timestamp ASC
         `, [threadId]) as any[];
         
         return result.map(row => ({
           id: row.id,
           role: row.role,
-          text: row.text,
-          timestamp: row.timestamp,
+          content: JSON.parse(row.content || "null") || [{ type: "text", text: row.text || "" }],
+          createdAt: new Date(row.timestamp),
           attachments: JSON.parse(row.attachments || '[]')
         })) as ChatMessage[];
       } catch (error) {
