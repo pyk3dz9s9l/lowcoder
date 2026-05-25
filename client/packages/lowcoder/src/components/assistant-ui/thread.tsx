@@ -1,6 +1,4 @@
 import { AuiIf, ThreadPrimitive } from "@assistant-ui/react";
-import { LoadingOutlined } from "@ant-design/icons";
-import { Flex, Spin } from "antd";
 import { ArrowDownIcon } from "lucide-react";
 import type { FC } from "react";
 import { trans } from "i18n";
@@ -16,21 +14,6 @@ interface ThreadProps {
   showAttachments?: boolean;
   autoHeight?: boolean;
 }
-
-const SimpleANTDLoader = () => {
-  const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
-
-  return (
-    <div style={{ textAlign: "left", width: "100%" }}>
-      <Flex align="center" gap={12} style={{ paddingLeft: "16px" }}>
-        <Spin indicator={antIcon} size="small" />
-        <span style={{ color: "#666", fontSize: "14px" }}>
-          Working on it...
-        </span>
-      </Flex>
-    </div>
-  );
-};
 
 export const Thread: FC<ThreadProps> = ({
   placeholder = trans("chat.composerPlaceholder"),
@@ -61,10 +44,6 @@ export const Thread: FC<ThreadProps> = ({
               {() => <ThreadMessage showAttachments={showAttachments} />}
             </ThreadPrimitive.Messages>
           </div>
-
-          <ThreadPrimitive.If running>
-            <SimpleANTDLoader />
-          </ThreadPrimitive.If>
 
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer">
             <ThreadScrollToBottom />

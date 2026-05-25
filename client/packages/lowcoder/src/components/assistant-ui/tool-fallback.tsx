@@ -4,7 +4,6 @@ import { memo, useCallback, useRef, useState } from "react";
 import {
   AlertCircleIcon,
   CheckIcon,
-  ChevronDownIcon,
   LoaderIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -277,10 +276,6 @@ function ToolFallbackTrigger({
           </span>
         )}
       </span>
-      <ChevronDownIcon
-        data-slot="tool-fallback-trigger-chevron"
-        className="aui-tool-fallback-trigger-chevron"
-      />
     </StyledToolFallbackTrigger>
   );
 }
@@ -385,8 +380,6 @@ function ToolFallbackError({
 
 const ToolFallbackImpl: ToolCallMessagePartComponent = ({
   toolName,
-  argsText,
-  result,
   status,
 }) => {
   const isCancelled =
@@ -395,14 +388,6 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
   return (
     <ToolFallbackRoot cancelled={isCancelled}>
       <ToolFallbackTrigger toolName={toolName} status={status} />
-      <ToolFallbackContent>
-        <ToolFallbackError status={status} />
-        <ToolFallbackArgs
-          argsText={argsText}
-          style={isCancelled ? { opacity: 0.6 } : undefined}
-        />
-        {!isCancelled && <ToolFallbackResult result={result} />}
-      </ToolFallbackContent>
     </ToolFallbackRoot>
   );
 };

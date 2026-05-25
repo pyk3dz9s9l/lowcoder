@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { FC } from "react";
 
+import { AssistantMessageLoader } from "./assistant-message-loader";
 import { MarkdownText } from "./markdown-text";
 import { EditComposer } from "./thread-composer";
 import {
@@ -59,6 +60,12 @@ const MessageError: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
+  const isEmptyRunningMessage = useAuiState(
+    (s) =>
+      s.message.parts.length === 0 &&
+      (s.message.status?.type ?? "complete") === "running"
+  );
+
   return (
     <MessagePrimitive.Root
       data-slot="aui_assistant-message-root"
@@ -69,6 +76,7 @@ const AssistantMessage: FC = () => {
         data-slot="aui_assistant-message-content"
         className="aui-assistant-message-content"
       >
+        {isEmptyRunningMessage && <AssistantMessageLoader />}
         <MessagePrimitive.GroupedParts
           groupBy={(part) => {
             if (part.type === "reasoning")
@@ -106,6 +114,9 @@ const AssistantMessage: FC = () => {
                   </ToolGroupRoot>
                 );
               case "text":
+                if (part.status?.type === "running" && part.text === "") {
+                  return <AssistantMessageLoader />;
+                }
                 return <MarkdownText />;
               case "reasoning":
                 return <Reasoning {...part} />;
