@@ -16,16 +16,28 @@ function buildAutomatorQueryArgs(
   payload: ReturnType<typeof buildAutomatorPayload>,
   messagesWithoutSystem: Array<{ role: ChatMessage["role"]; content: string }>
 ) {
+  const ai = {
+    mode: "automator" as const,
+    ...payload,
+    message,
+    prompt: getTextFromThreadContent(message.content),
+    sessionId,
+    conversationHistory,
+    messagesWithoutSystem,
+    responseContract: {
+      assistantMessage: "Return an assistant-ui compatible assistant message.",
+      actionTool:
+        "When modifying Lowcoder, return a tool-call part for execute_automator_actions.",
+    },
+  };
+
   return {
+    ai: {
+      value: ai,
+    },
+    // Backward compatibility for existing user-created model queries.
     automator: {
-      value: {
-        ...payload,
-        message,
-        prompt: getTextFromThreadContent(message.content),
-        sessionId,
-        conversationHistory,
-        messagesWithoutSystem,
-      }
+      value: ai,
     },
   };
 }
