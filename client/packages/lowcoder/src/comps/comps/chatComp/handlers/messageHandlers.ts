@@ -35,10 +35,6 @@ function buildAutomatorQueryArgs(
     ai: {
       value: ai,
     },
-    // Backward compatibility for existing user-created model queries.
-    automator: {
-      value: ai,
-    },
   };
 }
 

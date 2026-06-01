@@ -73,6 +73,10 @@ function buildHelperPayload(args: {
   const tools = buildAIHelperTools();
   const messages = [
     { role: "system" as const, content: system },
+    {
+      role: "system" as const,
+      content: `HELPER_CONTEXT:\n${JSON.stringify(context, null, 2)}`,
+    },
     ...messagesWithoutSystem,
   ];
 
@@ -138,7 +142,6 @@ export class AIHelperQueryHandler {
         executeQueryAction({
           args: {
             ai: { value: ai },
-            aiHelper: { value: ai },
           },
         })
       )
