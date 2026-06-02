@@ -10,25 +10,11 @@ import {
 } from "../utils/assistantMessages";
 
 function buildAutomatorQueryArgs(
-  message: ChatMessage,
-  sessionId: string | undefined,
-  conversationHistory: ChatMessage[],
-  payload: ReturnType<typeof buildAutomatorPayload>,
-  messagesWithoutSystem: Array<{ role: ChatMessage["role"]; content: string }>
+  payload: ReturnType<typeof buildAutomatorPayload>
 ) {
   const ai = {
     mode: "automator" as const,
     ...payload,
-    message,
-    prompt: getTextFromThreadContent(message.content),
-    sessionId,
-    conversationHistory,
-    messagesWithoutSystem,
-    responseContract: {
-      assistantMessage: "Return an assistant-ui compatible assistant message.",
-      actionTool:
-        "When modifying Lowcoder, return a tool-call part for execute_automator_actions.",
-    },
   };
 
   return {
@@ -95,8 +81,8 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
   constructor(private config: QueryHandlerConfig) {}
 
   async sendMessage(
-    message: ChatMessage,
-    sessionId: string | undefined,
+    _message: ChatMessage,
+    _sessionId: string | undefined,
     conversationHistory: ChatMessage[]
   ): Promise<ChatMessage> {
     const { chatQuery, dispatch, getEditorState } = this.config;
@@ -138,13 +124,7 @@ export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
         routeByNameAction(
           chatQuery,
           executeQueryAction({
-            args: buildAutomatorQueryArgs(
-              message,
-              sessionId,
-              history,
-              payload,
-              rawHistory
-            ),
+            args: buildAutomatorQueryArgs(payload),
           })
         )
       );

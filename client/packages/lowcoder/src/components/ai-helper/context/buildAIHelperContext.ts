@@ -1,28 +1,8 @@
-import type { EditorState } from "comps/editorState";
 import type { DatasourceStructure } from "api/datasourceApi";
 
 import { AI_HELPER_APPLY_TOOL, type AIHelperTarget } from "../types";
 
-export interface AIHelperContextPayload {
-  app?: {
-    title?: string;
-    description?: string;
-  };
-  target: AIHelperTarget;
-  components: Array<{ name: string; type: string }>;
-  queries: Array<{ name: string; type: string; datasourceId?: string }>;
-  tempStates: Array<{ name: string; type: string }>;
-  transformers: Array<{ name: string; type: string }>;
-  datasourceSchema?: Record<string, string>;
-}
-
-function safe<T>(fn: () => T, fallback: T): T {
-  try {
-    return fn();
-  } catch {
-    return fallback;
-  }
-}
+export type AIHelperTargetContext = AIHelperTarget;
 
 export function flattenDatasourceSchema(
   structure: DatasourceStructure[] | undefined
@@ -42,57 +22,11 @@ export function flattenDatasourceSchema(
   return out;
 }
 
-export function buildAIHelperContext(args: {
-  editorState: EditorState | null | undefined;
+export function buildAIHelperTargetContext(args: {
   datasourceStructures?: Record<string, DatasourceStructure[]>;
   target: AIHelperTarget;
-}): AIHelperContextPayload {
-  const { editorState, datasourceStructures, target } = args;
-
-  if (!editorState) {
-    return {
-      target,
-      components: [],
-      queries: [],
-      tempStates: [],
-      transformers: [],
-    };
-  }
-
-  const settings = safe(() => editorState.getAppSettings(), {} as any);
-  const components = safe(
-    () =>
-      editorState.uiCompInfoList().map((info: any) => ({
-        name: info.name,
-        type: info.type,
-      })),
-    [] as Array<{ name: string; type: string }>
-  );
-  const queries = safe<Array<{ name: string; type: string; datasourceId?: string }>>(
-    () =>
-      editorState.queryCompInfoList().map((q: any) => ({
-        name: q.name,
-        type: q.type,
-        datasourceId: q.datasourceId,
-      })),
-    [] as Array<{ name: string; type: string; datasourceId?: string }>
-  );
-  const tempStates = safe(
-    () =>
-      editorState.getTempStateCompInfoList().map((q: any) => ({
-        name: q.name,
-        type: q.type,
-      })),
-    [] as Array<{ name: string; type: string }>
-  );
-  const transformers = safe(
-    () =>
-      editorState.getTransformerCompInfoList().map((q: any) => ({
-        name: q.name,
-        type: q.type,
-      })),
-    [] as Array<{ name: string; type: string }>
-  );
+}): AIHelperTargetContext {
+  const { datasourceStructures, target } = args;
 
   const datasourceSchema =
     target.datasourceId && datasourceStructures
@@ -100,15 +34,8 @@ export function buildAIHelperContext(args: {
       : undefined;
 
   return {
-    app: {
-      title: settings?.title,
-      description: settings?.description,
-    },
-    target,
-    components,
-    queries,
-    tempStates,
-    transformers,
+    ...target,
+    datasourceType: target.datasourceType ?? target.queryType,
     datasourceSchema:
       datasourceSchema && Object.keys(datasourceSchema).length > 0
         ? datasourceSchema
@@ -131,9 +58,7 @@ function describeTarget(target: AIHelperTarget): string {
   }
 }
 
-export function buildAIHelperSystemMessage(context: AIHelperContextPayload) {
-  const { target } = context;
-
+export function buildAIHelperSystemMessage(target: AIHelperTargetContext) {
   return `You are Lowcoder AI Helper, an embedded field assistant.
 
 You help the builder understand or generate code/data for one focused Lowcoder input.
@@ -142,10 +67,14 @@ You are NOT the Automator and must not create, move, or modify Lowcoder canvas c
 Target:
 ${describeTarget(target)}
 
+Target context:
+${JSON.stringify(target, null, 2)}
+
 Response rules:
 - Explain briefly when explanation is useful.
 - Prefer concrete code/data that can be pasted into the current target.
 - If you produce a replacement value for the target, call the ${AI_HELPER_APPLY_TOOL} tool with the exact value.
+- Use mode "replace" unless the user explicitly asks to insert or append.
 - Do not include markdown fences inside tool values.
 - Respect the current language/field kind and keep generated values syntactically valid.`;
 }
@@ -178,7 +107,7 @@ export function buildAIHelperTools() {
               description: "Optional language hint such as sql, javascript, or json.",
             },
           },
-          required: ["value"],
+          required: ["value", "mode"],
         },
       },
     },

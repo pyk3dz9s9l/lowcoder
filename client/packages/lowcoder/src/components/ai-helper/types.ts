@@ -1,5 +1,3 @@
-import type { ThreadAssistantMessagePart } from "@assistant-ui/react";
-
 export const AI_HELPER_APPLY_TOOL = "apply_ai_helper_result";
 
 export type AIHelperTargetKind =
@@ -20,6 +18,8 @@ export interface AIHelperTarget {
   selection?: string;
   cursor?: number;
   datasourceId?: string;
+  datasourceType?: string;
+  datasourceSchema?: Record<string, string>;
   queryType?: string;
   queryName?: string;
   componentName?: string;
@@ -34,9 +34,3 @@ export interface AIHelperApplyAction {
   mode: AIHelperApplyMode;
   language?: string;
 }
-
-export type AIHelperToolCallPart = Extract<
-  ThreadAssistantMessagePart,
-  { type: "tool-call" }
->;
-

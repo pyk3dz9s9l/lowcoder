@@ -127,12 +127,7 @@ export function AIHelperModal() {
   const helper = useAIHelper();
   const editorState = useContext(EditorContext);
   const datasourceStructures = useSelector(getDataSourceStructures);
-  const editorStateRef = useRef(editorState);
   const datasourceStructuresRef = useRef(datasourceStructures);
-
-  useEffect(() => {
-    editorStateRef.current = editorState;
-  }, [editorState]);
 
   useEffect(() => {
     datasourceStructuresRef.current = datasourceStructures;
@@ -209,7 +204,6 @@ export function AIHelperModal() {
             key={`${helper.helperQueryName}|${target.id}`}
             helperQueryName={helper.helperQueryName}
             dispatch={editorState?.rootComp?.dispatch}
-            getEditorState={() => editorStateRef.current}
             getDatasourceStructures={() => datasourceStructuresRef.current}
             target={target}
           />
@@ -218,4 +212,3 @@ export function AIHelperModal() {
     </AssistantModalPrimitive.Root>
   );
 }
-

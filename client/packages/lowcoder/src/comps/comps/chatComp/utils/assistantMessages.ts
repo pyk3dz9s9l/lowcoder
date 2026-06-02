@@ -114,8 +114,5 @@ export const getAutomatorActionsFromMessage = (message: ChatMessage) => {
   if (!toolPart) return [];
 
   const resultActions = (toolPart.result as any)?.actions;
-  if (Array.isArray(resultActions)) return resultActions;
-
-  const argActions = (toolPart.args as any)?.actions;
-  return Array.isArray(argActions) ? argActions : [];
+  return Array.isArray(resultActions) ? resultActions : [];
 };
