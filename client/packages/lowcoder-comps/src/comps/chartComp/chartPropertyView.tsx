@@ -171,7 +171,6 @@ export function chartPropertyView(
             fieldName: "echartsOption",
             fieldDescription:
               "Apache ECharts option JSON for the selected chart component.",
-            targetId: "echartsOption",
           },
           tooltip: (
             <div>
@@ -229,7 +228,6 @@ export function chartPropertyView(
             fieldName: "mapOptions",
             fieldDescription:
               "Apache ECharts map option JSON for the selected chart component.",
-            targetId: "mapOptions",
           },
           tooltip: (
             <div>
