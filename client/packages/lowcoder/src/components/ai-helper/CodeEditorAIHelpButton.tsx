@@ -2,6 +2,7 @@ import { useMemo, type MouseEvent } from "react";
 import { SparklesIcon } from "lucide-react";
 import styled from "styled-components";
 import type { EditorView } from "@codemirror/view";
+import Tooltip from "antd/es/tooltip";
 
 import { useAIHelper } from "./context/AIHelperController";
 import type {
@@ -24,10 +25,10 @@ export interface CodeEditorAIHelpButtonProps {
   targetId?: string;
 }
 
-const Button = styled.button`
+const Button = styled.button.attrs({ className: "code-editor-ai-help-button" })`
   position: absolute;
   top: 4px;
-  right: 6px;
+  right: 24px;
   z-index: 5;
   display: inline-flex;
   align-items: center;
@@ -148,16 +149,16 @@ export function CodeEditorAIHelpButton({
   };
 
   return (
-    <Button
-      type="button"
-      aria-label="Ask AI for help"
-      title="Ask AI for help"
-      onClick={onClick}
-      onMouseDown={(event) => event.stopPropagation()}
-    >
-      <SparklesIcon size={12} />
-      <span>AI Help</span>
-    </Button>
+    <Tooltip title="Ask AI for help" placement="top">
+      <Button
+        type="button"
+        aria-label="Ask AI for help"
+        onClick={onClick}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <SparklesIcon size={12} />
+        <span>AI</span>
+      </Button>
+    </Tooltip>
   );
 }
-

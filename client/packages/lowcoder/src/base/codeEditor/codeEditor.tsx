@@ -342,6 +342,19 @@ const CodeEditorPanelContainer = styled.div<{
 const CodeEditorWrapper = styled.div`
   height: 100%;
   position: relative;
+
+  .code-editor-ai-help-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  &:hover {
+    .code-editor-ai-help-button {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
 `;
 
 function canShowCard(props: CodeEditorProps) {
