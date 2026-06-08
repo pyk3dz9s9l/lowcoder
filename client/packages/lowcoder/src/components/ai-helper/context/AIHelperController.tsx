@@ -9,6 +9,10 @@ import {
 } from "react";
 
 import type { AIHelperApplyAction, AIHelperTarget } from "../types";
+import {
+  getSelectedAIQueryName,
+  saveSelectedAIQueryName,
+} from "util/localStorageUtil";
 
 export type AIHelperApplyCallback = (
   action: AIHelperApplyAction,
@@ -36,32 +40,10 @@ interface AIHelperContextValue extends AIHelperState {
 
 const AIHelperContext = createContext<AIHelperContextValue | null>(null);
 
-const HELPER_QUERY_STORAGE_KEY = "lc_ai_helper.query_name";
-
-function readPersistedQueryName(): string {
-  try {
-    return localStorage.getItem(HELPER_QUERY_STORAGE_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function writePersistedQueryName(name: string) {
-  try {
-    if (name) {
-      localStorage.setItem(HELPER_QUERY_STORAGE_KEY, name);
-    } else {
-      localStorage.removeItem(HELPER_QUERY_STORAGE_KEY);
-    }
-  } catch {
-    // Local storage can be unavailable in embedded/private contexts.
-  }
-}
-
 export function AIHelperProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AIHelperState>(() => ({
     open: false,
-    helperQueryName: readPersistedQueryName(),
+    helperQueryName: getSelectedAIQueryName(),
   }));
   const applyRef = useRef<AIHelperApplyCallback | null>(null);
 
@@ -84,7 +66,7 @@ export function AIHelperProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setHelperQueryName = useCallback((name: string) => {
-    writePersistedQueryName(name);
+    saveSelectedAIQueryName(name);
     setState((s) => ({ ...s, helperQueryName: name }));
   }, []);
 
@@ -118,4 +100,3 @@ export function AIHelperProvider({ children }: { children: ReactNode }) {
 export function useAIHelper() {
   return useContext(AIHelperContext);
 }
-

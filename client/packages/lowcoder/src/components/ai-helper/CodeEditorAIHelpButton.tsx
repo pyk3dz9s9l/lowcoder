@@ -157,7 +157,6 @@ export function CodeEditorAIHelpButton({
         onMouseDown={(event) => event.stopPropagation()}
       >
         <SparklesIcon size={12} />
-        <span>AI</span>
       </Button>
     </Tooltip>
   );

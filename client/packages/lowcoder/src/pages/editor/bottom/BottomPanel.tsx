@@ -2,8 +2,13 @@ import { BottomContent } from "pages/editor/bottom/BottomContent";
 import { ResizableBox, ResizeCallbackData } from "react-resizable";
 import styled from "styled-components";
 import * as React from "react";
-import { useContext, useMemo, useState } from "react";
-import { getPanelStyle, savePanelStyle } from "util/localStorageUtil";
+import { useContext, useEffect, useMemo, useState } from "react";
+import {
+  getPanelStyle,
+  getSelectedAIQueryName,
+  savePanelStyle,
+  saveSelectedAIQueryName,
+} from "util/localStorageUtil";
 import { BottomResultPanel } from "../../../components/resultPanel/BottomResultPanel";
 import { AppState } from "../../../redux/reducers";
 import { getUser } from "../../../redux/selectors/usersSelectors";
@@ -37,6 +42,7 @@ const StyledResizableBox = styled(ResizableBox)`
 `;
 
 const StyledMenu = styled(Menu)`
+  flex: 0 0 40px;
   width: 40px;
   padding: 6px 0;
 
@@ -74,6 +80,18 @@ const QueryLabel = styled.span`
   white-space: nowrap;
 `;
 
+const PanelBody = styled.div`
+  display: flex;
+  height: 100%;
+  min-width: 0;
+`;
+
+const PanelContent = styled.div`
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+`;
+
 const preventDefault = (e: any) => {
   e.preventDefault();
 };
@@ -98,9 +116,15 @@ function Bottom(props: any) {
 
   const [bottomHeight, setBottomHeight] = useState(panelStyle.bottom.h);
   const [currentOption, setCurrentOption] = useState("data");
-  const [selectedQuery, setSelectedQuery] = useState<string>("");
+  const [selectedQuery, setSelectedQuery] = useState<string>(() => getSelectedAIQueryName());
 
   const editorState = useContext(EditorContext);
+
+  useEffect(() => {
+    if (currentOption === "ai") {
+      setSelectedQuery(getSelectedAIQueryName());
+    }
+  }, [currentOption]);
 
   const queryOptions = useMemo(() => {
     if (!editorState) return [];
@@ -127,7 +151,7 @@ function Bottom(props: any) {
         onResizeStart={addListener}
         onResizeStop={resizeStop}
       >
-        <Flex style={{height: '100%'}}>
+        <PanelBody>
           <StyledMenu
             defaultSelectedKeys={[currentOption]}
             mode="inline"
@@ -137,32 +161,39 @@ function Bottom(props: any) {
               setCurrentOption(key);
             }}
           />
-          { currentOption === "data" && <BottomContent /> }
-          { currentOption === "ai" && (
-            <Flex style={{height: '100%', flex: 1}} vertical>
-              <ChatHeader>
-                <ChatTitle>Lowcoder Automator</ChatTitle>
-                <QuerySelectorWrapper>
-                  <QueryLabel>Query:</QueryLabel>
-                  <Select
-                    showSearch
-                    allowClear
-                    placeholder="Select a query"
-                    value={selectedQuery || undefined}
-                    onChange={(value) => setSelectedQuery(value || "")}
-                    options={queryOptions}
-                    style={{ width: 200 }}
-                    size="small"
-                  />
-                </QuerySelectorWrapper>
-              </ChatHeader>
-              <ChatPanel
-                tableName="LC_AI"
-                chatQuery={selectedQuery}
-              />
-            </Flex>
-          )}
-        </Flex>
+          <PanelContent>
+            {currentOption === "data" ? (
+              <BottomContent />
+            ) : (
+              <Flex style={{height: '100%'}} vertical>
+                <ChatHeader>
+                  <ChatTitle>Lowcoder Automator</ChatTitle>
+                  <QuerySelectorWrapper>
+                    <QueryLabel>Query:</QueryLabel>
+                    <Select
+                      showSearch
+                      allowClear
+                      placeholder="Select a query"
+                      value={selectedQuery || undefined}
+                      onChange={(value) => {
+                        const nextQuery = value || "";
+                        setSelectedQuery(nextQuery);
+                        saveSelectedAIQueryName(nextQuery);
+                      }}
+                      options={queryOptions}
+                      style={{ width: 200 }}
+                      size="small"
+                    />
+                  </QuerySelectorWrapper>
+                </ChatHeader>
+                <ChatPanel
+                  tableName="LC_AI"
+                  chatQuery={selectedQuery}
+                />
+              </Flex>
+            )}
+          </PanelContent>
+        </PanelBody>
       </StyledResizableBox>
     </>
   );

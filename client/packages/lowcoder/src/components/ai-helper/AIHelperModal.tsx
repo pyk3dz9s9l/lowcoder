@@ -9,6 +9,7 @@ import styled from "styled-components";
 
 import { EditorContext } from "comps/editorState";
 import { getDataSourceStructures } from "redux/selectors/datasourceSelectors";
+import { getSelectedAIQueryName } from "util/localStorageUtil";
 
 import { AIHelperRuntime } from "./AIHelperRuntime";
 import { useAIHelper } from "./context/AIHelperController";
@@ -132,6 +133,16 @@ export function AIHelperModal() {
   useEffect(() => {
     datasourceStructuresRef.current = datasourceStructures;
   }, [datasourceStructures]);
+
+  useEffect(() => {
+    if (!helper?.open) {
+      return;
+    }
+    const selectedQueryName = getSelectedAIQueryName();
+    if (selectedQueryName !== helper.helperQueryName) {
+      helper.setHelperQueryName(selectedQueryName);
+    }
+  }, [helper?.open]);
 
   if (!helper) return null;
 
