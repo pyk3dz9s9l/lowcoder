@@ -14,7 +14,8 @@ function buildAutomatorQueryArgs(
 ) {
   const ai = {
     mode: "automator" as const,
-    ...payload,
+    messages: payload.messages,
+    tools: payload.tools,
   };
 
   return {
