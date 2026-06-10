@@ -184,7 +184,17 @@ let JsonEditorTmpComp = (function () {
       return (
         <>
           <Section name={sectionNames.basic}>
-            {children.value.propertyView({ label: trans("export.jsonEditorDesc") })}
+            {children.value.propertyView({
+              label: trans("export.jsonEditorDesc"),
+              enableAIHelp: true,
+              aiHelp: {
+                targetKind: "json",
+                label: "JSON Editor value",
+                fieldName: "value",
+                fieldDescription:
+                  "JSON value edited by the JSON Editor component. Generate valid JSON that can be an object, array, string, number, boolean, or null.",
+              },
+            })}
           </Section>
 
           <FormDataPropertyView {...children} />

@@ -139,7 +139,6 @@ const timeValidationFields = (children: CommonChildrenType, dateType: PickerMode
 function validate(
   props: RecordConstructorToView<typeof validationChildren> & {
     value: { value: string };
-    showTime: boolean;
   }
 ): {
   validateStatus: "success" | "warning" | "error";
@@ -760,7 +759,7 @@ export let DateRangeComp = withExposingConfigs(dateRangeControl, [
   depsConfig({
     name: "invalid",
     desc: trans("export.invalidDesc"),
-    depKeys: ["start", "end", "required", "minTime", "maxTime", "minDate", "maxDate", "customRule"],
+    depKeys: ["start", "end", "showValidationWhenEmpty", "required", "minTime", "maxTime", "minDate", "maxDate", "customRule"],
     func: (input) =>
       validate({
         ...input,

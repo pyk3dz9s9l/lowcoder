@@ -585,7 +585,7 @@ export let TimeRangeComp = withExposingConfigs(timeRangeControl, [
   depsConfig({
     name: "invalid",
     desc: trans("export.invalidDesc"),
-    depKeys: ["start", "end", "required", "minTime", "maxTime", "customRule"],
+    depKeys: ["start", "end", "showValidationWhenEmpty", "required", "minTime", "maxTime", "customRule"],
     func: (input) =>
       validate({
         ...input,
