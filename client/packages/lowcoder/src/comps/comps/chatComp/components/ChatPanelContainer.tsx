@@ -221,7 +221,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
 
-  const maybeGenerateThreadTitle = async (userMessage: ChatMessage) => {
+  const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
     const currentThread = state.threadList.find(
       (thread) => thread.threadId === state.currentThreadId
     );
@@ -255,6 +255,7 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     const conversationHistory = [...currentMessages, userMessage];
   
     await actions.addMessage(state.currentThreadId, userMessage);
+    await updateInitialThreadTitle(userMessage);
     setIsRunning(true);
   
     try {
@@ -274,7 +275,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
         state.currentThreadId,
         assistantMessage
       );
-      await maybeGenerateThreadTitle(userMessage);
     } catch (error) {
       await actions.addMessage(
         state.currentThreadId,

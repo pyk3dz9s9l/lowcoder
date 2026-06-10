@@ -61,7 +61,7 @@ function ChatContainerView(props: ChatCoreProps) {
 
   const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
 
-  const maybeGenerateThreadTitle = async (userMessage: ChatMessage) => {
+  const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
     const currentThread = state.threadList.find(
       (thread) => thread.threadId === state.currentThreadId
     );
@@ -97,6 +97,7 @@ function ChatContainerView(props: ChatCoreProps) {
     const userMessage = createUserMessage(text, completeAttachments);
   
     await actions.addMessage(state.currentThreadId, userMessage);
+    await updateInitialThreadTitle(userMessage);
     setIsRunning(true);
   
     try {
@@ -104,7 +105,6 @@ function ChatContainerView(props: ChatCoreProps) {
       props.onMessageUpdate?.(getTextFromThreadContent(userMessage.content));
   
       await actions.addMessage(state.currentThreadId, assistantMessage);
-      await maybeGenerateThreadTitle(userMessage);
     } catch (error) {
       await actions.addMessage(
         state.currentThreadId,
