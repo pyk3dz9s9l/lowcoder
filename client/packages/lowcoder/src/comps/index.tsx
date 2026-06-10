@@ -122,6 +122,8 @@ import {
 import { ModuleComp } from "./comps/moduleComp/moduleComp";
 import { TableComp } from "./comps/tableComp/tableComp";
 import { defaultTableData } from "./comps/tableComp/mockTableComp";
+import { TableLiteComp } from "./comps/tableLiteComp/tableComp";
+import { defaultTableData as defaultTableLiteData } from "./comps/tableLiteComp/mockTableComp";
 import { ContainerComp, defaultContainerData } from "./comps/containerComp/containerComp";
 import { ColumnLayoutComp } from "./comps/columnLayout/columnLayout";
 import { TabbedContainerComp } from "./comps/tabs/tabbedContainerComp";
@@ -191,6 +193,7 @@ import { TreeComp } from "./comps/treeComp/treeComp";
 import { TreeSelectComp } from "./comps/treeComp/treeSelectComp";
 import { DrawerComp } from "./hooks/drawerComp";
 import { ModalComp } from "./hooks/modalComp";
+import { ToastComp } from "./hooks/toastComp";
 import { defaultCollapsibleContainerData } from "./comps/containerComp/collapsibleContainerComp";
 import { ContainerComp as FloatTextContainerComp } from "./comps/containerComp/textContainerComp";
 import { MultiTagsComp } from "./comps/tagsComp/tagsCompView";
@@ -489,6 +492,22 @@ export var uiCompMap: Registry = {
     defaultDataFn: defaultTableData,
   },
 
+  tableLite: {
+    name: trans("uiComp.tableLiteCompName"),
+    enName: "Table Lite",
+    description: trans("uiComp.tableLiteCompDesc"),
+    categories: ["dashboards", "projectmanagement"],
+    icon: TableCompIcon,
+    keywords: trans("uiComp.tableLiteCompKeywords"),
+    comp: TableLiteComp,
+    layoutInfo: {
+      w: 12,
+      h: 40,
+    },
+    withoutLoading: true,
+    defaultDataFn: defaultTableLiteData,
+  },
+
   pivotTable: {
     name: trans("uiComp.pivotTableCompName"),
     enName: "pivotTable",
@@ -741,6 +760,16 @@ export var uiCompMap: Registry = {
     icon: DrawerCompIcon,
     keywords: trans("uiComp.drawerCompKeywords"),
     comp: DrawerComp,
+    withoutLoading: true,
+  },
+  toast: {
+    name: trans("uiComp.toastCompName"),
+    enName: "Toast",
+    description: trans("uiComp.toastCompDesc"),
+    categories: ["layout"],
+    icon: CommentCompIcon,
+    keywords: trans("uiComp.toastCompKeywords"),
+    comp: ToastComp,
     withoutLoading: true,
   },
   divider: {

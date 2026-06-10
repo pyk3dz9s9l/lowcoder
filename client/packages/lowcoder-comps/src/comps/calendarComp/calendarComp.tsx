@@ -215,6 +215,7 @@ let childrenMap: any = {
   updatedEvents: stateComp<JSONObject>({}),
   insertedEvents: stateComp<JSONObject>({}),
   deletedEvents: stateComp<JSONObject>({}),
+  selectedEvent: stateComp<JSONObject>({}),
   inputFormat: withDefault(StringControl, DATE_TIME_FORMAT),
 };
 
@@ -268,6 +269,7 @@ let CalendarBasicComp = (function () {
     const ref = createRef<HTMLDivElement>();
     const editEvent = useRef<EventInput>();
     const initData = useRef<boolean>(false);
+    const clickTimeout = useRef<NodeJS.Timeout | null>(null);
     const [form] = Form.useForm(); 
     const [left, setLeft] = useState<number | undefined>(undefined);
     const [licensed, setLicensed] = useState<boolean>(props.licenseKey !== "");
@@ -370,6 +372,15 @@ let CalendarBasicComp = (function () {
         initData.current = true;
       }
     }, [JSON.stringify(initialEvents), comp?.children?.comp?.children?.initialData]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (clickTimeout.current) {
+          clearTimeout(clickTimeout.current);
+        }
+      };
+    }, []);
   
     const resources = useMemo(() => props.resources.value, [props.resources.value]);
 
@@ -850,22 +861,30 @@ let CalendarBasicComp = (function () {
       handleEventDataChange,
     ]); 
 
+    const handleSingleClick = useCallback(() => {
+      // Prevent double click from triggering the event
+      // Use a timeout to debounce rapid clicks
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current);
+        clickTimeout.current = null;
+        return; // This was a double click, don't trigger
+      }
+      
+      clickTimeout.current = setTimeout(() => {
+        props.onEvent('click');
+        clickTimeout.current = null;
+      }, 150); // Small delay to catch double clicks
+    }, [props.onEvent]);
+
     const handleDbClick = useCallback(() => {
-      const event = props.updatedEventsData.find(
-        (item: EventType) => item.id === editEvent.current?.id
-      ) as EventType;
       if (!props.editable || !editEvent.current) {
         return;
       }
-      if (event) {
-        showModal(event, true);
+      if (onEventVal && onEventVal.some((e: any) => e.name === 'doubleClick')) {
+        // Check if 'doubleClick' is included in the array
+        props.onEvent('doubleClick');
       } else {
-        if (onEventVal && onEventVal.some((e: any) => e.name === 'doubleClick')) {
-          // Check if 'doubleClick' is included in the array
-          props.onEvent('doubleClick');
-        } else {
-          showModal(editEvent.current as EventType, false);
-        }
+        showModal(editEvent.current as EventType, false);
       }
     }, [
       editEvent,
@@ -974,14 +993,26 @@ let CalendarBasicComp = (function () {
             allDaySlot={props.showAllDay}
             eventContent={renderEventContent}
             select={(info) => handleCreate(info)}
+            dateClick={() => {
+              handleSingleClick();
+            }}
             eventClick={(info) => {
               const event = events.find(
                 (item: EventInput) => item.id === info.event.id
+              );
+              // Find original event from props.events to include all custom fields (e.g., join_url)
+              const originalEvent = props.events.find(
+                (item: EventType) => String(item.id) === String(info.event.id)
+              );
+              // Update selectedEvent state with all original data
+              comp?.children?.comp?.children?.selectedEvent?.dispatchChangeValueAction?.(
+                originalEvent || event || {}
               );
               editEvent.current = event;
               setTimeout(() => {
                 editEvent.current = undefined;
               }, 500);
+              handleSingleClick();
             }}
             moreLinkClick={(info) => {
               let left = 0;
@@ -1204,6 +1235,14 @@ const TmpCalendarComp = withExposingConfigs(CalendarBasicComp, [
     depKeys: ["deletedEvents"],
     func: (input: { deletedEvents: any[]; }) => {
       return input.deletedEvents;
+    },
+  }),
+  depsConfig({
+    name: "selectedEvent",
+    desc: trans("calendar.selectedEvent"),
+    depKeys: ["selectedEvent"],
+    func: (input: { selectedEvent: any; }) => {
+      return input.selectedEvent;
     },
   }),
 ]);

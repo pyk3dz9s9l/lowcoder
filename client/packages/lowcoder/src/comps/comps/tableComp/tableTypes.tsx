@@ -140,6 +140,11 @@ export const TableEventOptions = [
     description: trans("table.pageChange"),
   },
   {
+    label: trans("table.pageSizeChange"),
+    value: "pageSizeChange",
+    description: trans("table.pageSizeChange"),
+  },
+  {
     label: trans("table.refresh"),
     value: "refresh",
     description: trans("table.refresh"),
@@ -237,6 +242,7 @@ const tableChildrenMap = {
   selection: SelectionControl,
   pagination: PaginationControl,
   sort: valueComp<Array<SortValue>>([]),
+  headerFilters: stateComp<Record<string, any[]>>({}),
   toolbar: TableToolbarComp,
   showSummary: BoolControl,
   summaryRows: dropdownControl(summarRowsOptions, "1"),

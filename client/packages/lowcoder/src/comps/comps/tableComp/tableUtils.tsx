@@ -30,6 +30,26 @@ export const OB_ROW_RECORD = "__ob_origin_record";
 export const COL_MIN_WIDTH = 55;
 export const COL_MAX_WIDTH = 500;
 
+/*
+
+======================== Virtualization constants =========================
+
+*/
+export const VIRTUAL_ROW_HEIGHTS = {
+  small: 32,
+  middle: 48,
+  large: 80
+} as const;
+
+
+export const VIRTUAL_THRESHOLD = 50;
+export const MIN_VIRTUAL_HEIGHT = 200; // Minimum container height needed for virtualization
+export const TOOLBAR_HEIGHT = 48;      // Standard toolbar height
+export const HEADER_HEIGHT = 40;       // Standard header height
+
+ /* ========================== End of Virtualization constants ==========================  */
+
+
 /**
  * Add __originIndex__, mainly for the logic of the default key
  */
@@ -77,6 +97,31 @@ export function filterData(
     });
   }
   return resultData;
+}
+
+export function applyHeaderFilters(
+  data: Array<RecordType>,
+  headerFilters: Record<string, any[]>
+) {
+  if (!headerFilters || Object.keys(headerFilters).length === 0) {
+    return data;
+  }
+
+  return data.filter((row) =>
+    Object.entries(headerFilters).every(([columnKey, filterValues]) => {
+      if (!Array.isArray(filterValues) || filterValues.length === 0) {
+        return true;
+      }
+
+      const cellValue = row[columnKey];
+      return filterValues.some((filterValue) => {
+        if (cellValue == null) {
+          return filterValue == null;
+        }
+        return String(cellValue) === String(filterValue);
+      });
+    })
+  );
 }
 
 export function sortData(
@@ -189,7 +234,8 @@ export function transformDispalyData(
   return oriDisplayData.map((row) => {
     const transData = _(row)
       .omit(OB_ROW_ORI_INDEX)
-      .mapKeys((value, key) => dataIndexTitleDict[key] || key)
+      .pickBy((value, key) => key in dataIndexTitleDict) // Only include columns in the dictionary
+      .mapKeys((value, key) => dataIndexTitleDict[key])
       .value();
     if (Array.isArray(row[COLUMN_CHILDREN_KEY])) {
       return {
@@ -210,17 +256,47 @@ export function getColumnsAggr(
   oriDisplayData: JSONObject[],
   dataIndexWithParamsDict: NodeToValue<
     ReturnType<InstanceType<typeof ColumnListComp>["withParamsNode"]>
-  >
+  >,
+  columnChangeSets?: Record<string, Record<string, any>>
 ): ColumnsAggrData {
   return _.mapValues(dataIndexWithParamsDict, (withParams, dataIndex) => {
     const compType = (withParams.wrap() as any).compType;
     const res: Record<string, JSONValue> & { compType: string } = { compType };
+    
     if (compType === "tag") {
-      res.uniqueTags = _(oriDisplayData)
+      const originalTags = _(oriDisplayData)
         .map((row) => row[dataIndex]!)
         .filter((tag) => !!tag)
+        .value();
+      
+      const pendingChanges = columnChangeSets?.[dataIndex] || {};
+      const pendingTags = _(pendingChanges)
+        .values()
+        .filter((value) => !!value)
+        .value();
+      
+      const extractTags = (value: any): string[] => {
+        if (!value) return [];
+        if (_.isArray(value)) return value.map(String);
+        if (typeof value === "string") {
+          // Handle comma-separated tags
+          if (value.includes(",")) {
+            return value.split(",").map(tag => tag.trim()).filter(tag => tag);
+          }
+          return [value];
+        }
+        return [String(value)];
+      };
+      
+      const allTags = [
+        ...originalTags.flatMap(extractTags),
+        ...pendingTags.flatMap(extractTags)
+      ];
+      
+      res.uniqueTags = _(allTags)
         .uniq()
         .value();
+        
     } else if (compType === "badgeStatus") {
       res.uniqueStatus = _(oriDisplayData)
         .map((row) => {
@@ -240,6 +316,14 @@ export function getColumnsAggr(
         .uniqBy("text")
         .value();
     }
+
+    res.uniqueValues = _(oriDisplayData)
+      .map((row) => row[dataIndex])
+      .filter((value): value is JSONValue => value !== undefined && value !== null && value !== "")
+      .uniqWith(_.isEqual)
+      .slice(0, 100)
+      .value();
+
     return res;
   });
 }
@@ -283,7 +367,30 @@ export type CustomColumnType<RecordType> = ColumnType<RecordType> & {
   style: TableColumnStyleType;
   linkStyle: TableColumnLinkStyleType;
   cellColorFn: CellColorViewType;
+  columnClassName?: string;
+  columnDataTestId?: string;
 };
+
+function buildHeaderFilterProps(
+  dataIndex: string,
+  filterable: boolean,
+  uniqueValues: any[],
+  headerFilters: Record<string, any[]> = {}
+) {
+  if (!filterable || uniqueValues.length === 0) {
+    return {};
+  }
+
+  return {
+    filters: uniqueValues.map((value) => ({
+      text: String(value),
+      value,
+    })),
+    filteredValue: headerFilters[dataIndex] ?? null,
+    filterSearch: true,
+    filterMultiple: true,
+  } as const;
+}
 
 /**
  * convert column in raw format into antd format
@@ -298,6 +405,7 @@ export function columnsToAntdFormat(
   columnsAggrData: ColumnsAggrData,
   editMode: string,
   onTableEvent: (eventName: any) => void,
+  headerFilters: Record<string, any[]> = {},
 ): Array<CustomColumnType<RecordType>> {
   const customColumns = columns.filter(col => col.isCustom).map(col => col.dataIndex);
   const initialColumns = getInitialColumns(columnsAggrData, customColumns);
@@ -340,16 +448,26 @@ export function columnsToAntdFormat(
       text: string;
       status: StatusType;
     }[];
+    const uniqueValues = ((columnsAggrData[column.dataIndex] ?? {}).uniqueValues ?? []) as any[];
+    const columnKey = column.dataIndex || `custom-${mIndex}`;
     const title = renderTitle({ title: column.title, tooltip: column.titleTooltip, editable: column.editable });
+    const filterProps = buildHeaderFilterProps(
+      column.dataIndex,
+      column.filterable,
+      uniqueValues,
+      headerFilters
+    );
 
     return {
-      key: `${column.dataIndex}-${mIndex}`,
+      key: columnKey,
       title: column.showTitle ? title : '',
       titleText: column.title,
       dataIndex: column.dataIndex,
       align: column.align,
       width: column.autoWidth === "auto" ? 0 : column.width,
       fixed: column.fixed === "close" ? false : column.fixed,
+      columnClassName: column.className,
+      columnDataTestId: column.dataTestId,
       style: {
         background: column.background,
         margin: column.margin,
@@ -396,7 +514,7 @@ export function columnsToAntdFormat(
             }),
             editMode,
             onTableEvent,
-            cellIndex: `${column.dataIndex}-${index}`,
+            cellIndex: `${column.dataIndex}-${record?.[OB_ROW_ORI_INDEX] ?? index}`,
           });
       },
       ...(column.sortable
@@ -413,6 +531,7 @@ export function columnsToAntdFormat(
             showSorterTooltip: false,
           }
         : {}),
+      ...filterProps,
     };
   });
 }
@@ -448,6 +567,16 @@ export function onTableChange(
     }
     dispatch(changeChildAction("sort", sortValues, true));
     onEvent("sortChange");
+  }
+
+  if (extra.action === "filter") {
+    const headerFilters = _(filters)
+      .pickBy((filterValues) => Array.isArray(filterValues) && filterValues.length > 0)
+      .mapValues((filterValues) => filterValues as any[])
+      .value();
+
+    dispatch(changeChildAction("headerFilters", headerFilters, true));
+    onEvent("filterChange");
   }
 }
 

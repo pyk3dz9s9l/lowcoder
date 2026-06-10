@@ -128,12 +128,16 @@ export const columnChildrenMap = {
   dataIndex: valueComp<string>(""),
   hide: BoolControl,
   sortable: BoolControl,
+  filterable: withDefault(BoolControl, false),
   width: NumberControl,
   autoWidth: dropdownControl(columnWidthOptions, "auto"),
   render: RenderComp,
   align: HorizontalAlignmentControl,
   tempHide: stateComp<boolean>(false),
   fixed: dropdownControl(columnFixOptions, "close"),
+  // identifiers
+  className: StringControl,
+  dataTestId: StringControl,
   editable: BoolControl,
   background: withDefault(ColorControl, ""),
   margin: withDefault(RadiusControl, ""),
@@ -161,6 +165,11 @@ const StyledTextSizeIcon = styled(TextSizeIcon)` width: 24px; margin: 0 8px 0 -3
 const StyledFontFamilyIcon = styled(FontFamilyIcon)` width: 24px; margin: 0 8px 0 -3px; padding: 3px;`;
 const StyledTextWeightIcon = styled(TextWeightIcon)` width: 24px; margin: 0 8px 0 -3px; padding: 3px;`;
 const StyledBackgroundImageIcon = styled(ImageCompIcon)` width: 24px; margin: 0 0px 0 -12px;`;
+
+const SectionHeading = styled.div`
+  font-weight: bold;
+  margin-bottom: 8px;
+`;
 
 /**
  * export for test.
@@ -262,6 +271,9 @@ const ColumnPropertyView = React.memo(({
           {comp.children.sortable.propertyView({
             label: trans("table.sortable"),
           })}
+          {comp.children.filterable.propertyView({
+            label: trans("table.filterable"),
+          })}
           {comp.children.hide.propertyView({
             label: trans("prop.hide"),
           })}
@@ -283,11 +295,7 @@ const ColumnPropertyView = React.memo(({
           {(columnType === 'link' || columnType === 'links') && (
             <>
               <Divider style={{ margin: '12px 0' }} />
-              {controlItem({}, (
-                <div>
-                  <b>{"Link Style"}</b>
-                </div>
-              ))}
+              <SectionHeading>Link Style</SectionHeading>
               {comp.children.linkColor.propertyView({
                 label: trans('text') // trans('style.background'),
               })}
@@ -300,11 +308,7 @@ const ColumnPropertyView = React.memo(({
             </>
           )}
           <Divider style={{ margin: '12px 0' }} />
-          {controlItem({}, (
-            <div>
-              <b>{"Column Style"}</b>
-            </div>
-          ))}
+          <SectionHeading>Column Style</SectionHeading>
           {comp.children.background.propertyView({
             label: trans('style.background'),
           })}
@@ -346,6 +350,14 @@ const ColumnPropertyView = React.memo(({
           })}
           {comp.children.textOverflow.getPropertyView()}
           {comp.children.cellColor.getPropertyView()}
+          <Divider style={{ margin: '12px 0' }} />
+          <SectionHeading>Identifiers</SectionHeading>
+          {comp.children.className.propertyView({
+            label: trans("prop.className"),
+          })}
+          {comp.children.dataTestId.propertyView({
+            label: trans("prop.dataTestId"),
+          })}
         </>
       )}
     </>
