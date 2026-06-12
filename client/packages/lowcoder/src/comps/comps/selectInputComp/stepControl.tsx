@@ -241,11 +241,11 @@ const StyledWrapper = styled.div<{
   }
 
   /* Custom icons need explicit circle shape */
-  .ant-steps-item-custom .ant-steps-item-icon {
+  .ant-steps-item-custom .ant-steps-icon {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
-    display: inline-flex;
+    border-radius: 50% !important;
+    display: flex;
     align-items: center;
     justify-content: center;
   }
