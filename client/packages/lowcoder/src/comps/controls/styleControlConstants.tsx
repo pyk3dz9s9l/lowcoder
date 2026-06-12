@@ -1775,22 +1775,57 @@ export const SegmentStyle = [
 
 export const StepsStyle = [
   {
-    name: "activeBackground",
+    name: "stepActiveColor",
     label: trans("style.accent"),
-    depName: "activeBackground",
-    transformer: handleToSegmentBackground,
+    depTheme: "primary",
+    depType: DEP_TYPE.SELF,
+    transformer: toSelf,
   },
   {
-    name: "titleText",
+    name: "stepErrorColor",
+    label: trans("style.validate"),
+    color: ERROR_COLOR,
+  },
+  {
+    name: "stepTitleColor",
     label: trans("title"),
-    depName: "text",
-    depType: DEP_TYPE.SELF,
+    color: "rgba(0,0,0,0.88)",
+  },
+  {
+    name: "stepDescriptionColor",
+    label: trans("stepOptionsControl.description"),
+    color: "rgba(0,0,0,0.45)",
+  },
+  {
+    name: "stepDisabledColor",
+    label: trans("disabled"),
+    color: "rgba(0,0,0,0.25)",
+  },
+  {
+    name: "stepIconTextColor",
+    label: trans("text"),
+    depName: "stepActiveColor",
+    depType: DEP_TYPE.CONTRAST_TEXT,
     transformer: contrastText,
   },
-  ...STYLING_FIELDS_SEQUENCE.filter(
-    (style) =>
-      ["background", "textSize", "textDecoration"].includes(style.name) ===
-      false
+  {
+    name: "stepLineColor",
+    label: trans("style.border"),
+    color: "rgba(5,5,5,0.06)",
+  },
+  {
+    name: "stepIconBackground",
+    label: trans("style.background"),
+    color: "rgba(0,0,0,0.04)",
+  },
+  TEXT_SIZE,
+  TEXT_WEIGHT,
+  FONT_FAMILY,
+  FONT_STYLE,
+  TEXT_TRANSFORM,
+  TEXT_DECORATION,
+  ...STYLING_FIELDS_CONTAINER_SEQUENCE.filter(
+    (style) => style.name !== "lineHeight",
   ),
   getBackground(),
   {
@@ -2680,4 +2715,3 @@ export function marginCalculator(margin: string) {
 }
 
 export type {ThemeDetail};
-

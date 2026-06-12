@@ -743,6 +743,7 @@ let StepOption = new MultiCompBuilder(
     icon: IconControl,
     status: StringControl,
     disabled: BoolCodeControl,
+    hidden: BoolCodeControl,
   },
   (props) => props
 ).build();
@@ -758,6 +759,7 @@ StepOption = class extends StepOption implements OptionCompProperty {
         {this.children.icon.propertyView({ label: trans("stepOptionsControl.icon") })}
         {this.children.status.propertyView({ label: trans("stepOptionsControl.status") })}
         {disabledPropertyView(this.children)}
+        {hiddenPropertyView(this.children)}
       </>
     );
   }
