@@ -43,6 +43,32 @@ The payload contains:
 
 The `messages` include the helper system prompt and the conversation. The `tools` describe how the model can offer a result that Lowcoder can apply. The `target` describes the current field, for example whether it is SQL, JavaScript, JSON, an ECharts option, or another supported input.
 
+AI Help does not call the model directly. The selected query is the integration layer between Lowcoder and your AI provider.
+
+## Where AI Help Appears
+
+AI Help is shown inside supported Lowcoder code editors and structured input editors. In the current editor flow, this includes:
+
+- JavaScript queries
+- transformers
+- temporary state values
+- SQL query editors
+- HTTP and Server-Sent Events request bodies
+- GraphQL query editors
+- MongoDB query fields
+- Redis command editors
+- Elasticsearch query editors
+- AlaSQL query editors
+- JSON editor and JSON explorer components
+- ECharts option JSON for charts
+- Table and Table Lite data JSON
+- option-list data, such as Select, Multi Select, Radio, Checkbox, and similar option components
+- Tree component data JSON
+- JSON Schema Form schema, UI schema, and form data JSON
+- JavaScript event-handler scripts, such as Run JavaScript actions
+
+When AI Help opens, it receives context for the exact field where it was opened. For example, in a JavaScript query it receives a JavaScript-focused target, and in an ECharts option field it receives an ECharts JSON-focused target.
+
 ## Recommended Query Setup
 
 A common setup is to create two queries:
@@ -62,6 +88,8 @@ Before you start, prepare:
 - a Lowcoder HTTP query, for example `llmHttp`
 - a Lowcoder JavaScript query, for example `aiBridge`
 
+In the example below, the HTTP query is named `llmHttp` and the JavaScript bridge query is named `unifiedQuery`.
+
 ## HTTP Query
 
 Create an HTTP query, for example `llmHttp`, that points to your model provider endpoint.
@@ -79,6 +107,8 @@ For an OpenAI-compatible chat completions API, the request body can look like th
 ```
 
 Change the model name, URL, headers, authentication, and request fields to match the provider you use.
+
+<figure><img src="../../.gitbook/assets/automator-ai-help-httpquery.png" alt=""><figcaption><p>HTTP query calling an OpenAI-compatible model endpoint.</p></figcaption></figure>
 
 ## Provider Starting Points
 
@@ -251,6 +281,8 @@ return llmHttp
 
 This bridge can be shared with Automator when both features use the same provider and response format.
 
+<figure><img src="../../.gitbook/assets/automator-ai-help-jsquery.png" alt=""><figcaption><p>JavaScript bridge query that forwards AI Help payloads to the HTTP query and normalizes the response.</p></figcaption></figure>
+
 ## Select the Query
 
 In the App Editor:
@@ -261,6 +293,8 @@ In the App Editor:
 4. apply the suggestion if AI Help returns an apply action
 
 AI Help keeps the conversation focused on the field where it was opened. For example, in a SQL editor it should help write or improve SQL. In a JSON field it should return valid JSON.
+
+<figure><img src="../../.gitbook/assets/ai-help-query-selection.png" alt=""><figcaption><p>Select the JavaScript bridge query in the AI Helper panel.</p></figcaption></figure>
 
 ## Example Prompts
 
@@ -273,6 +307,10 @@ AI Help is designed for focused field-level work. Useful prompts include:
 - "Replace this value with a safer version."
 
 When AI Help returns an apply action, Lowcoder can insert, append, or replace the current field value depending on the tool arguments returned by the model.
+
+<figure><img src="../../.gitbook/assets/ai-help-on-echarts.png" alt=""><figcaption><p>AI Help can generate and apply ECharts option JSON for chart configuration.</p></figcaption></figure>
+
+<figure><img src="../../.gitbook/assets/ai-help-on-jS.png" alt=""><figcaption><p>AI Help can generate, replace, or explain JavaScript query code.</p></figcaption></figure>
 
 ## Response Contract
 

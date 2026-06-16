@@ -42,6 +42,8 @@ The payload contains:
 
 The query should send `messages` and `tools` to your model. If the model returns a normal assistant reply, the query returns that text to Automator. If the model calls an Automator tool, the query returns the tool call so Lowcoder can apply the generated actions in the editor.
 
+Automator does not call the model directly. The selected query is the integration layer between Lowcoder and your AI provider.
+
 ## Recommended Query Setup
 
 A common setup is to create two queries:
@@ -61,6 +63,8 @@ Before you start, prepare:
 - a Lowcoder HTTP query, for example `llmHttp`
 - a Lowcoder JavaScript query, for example `aiBridge`
 
+In the example below, the HTTP query is named `llmHttp` and the JavaScript bridge query is named `unifiedQuery`.
+
 ## HTTP Query
 
 Create an HTTP query, for example `llmHttp`, that points to your model provider endpoint.
@@ -78,6 +82,8 @@ For an OpenAI-compatible chat completions API, the request body can look like th
 ```
 
 Change the model name, URL, headers, authentication, and request fields to match the provider you use.
+
+<figure><img src="../../.gitbook/assets/automator-ai-help-httpquery.png" alt=""><figcaption><p>HTTP query calling an OpenAI-compatible model endpoint.</p></figcaption></figure>
 
 ## Provider Starting Points
 
@@ -250,6 +256,8 @@ return llmHttp
 
 This bridge keeps Automator independent from a specific provider. If your provider returns a different response shape, update only this JavaScript query.
 
+<figure><img src="../../.gitbook/assets/automator-ai-help-jsquery.png" alt=""><figcaption><p>JavaScript bridge query that forwards Automator payloads to the HTTP query and normalizes the response.</p></figcaption></figure>
+
 ## Select the Query
 
 In the App Editor:
@@ -259,6 +267,8 @@ In the App Editor:
 3. send an instruction, such as creating components, adjusting layout, or modifying supported properties
 
 Automator will run the selected query and apply supported tool calls returned by the model.
+
+<figure><img src="../../.gitbook/assets/automator-query-selection.png" alt=""><figcaption><p>Select the JavaScript bridge query in the Automator panel.</p></figcaption></figure>
 
 ## Example Instructions
 
@@ -270,6 +280,8 @@ After selecting the bridge query, you can ask Automator for app-editor changes s
 - "Create a simple dashboard layout with a chart and two summary cards."
 
 The model can only apply actions that are available in the tools passed by Lowcoder. If a request is outside the supported action set, the assistant should explain what it can do instead.
+
+<figure><img src="../../.gitbook/assets/automator-app-build.png" alt=""><figcaption><p>Automator can apply generated tool calls to build or update the app canvas.</p></figcaption></figure>
 
 ## Response Contract
 
