@@ -5,7 +5,13 @@ import type {
   ChatBoxContainerStyleType,
   ChatBoxSidebarStyleType,
   ChatBoxHeaderStyleType,
-  ChatBoxMessageStyleType,
+  ChatBoxMessageAreaStyleType,
+  ChatBoxOwnMessageStyleType,
+  ChatBoxOtherMessageStyleType,
+  ChatBoxAiMessageStyleType,
+  ChatBoxOwnAvatarStyleType,
+  ChatBoxOtherAvatarStyleType,
+  ChatBoxAiAvatarStyleType,
   ChatBoxInputAreaStyleType,
   ChatBoxInputFieldStyleType,
   ChatBoxInputSendButtonStyleType,
@@ -35,6 +41,12 @@ interface BooleanExposedState {
   onChange: (v: boolean) => void;
 }
 
+/** Imperative handle registered on the ChatBox comp for external actions (e.g. event handlers). */
+export interface ChatBoxMessageUploadHandle {
+  /** Opens the same native file picker as the message input paperclip. */
+  openFilePicker: () => void;
+}
+
 export interface ChatBoxContextValue {
   // Data
   messages: any[];
@@ -45,6 +57,8 @@ export interface ChatBoxContextValue {
   currentUserName: string;
   typingUsers: any[];
   onlineUsers: OnlineUser[];
+  /** Raw mention picker config from the property panel; empty array uses room/online fallback. */
+  mentionCandidatesConfig: unknown[];
   pendingInvites: PendingRoomInvite[];
   isAiThinking: boolean;
 
@@ -65,7 +79,13 @@ export interface ChatBoxContextValue {
   animationStyle: AnimationStyleType;
   sidebarStyle: ChatBoxSidebarStyleType;
   headerStyle: ChatBoxHeaderStyleType;
-  messageStyle: ChatBoxMessageStyleType;
+  messageAreaStyle: ChatBoxMessageAreaStyleType;
+  ownMessageStyle: ChatBoxOwnMessageStyleType;
+  otherMessageStyle: ChatBoxOtherMessageStyleType;
+  aiMessageStyle: ChatBoxAiMessageStyleType;
+  ownAvatarStyle: ChatBoxOwnAvatarStyleType;
+  otherAvatarStyle: ChatBoxOtherAvatarStyleType;
+  aiAvatarStyle: ChatBoxAiAvatarStyleType;
   inputAreaStyle: ChatBoxInputAreaStyleType;
   inputFieldStyle: ChatBoxInputFieldStyleType;
   inputSendButtonStyle: ChatBoxInputSendButtonStyleType;
@@ -80,6 +100,8 @@ export interface ChatBoxContextValue {
   setMessageAttachments: (files: JSONObject[], values: Array<string | null>) => void;
   clearMessageAttachments: () => void;
   onFileUploadEvent: () => void;
+  /** Ref setter from `messageUploadRef` child — used to expose `openMessageFilePicker` methods. */
+  messageUploadRef: (instance: ChatBoxMessageUploadHandle | null) => void;
 
   // Events
   onEvent: (event: ChatEventName) => any;

@@ -1,5 +1,6 @@
-import React, { useContext } from "react";
-import { Section, sectionNames } from "lowcoder-design";
+import React, { useContext, useState } from "react";
+import { Section, sectionNames, controlItem } from "lowcoder-design";
+import { default as Segmented } from "antd/es/segmented";
 import { UICompBuilder, withDefault, stateComp } from "../../generators";
 import { changeValueAction, multiChangeAction } from "lowcoder-core";
 import {
@@ -26,18 +27,25 @@ import {
   ChatBoxContainerStyle,
   ChatBoxSidebarStyle,
   ChatBoxHeaderStyle,
-  ChatBoxMessageStyle,
+  ChatBoxMessageAreaStyle,
+  ChatBoxOwnMessageStyle,
+  ChatBoxOtherMessageStyle,
+  ChatBoxAiMessageStyle,
+  ChatBoxOwnAvatarStyle,
+  ChatBoxOtherAvatarStyle,
+  ChatBoxAiAvatarStyle,
   ChatBoxInputAreaStyle,
   ChatBoxInputFieldStyle,
   ChatBoxInputSendButtonStyle,
   ChatBoxInputAttachButtonStyle,
 } from "comps/controls/styleControlConstants";
+import { RefControl } from "comps/controls/refControl";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
 import { trans } from "i18n";
 
 import { ChatBoxView } from "./components/ChatBoxView";
-import { ChatBoxContext } from "./ChatBoxContext";
+import { ChatBoxContext, type ChatBoxMessageUploadHandle } from "./ChatBoxContext";
 import type { ChatRoom, PendingRoomInvite } from "./store";
 import type { JSONObject } from "util/jsonTypes";
 
@@ -124,6 +132,8 @@ const childrenMap = {
   currentRoomId: withDefault(StringControl, ""),
   pendingInvites: jsonArrayControl([]),
   onlineUsers: jsonArrayControl([]),
+  /** Optional @mention picker list. When non-empty, each entry is treated as a user; AI is appended. */
+  mentionCandidates: jsonArrayControl([]),
   showRoomsPanel: withDefault(BoolControl, true),
   roomsPanelWidth: withDefault(StringControl, "240px"),
   allowRoomCreation: withDefault(BoolControl, true),
@@ -145,18 +155,41 @@ const childrenMap = {
   animationStyle: styleControl(AnimationStyle, "animationStyle"),
   sidebarStyle: styleControl(ChatBoxSidebarStyle, "sidebarStyle"),
   headerStyle: styleControl(ChatBoxHeaderStyle, "headerStyle"),
-  messageStyle: styleControl(ChatBoxMessageStyle, "messageStyle"),
+  messageAreaStyle: styleControl(ChatBoxMessageAreaStyle, "messageAreaStyle"),
+  ownMessageStyle: styleControl(ChatBoxOwnMessageStyle, "ownMessageStyle"),
+  otherMessageStyle: styleControl(ChatBoxOtherMessageStyle, "otherMessageStyle"),
+  aiMessageStyle: styleControl(ChatBoxAiMessageStyle, "aiMessageStyle"),
+  ownAvatarStyle: styleControl(ChatBoxOwnAvatarStyle, "ownAvatarStyle"),
+  otherAvatarStyle: styleControl(ChatBoxOtherAvatarStyle, "otherAvatarStyle"),
+  aiAvatarStyle: styleControl(ChatBoxAiAvatarStyle, "aiAvatarStyle"),
   inputAreaStyle: styleControl(ChatBoxInputAreaStyle, "inputAreaStyle"),
   inputFieldStyle: styleControl(ChatBoxInputFieldStyle, "inputFieldStyle"),
   inputSendButtonStyle: styleControl(ChatBoxInputSendButtonStyle, "inputSendButtonStyle"),
   inputAttachButtonStyle: styleControl(ChatBoxInputAttachButtonStyle, "inputAttachButtonStyle"),
+  messageUploadRef: RefControl<ChatBoxMessageUploadHandle>,
 };
 
 // ─── Property panel ──────────────────────────────────────────────────────────
 
+type MessageStyleSegment = "own" | "other" | "ai";
+
+const roleStyleOptions = [
+  { label: trans("chatBox.ownMessageStyle"), value: "own" },
+  { label: trans("chatBox.otherMessageStyle"), value: "other" },
+  { label: trans("chatBox.aiMessageStyle"), value: "ai" },
+] as const;
+
+const avatarStyleOptions = [
+  { label: trans("chatBox.ownAvatarStyle"), value: "own" },
+  { label: trans("chatBox.otherAvatarStyle"), value: "other" },
+  { label: trans("chatBox.aiAvatarStyle"), value: "ai" },
+] as const;
+
 const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   const { children } = props;
   const editorMode = useContext(EditorContext).editorModeStatus;
+  const [messageStyleSegment, setMessageStyleSegment] = useState<MessageStyleSegment>("own");
+  const [avatarStyleSegment, setAvatarStyleSegment] = useState<MessageStyleSegment>("own");
 
   return (
     <>
@@ -176,6 +209,10 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
         {children.currentUserName.propertyView({
           label: trans("chatBox.currentUserNameLabel"),
           tooltip: trans("chatBox.currentUserNameTooltip"),
+        })}
+        {children.mentionCandidates.propertyView({
+          label: trans("chatBox.mentionCandidatesLabel"),
+          tooltip: trans("chatBox.mentionCandidatesTooltip"),
         })}
       </Section>
 
@@ -257,8 +294,34 @@ const ChatBoxPropertyView = React.memo((props: { children: any }) => {
           <Section name={trans("chatBox.headerStyleSection")}>
             {children.headerStyle.getPropertyView()}
           </Section>
+          <Section name={trans("chatBox.messageAreaStyleSection")}>
+            {children.messageAreaStyle.getPropertyView()}
+          </Section>
           <Section name={trans("chatBox.messageStyleSection")}>
-            {children.messageStyle.getPropertyView()}
+            {controlItem({}, (
+              <Segmented
+                block
+                options={roleStyleOptions as any}
+                value={messageStyleSegment}
+                onChange={(k) => setMessageStyleSegment(k as MessageStyleSegment)}
+              />
+            ))}
+            {messageStyleSegment === "own" && children.ownMessageStyle.getPropertyView()}
+            {messageStyleSegment === "other" && children.otherMessageStyle.getPropertyView()}
+            {messageStyleSegment === "ai" && children.aiMessageStyle.getPropertyView()}
+          </Section>
+          <Section name={trans("chatBox.avatarStyleSection")}>
+            {controlItem({}, (
+              <Segmented
+                block
+                options={avatarStyleOptions as any}
+                value={avatarStyleSegment}
+                onChange={(k) => setAvatarStyleSegment(k as MessageStyleSegment)}
+              />
+            ))}
+            {avatarStyleSegment === "own" && children.ownAvatarStyle.getPropertyView()}
+            {avatarStyleSegment === "other" && children.otherAvatarStyle.getPropertyView()}
+            {avatarStyleSegment === "ai" && children.aiAvatarStyle.getPropertyView()}
           </Section>
           <Section name={trans("chatBox.inputAreaStyleSection")}>
             {children.inputAreaStyle.getPropertyView()}
@@ -291,6 +354,9 @@ let ChatBoxTmp = (function () {
     const rooms = (Array.isArray(props.rooms) ? props.rooms : []) as unknown as ChatRoom[];
     const typingUsers = Array.isArray(props.typingUsers) ? props.typingUsers : [];
     const onlineUsers = Array.isArray(props.onlineUsers) ? props.onlineUsers : [];
+    const mentionCandidatesConfig = Array.isArray(props.mentionCandidates)
+      ? props.mentionCandidates
+      : [];
     const isAiThinking = Boolean(props.isAiThinking);
     const pendingInvites = (Array.isArray(props.pendingInvites)
       ? props.pendingInvites
@@ -322,6 +388,7 @@ let ChatBoxTmp = (function () {
       currentUserName: props.currentUserName,
       typingUsers,
       onlineUsers: onlineUsers as any,
+      mentionCandidatesConfig,
       isAiThinking,
       pendingInvites,
 
@@ -339,7 +406,13 @@ let ChatBoxTmp = (function () {
       animationStyle: props.animationStyle,
       sidebarStyle: props.sidebarStyle,
       headerStyle: props.headerStyle,
-      messageStyle: props.messageStyle,
+      messageAreaStyle: props.messageAreaStyle,
+      ownMessageStyle: props.ownMessageStyle,
+      otherMessageStyle: props.otherMessageStyle,
+      aiMessageStyle: props.aiMessageStyle,
+      ownAvatarStyle: props.ownAvatarStyle,
+      otherAvatarStyle: props.otherAvatarStyle,
+      aiAvatarStyle: props.aiAvatarStyle,
       inputAreaStyle: props.inputAreaStyle,
       inputFieldStyle: props.inputFieldStyle,
       inputSendButtonStyle: props.inputSendButtonStyle,
@@ -360,6 +433,7 @@ let ChatBoxTmp = (function () {
       },
       clearMessageAttachments,
       onFileUploadEvent: () => props.onEvent("fileUpload"),
+      messageUploadRef: props.messageUploadRef,
 
       onEvent: props.onEvent,
 
@@ -406,6 +480,18 @@ let ChatBoxTmp = (function () {
     .setPropertyViewFn((children) => (
       <ChatBoxPropertyView children={children} />
     ))
+    .setExposeMethodConfigs([
+      {
+        method: {
+          name: "openMessageFilePicker",
+          description: trans("chatBox.openMessageFilePickerDesc"),
+          params: [],
+        },
+        execute: (comp) => {
+          comp.children.messageUploadRef.viewRef?.openFilePicker();
+        },
+      },
+    ])
     .build();
 })();
 

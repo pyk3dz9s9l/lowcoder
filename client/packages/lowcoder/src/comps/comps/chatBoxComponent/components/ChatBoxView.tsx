@@ -50,6 +50,21 @@ export const ChatBoxView = React.memo(() => {
       });
     };
 
+    const customConfig = ctx.mentionCandidatesConfig;
+    if (Array.isArray(customConfig) && customConfig.length > 0) {
+      for (const item of customConfig) {
+        if (item == null || typeof item !== "object") continue;
+        const row = item as Record<string, unknown>;
+        const id = String(row.id ?? row.userId ?? "").trim();
+        if (!id) continue;
+        const label =
+          String(row.label ?? row.userName ?? row.name ?? id).trim() || id;
+        add(id, label, "user");
+      }
+      add(LLM_BOT_AUTHOR_ID, trans("chatBox.aiShortLabel"), "llm");
+      return list;
+    }
+
     add(LLM_BOT_AUTHOR_ID, trans("chatBox.aiShortLabel"), "llm");
 
     const room = ctx.currentRoom;
@@ -76,7 +91,13 @@ export const ChatBoxView = React.memo(() => {
     }
 
     return list;
-  }, [ctx.currentRoom, ctx.onlineUsers, ctx.currentRoomId, ctx.currentUserId]);
+  }, [
+    ctx.mentionCandidatesConfig,
+    ctx.currentRoom,
+    ctx.onlineUsers,
+    ctx.currentRoomId,
+    ctx.currentUserId,
+  ]);
 
   return (
     <Wrapper $style={ctx.style} $anim={ctx.animationStyle}>
@@ -119,8 +140,15 @@ export const ChatBoxView = React.memo(() => {
           messages={ctx.messages}
           typingUsers={ctx.typingUsers}
           currentUserId={ctx.currentUserId}
+          currentUserName={ctx.currentUserName}
           isAiThinking={ctx.isAiThinking}
-          messageStyle={ctx.messageStyle}
+          messageAreaStyle={ctx.messageAreaStyle}
+          ownMessageStyle={ctx.ownMessageStyle}
+          otherMessageStyle={ctx.otherMessageStyle}
+          aiMessageStyle={ctx.aiMessageStyle}
+          ownAvatarStyle={ctx.ownAvatarStyle}
+          otherAvatarStyle={ctx.otherAvatarStyle}
+          aiAvatarStyle={ctx.aiAvatarStyle}
         />
 
         <InputBar
@@ -132,6 +160,7 @@ export const ChatBoxView = React.memo(() => {
           messageFileValues={ctx.messageFileValues}
           onAttachmentsChange={ctx.setMessageAttachments}
           onFileUpload={ctx.onFileUploadEvent}
+          messageUploadRef={ctx.messageUploadRef}
           onSend={(text) => {
             ctx.lastSentMessageText.onChange(text);
             ctx.lastSentMessageTagsLlm.onChange(

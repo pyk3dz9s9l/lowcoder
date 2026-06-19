@@ -4,13 +4,18 @@ import type {
   ChatBoxContainerStyleType,
   ChatBoxSidebarStyleType,
   ChatBoxHeaderStyleType,
-  ChatBoxMessageStyleType,
+  ChatBoxMessageAreaStyleType,
+  ChatBoxMessageRoleStyleType,
+  ChatBoxAiMessageStyleType,
   ChatBoxInputAreaStyleType,
   ChatBoxInputFieldStyleType,
   ChatBoxInputSendButtonStyleType,
   ChatBoxInputAttachButtonStyleType,
   AnimationStyleType,
 } from "comps/controls/styleControlConstants";
+
+const messageBoxShadow = (style?: { boxShadow?: string; boxShadowColor?: string }) =>
+  `${style?.boxShadow ?? ""} ${style?.boxShadowColor ?? ""}`.trim() || "none";
 
 export const Wrapper = styled.div<{ $style: ChatBoxContainerStyleType; $anim: AnimationStyleType }>`
   height: 100%;
@@ -21,6 +26,7 @@ export const Wrapper = styled.div<{ $style: ChatBoxContainerStyleType; $anim: An
   background: ${(p) => p.$style.background || "#fff"};
   margin: ${(p) => p.$style.margin || "0"};
   padding: ${(p) => p.$style.padding || "0"};
+  box-shadow: ${(p) => messageBoxShadow(p.$style)};
   ${(p) => p.$anim}
 `;
 
@@ -117,63 +123,99 @@ export const ChatHeaderBar = styled.div<{ $headerStyle?: ChatBoxHeaderStyleType 
   align-items: center;
 `;
 
-export const MessagesArea = styled.div<{ $messageStyle?: ChatBoxMessageStyleType }>`
+export const MessagesArea = styled.div<{ $areaStyle?: ChatBoxMessageAreaStyleType }>`
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: ${(p) => p.$areaStyle?.padding || "16px"};
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: ${(p) => p.$messageStyle?.messageAreaBackground || "transparent"};
+  gap: 24px;
+  background: ${(p) => p.$areaStyle?.messageAreaBackground || "transparent"};
 `;
 
-export const MessageWrapper = styled.div<{ $own: boolean }>`
+export const MessageRow = styled.div<{ $own: boolean }>`
+  display: flex;
+  flex-direction: ${(p) => (p.$own ? "row-reverse" : "row")};
+  align-items: flex-end;
+  gap: 8px;
+  align-self: ${(p) => (p.$own ? "flex-end" : "flex-start")};
+  max-width: 85%;
+  width: 100%;
+`;
+
+export const MessageContentColumn = styled.div<{ $own: boolean }>`
   display: flex;
   flex-direction: column;
-  align-self: ${(p) => (p.$own ? "flex-end" : "flex-start")};
-  max-width: 70%;
+  min-width: 0;
+  // flex: 1;
+  max-width: calc(100% - 40px);
+`;
+
+export const MessageAvatar = styled.div<{
+  $bg: string;
+  $textColor: string;
+  $border?: string;
+}>`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: ${(p) => p.$bg};
+  color: ${(p) => p.$textColor};
+  border: ${(p) => p.$border || "none"};
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  user-select: none;
+  margin-bottom: 19px;
 `;
 
 export const Bubble = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxMessageStyleType;
+  $style?: ChatBoxMessageRoleStyleType;
 }>`
-  padding: ${(p) => p.$messageStyle?.padding || "10px 14px"};
+  padding: ${(p) => p.$style?.padding || "10px 14px"};
   border-radius: ${(p) => {
-    const r = p.$messageStyle?.radius;
+    const r = p.$style?.radius;
     if (r && r !== "0") return r;
     return p.$own ? "16px 16px 4px 16px" : "16px 16px 16px 4px";
   }};
+  ${(p) => !p.$own ?
+    `border-bottom-left-radius: 0;` :
+    `border-bottom-right-radius: 0;`
+  }
+  border-width: ${(p) => p.$style?.borderWidth || "0"};
+  border-style: ${(p) => p.$style?.borderStyle || "solid"};
+  border-color: ${(p) => p.$style?.border || "transparent"};
   background: ${(p) =>
-    p.$own
-      ? p.$messageStyle?.ownMessageBackground || "#1890ff"
-      : p.$messageStyle?.otherMessageBackground || "#f0f0f0"};
-  color: ${(p) =>
-    p.$own
-      ? p.$messageStyle?.ownMessageText || "#fff"
-      : p.$messageStyle?.otherMessageText || "#333"};
-  font-size: 14px;
+    p.$style?.background || (p.$own ? "#1890ff" : "#f0f0f0")};
+  color: ${(p) => p.$style?.text || (p.$own ? "#fff" : "#333")};
+  font-size: ${(p) => p.$style?.textSize || "14px"};
+  box-shadow: ${(p) => messageBoxShadow(p.$style)};
   word-break: break-word;
 `;
 
 export const BubbleMeta = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxMessageStyleType;
+  $style?: ChatBoxMessageRoleStyleType;
 }>`
   font-size: 11px;
-  color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
-  opacity: ${(p) => (p.$messageStyle?.messageMetaText ? 1 : 0.7)};
+  color: ${(p) => p.$style?.messageMetaText || "inherit"};
+  opacity: ${(p) => (p.$style?.messageMetaText ? 1 : 0.7)};
   margin-bottom: 2px;
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
 
 export const BubbleTime = styled.div<{
   $own: boolean;
-  $messageStyle?: ChatBoxMessageStyleType;
+  $style?: ChatBoxMessageRoleStyleType;
 }>`
   font-size: 10px;
-  color: ${(p) => p.$messageStyle?.messageMetaText || "inherit"};
-  opacity: ${(p) => (p.$messageStyle?.messageMetaText ? 0.8 : 0.6)};
+  color: ${(p) => p.$style?.messageMetaText || "inherit"};
+  opacity: ${(p) => (p.$style?.messageMetaText ? 0.8 : 0.6)};
   margin-top: 4px;
   text-align: ${(p) => (p.$own ? "right" : "left")};
 `;
@@ -213,6 +255,8 @@ export const StyledTextArea = styled.textarea<{
   font-family: inherit;
   line-height: 1.4;
   box-sizing: border-box;
+  box-shadow: ${(p) =>
+    `${p.$fieldStyle?.boxShadow ?? ""} ${p.$fieldStyle?.boxShadowColor ?? ""}`.trim() || "none"};
   &:focus {
     border-color: ${(p) => p.$sendStyle?.sendButtonBackground || "#1890ff"};
   }
@@ -234,6 +278,8 @@ export const InputBarFieldWrap = styled.div<{ $fieldStyle?: ChatBoxInputFieldSty
   border-color: ${(p) => p.$fieldStyle?.border ?? "#e5e7eb"};
   border-radius: ${(p) => p.$fieldStyle?.radius ?? "10px"};
   background: ${(p) => p.$fieldStyle?.inputBackground ?? "#ffffff"};
+  box-shadow: ${(p) =>
+    `${p.$fieldStyle?.boxShadow ?? ""} ${p.$fieldStyle?.boxShadowColor ?? ""}`.trim() || "none"};
 `;
 
 export const InputBarAttachmentList = styled.div`
@@ -496,8 +542,8 @@ export const ConnectionDot = styled.span<{ $status: "online" | "offline" | "conn
 export const AiBubbleWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  align-self: flex-start;
-  max-width: 80%;
+  min-width: 0;
+  width: 100%;
   position: relative;
 
   &:hover .ai-copy-btn {
@@ -512,23 +558,31 @@ export const AiBadge = styled.span`
   font-size: 10px;
   font-weight: 600;
   color: #7c3aed;
-  background: #f3e8ff;
+  // background: #f3e8ff;
   border-radius: 8px;
-  padding: 2px 7px;
+  // padding: 2px 7px;
   margin-bottom: 4px;
   align-self: flex-start;
   letter-spacing: 0.4px;
   text-transform: uppercase;
 `;
 
-export const AiBubble = styled.div`
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
-  border-radius: 4px 16px 16px 16px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: #1f1f1f;
+export const AiBubble = styled.div<{ $style?: ChatBoxAiMessageStyleType }>`
+  background: ${(p) => p.$style?.background || "#faf5ff"};
+  border-width: ${(p) => p.$style?.borderWidth || "1px"};
+  border-style: ${(p) => p.$style?.borderStyle || "solid"};
+  border-color: ${(p) => p.$style?.border || "#e9d5ff"};
+  border-radius: ${(p) => {
+    const r = p.$style?.radius;
+    if (r && r !== "0") return r;
+    return "16px 16px 16px 4px";
+  }};
+  border-bottom-left-radius: 0;
+  padding: ${(p) => p.$style?.padding || "10px 14px"};
+  font-size: ${(p) => p.$style?.textSize || "14px"};
+  color: ${(p) => p.$style?.text || "#1f1f1f"};
   line-height: 1.6;
+  box-shadow: ${(p) => messageBoxShadow(p.$style)};
   word-break: break-word;
 
   p { margin: 0 0 8px; }
@@ -567,14 +621,14 @@ export const AiBubble = styled.div`
   th { background: #f3e8ff; }
 `;
 
-export const AiCopyButton = styled.button`
+export const AiCopyButton = styled.button<{ $style?: ChatBoxAiMessageStyleType }>`
   position: absolute;
   top: 28px;
   right: -34px;
   width: 26px;
   height: 26px;
   border: none;
-  background: #f3e8ff;
+  background: ${(p) => p.$style?.background || "#f3e8ff"};
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -582,11 +636,12 @@ export const AiCopyButton = styled.button`
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s ease, background 0.15s ease;
-  color: #7c3aed;
+  color: ${(p) => p.$style?.text || "#7c3aed"};
   font-size: 13px;
+  box-shadow: ${(p) => messageBoxShadow(p.$style)};
 
   &:hover {
-    background: #e9d5ff;
+    background: ${(p) => p.$style?.background || "#f3e8ff"};
   }
 `;
 

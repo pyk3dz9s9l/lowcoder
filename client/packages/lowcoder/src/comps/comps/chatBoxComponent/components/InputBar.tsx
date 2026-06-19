@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CloseOutlined,
   FileOutlined,
@@ -33,6 +33,7 @@ import {
   InputBarSendButton,
 } from "../styles";
 import { trans } from "i18n";
+import type { ChatBoxMessageUploadHandle } from "../ChatBoxContext";
 import type { MentionCandidate } from "../mentionUtils";
 import { mentionInsertValue } from "../mentionUtils";
 import { resolveValue, validateFile } from "../../fileComp/fileComp";
@@ -70,6 +71,7 @@ export interface InputBarProps {
   messageFileValues: Array<string | null>;
   onAttachmentsChange: (files: JSONObject[], values: Array<string | null>) => void;
   onFileUpload: () => void;
+  messageUploadRef?: (instance: ChatBoxMessageUploadHandle | null) => void;
 }
 
 export const InputBar = React.memo((props: InputBarProps) => {
@@ -90,10 +92,14 @@ export const InputBar = React.memo((props: InputBarProps) => {
     messageFileValues,
     onAttachmentsChange,
     onFileUpload,
+    messageUploadRef,
   } = props;
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
   const fieldWrapRef = useRef<HTMLDivElement>(null);
+  const uploadHostRef = useRef<HTMLSpanElement>(null);
+  const allowMessageFileUploadRef = useRef(allowMessageFileUpload);
+  const maxMessageFilesRef = useRef(maxMessageFiles);
   const messageFilesRef = useRef(messageFiles);
   const messageFileValuesRef = useRef(messageFileValues);
 
@@ -101,6 +107,14 @@ export const InputBar = React.memo((props: InputBarProps) => {
     messageFilesRef.current = messageFiles;
     messageFileValuesRef.current = messageFileValues;
   }, [messageFiles, messageFileValues]);
+
+  useEffect(() => {
+    allowMessageFileUploadRef.current = allowMessageFileUpload;
+  }, [allowMessageFileUpload]);
+
+  useEffect(() => {
+    maxMessageFilesRef.current = maxMessageFiles;
+  }, [maxMessageFiles]);
 
   const [draft, setDraft] = useState("");
   const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
@@ -336,6 +350,31 @@ export const InputBar = React.memo((props: InputBarProps) => {
   const canAddMore = messageFiles.length < effectiveMax;
   const isUploading = uploadingFiles.length > 0;
 
+  const openFilePicker = useCallback(() => {
+    if (!allowMessageFileUploadRef.current) {
+      return;
+    }
+    const max =
+      typeof maxMessageFilesRef.current === "number" && maxMessageFilesRef.current > 0
+        ? maxMessageFilesRef.current
+        : 100;
+    if (messageFilesRef.current.length >= max) {
+      return;
+    }
+    const input = uploadHostRef.current?.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement | null;
+    input?.click();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!messageUploadRef) {
+      return;
+    }
+    messageUploadRef({ openFilePicker });
+    return () => messageUploadRef(null);
+  }, [messageUploadRef, openFilePicker]);
+
   return (
     <InputBarContainer $areaStyle={inputAreaStyle}>
       {allowMessageFileUpload && messageFiles.length > 0 && (
@@ -381,28 +420,30 @@ export const InputBar = React.memo((props: InputBarProps) => {
       <InputBarFieldWrap ref={fieldWrapRef} $fieldStyle={inputFieldStyle}>
         <InputBarInputRow $fieldStyle={inputFieldStyle}>
           {allowMessageFileUpload && (
-            <AntdUpload
-              key={JSON.stringify(messageFiles.map((f) => String(f.uid ?? "")))}
-              accept={accept}
-              multiple={effectiveMax > 1}
-              showUploadList={false}
-              fileList={uploadFileList}
-              disabled={!canAddMore}
-              customRequest={(options: UploadRequestOption) =>
-                options.onSuccess && options.onSuccess({})
-              }
-              beforeUpload={(file) => validateFile(file, {})}
-              onChange={handleUploadChange}
-            >
-              <InputBarAttachButton
-                icon={<PaperClipOutlined />}
-                loading={isUploading}
+            <span ref={uploadHostRef} style={{ display: "inline-flex" }}>
+              <AntdUpload
+                key={JSON.stringify(messageFiles.map((f) => String(f.uid ?? "")))}
+                accept={accept}
+                multiple={effectiveMax > 1}
+                showUploadList={false}
+                fileList={uploadFileList}
                 disabled={!canAddMore}
-                $attachStyle={attachStyleResolved}
-                title={trans("chatBox.attachFileTooltip")}
-                aria-label={trans("chatBox.attachFileTooltip")}
-              />
-            </AntdUpload>
+                customRequest={(options: UploadRequestOption) =>
+                  options.onSuccess && options.onSuccess({})
+                }
+                beforeUpload={(file) => validateFile(file, {})}
+                onChange={handleUploadChange}
+              >
+                <InputBarAttachButton
+                  icon={<PaperClipOutlined />}
+                  loading={isUploading}
+                  disabled={!canAddMore}
+                  $attachStyle={attachStyleResolved}
+                  title={trans("chatBox.attachFileTooltip")}
+                  aria-label={trans("chatBox.attachFileTooltip")}
+                />
+              </AntdUpload>
+            </span>
           )}
           <Mentions
             value={draft}

@@ -3,15 +3,27 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Tooltip } from "antd";
 import { CopyOutlined, CheckOutlined, FileOutlined, RobotOutlined } from "@ant-design/icons";
+import { Sparkles } from "lucide-react";
 import dayjs from "dayjs";
 import { parseMessageTimestamp, formatChatTime } from "util/dateTimeUtils";
 import { LLM_BOT_AUTHOR_ID } from "../store";
 import { parseMessageIntoParts } from "../mentionUtils";
-import type { ChatBoxMessageStyleType } from "comps/controls/styleControlConstants";
+import type {
+  ChatBoxMessageAreaStyleType,
+  ChatBoxOwnMessageStyleType,
+  ChatBoxOtherMessageStyleType,
+  ChatBoxAiMessageStyleType,
+  ChatBoxOwnAvatarStyleType,
+  ChatBoxOtherAvatarStyleType,
+  ChatBoxAiAvatarStyleType,
+  ChatBoxAvatarRoleStyleType,
+} from "comps/controls/styleControlConstants";
 import { trans } from "i18n";
 import {
   MessagesArea,
-  MessageWrapper,
+  MessageRow,
+  MessageContentColumn,
+  MessageAvatar,
   Bubble,
   BubbleMeta,
   BubbleTime,
@@ -26,6 +38,45 @@ import {
   LlmLoadingBubble,
   MentionSpan,
 } from "../styles";
+
+const AI_AVATAR_DEFAULTS = {
+  bg: "#f3e8ff",
+  color: "#7c3aed",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  borderColor: "#e9d5ff",
+} as const;
+
+function resolveAvatarColors(
+  style: ChatBoxAvatarRoleStyleType | undefined,
+  isAi: boolean,
+  isOwn?: boolean,
+): { bg: string; color: string; border?: string } {
+  const bg =
+    style?.background ??
+    (isAi ? AI_AVATAR_DEFAULTS.bg : isOwn ? "#1890ff" : "#f0f0f0");
+  const color =
+    style?.text ??
+    (isAi ? AI_AVATAR_DEFAULTS.color : isOwn ? "#fff" : "#333");
+  const borderWidth = style?.borderWidth ?? (isAi ? AI_AVATAR_DEFAULTS.borderWidth : "0");
+  const borderStyle = style?.borderStyle || "solid";
+  const borderColor = style?.border ?? (isAi ? AI_AVATAR_DEFAULTS.borderColor : "transparent");
+  const border =
+    borderWidth && borderWidth !== "0"
+      ? `${borderWidth} ${borderStyle} ${borderColor}`
+      : undefined;
+  return { bg, color, border };
+}
+
+function getInitials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return trimmed.slice(0, 2).toUpperCase();
+}
 
 function readField(msg: any, ...keys: string[]): string {
   for (const k of keys) {
@@ -165,6 +216,33 @@ const MessageAttachmentsPreview = React.memo(
 
 MessageAttachmentsPreview.displayName = "MessageAttachmentsPreview";
 
+const MessageAvatarBadge = React.memo(
+  ({
+    displayName,
+    isAi,
+    isOwn,
+    avatarStyle,
+  }: {
+    displayName: string;
+    isAi?: boolean;
+    isOwn?: boolean;
+    avatarStyle?: ChatBoxAvatarRoleStyleType;
+  }) => {
+    const { bg, color, border } = resolveAvatarColors(avatarStyle, !!isAi, isOwn);
+    return (
+      <MessageAvatar $bg={bg} $textColor={color} $border={border} aria-hidden>
+        {isAi ? (
+          <Sparkles size={14} strokeWidth={2.2} />
+        ) : (
+          getInitials(displayName)
+        )}
+      </MessageAvatar>
+    );
+  },
+);
+
+MessageAvatarBadge.displayName = "MessageAvatarBadge";
+
 // ── AI message bubble with copy button ───────────────────────────────────────
 
 const AiMessageBubble = React.memo(
@@ -173,11 +251,15 @@ const AiMessageBubble = React.memo(
     authorName,
     ts,
     files,
+    aiMessageStyle,
+    aiAvatarStyle,
   }: {
     text: string;
     authorName: string;
     ts: dayjs.Dayjs | null;
     files: MessageFileItem[];
+    aiMessageStyle?: ChatBoxAiMessageStyleType;
+    aiAvatarStyle?: ChatBoxAiAvatarStyleType;
   }) => {
     const [copied, setCopied] = useState(false);
 
@@ -191,49 +273,59 @@ const AiMessageBubble = React.memo(
     const aiParts = parseMessageIntoParts(text);
 
     return (
-      <AiBubbleWrapper>
-        <AiBadge>
-          <RobotOutlined style={{ fontSize: 9 }} />
-          {authorName}
-        </AiBadge>
-        {files.length > 0 && <MessageAttachmentsPreview files={files} tone="ai" />}
-        <div style={{ position: "relative" }}>
-          <AiBubble>
-            {aiParts.map((p, i) =>
-              p.type === "mention" ? (
-                <MentionSpan key={i} $inAi>
-                  @{p.label}
-                </MentionSpan>
-              ) : p.text ? (
-                <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
-                  {p.text}
-                </ReactMarkdown>
-              ) : null,
+      <MessageRow $own={false}>
+        <MessageAvatarBadge
+          displayName={authorName}
+          isAi
+          avatarStyle={aiAvatarStyle}
+        />
+        <MessageContentColumn $own={false}>
+          {/* <AiBadge>
+            {authorName}
+          </AiBadge> */}
+          <BubbleMeta $own={false} $style={aiMessageStyle}>{authorName}</BubbleMeta>
+          <AiBubbleWrapper>
+            {files.length > 0 && <MessageAttachmentsPreview files={files} tone="ai" />}
+            <div style={{ position: "relative" }}>
+              <AiBubble $style={aiMessageStyle}>
+                {aiParts.map((p, i) =>
+                  p.type === "mention" ? (
+                    <MentionSpan key={i} $inAi>
+                      @{p.label}
+                    </MentionSpan>
+                  ) : p.text ? (
+                    <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
+                      {p.text}
+                    </ReactMarkdown>
+                  ) : null,
+                )}
+              </AiBubble>
+              <Tooltip
+                title={copied ? trans("chatBox.copied") : trans("chatBox.copyAction")}
+                placement="right"
+              >
+                <AiCopyButton
+                  className="ai-copy-btn"
+                  onClick={handleCopy}
+                  aria-label={trans("chatBox.copyAiResponse")}
+                  $style={aiMessageStyle}
+                >
+                  {copied ? (
+                    <CheckOutlined style={{ fontSize: 11, color: "#52c41a" }} />
+                  ) : (
+                    <CopyOutlined style={{ fontSize: 11 }} />
+                  )}
+                </AiCopyButton>
+              </Tooltip>
+            </div>
+            {ts && (
+              <BubbleTime $own={false} $style={aiMessageStyle}>
+                {formatChatTime(ts)}
+              </BubbleTime>
             )}
-          </AiBubble>
-          <Tooltip
-            title={copied ? trans("chatBox.copied") : trans("chatBox.copyAction")}
-            placement="right"
-          >
-            <AiCopyButton
-              className="ai-copy-btn"
-              onClick={handleCopy}
-              aria-label={trans("chatBox.copyAiResponse")}
-            >
-              {copied ? (
-                <CheckOutlined style={{ fontSize: 11, color: "#52c41a" }} />
-              ) : (
-                <CopyOutlined style={{ fontSize: 11 }} />
-              )}
-            </AiCopyButton>
-          </Tooltip>
-        </div>
-        {ts && (
-          <BubbleTime $own={false}>
-            {formatChatTime(ts)}
-          </BubbleTime>
-        )}
-      </AiBubbleWrapper>
+          </AiBubbleWrapper>
+        </MessageContentColumn>
+      </MessageRow>
     );
   },
 );
@@ -252,12 +344,32 @@ export interface MessageListProps {
   messages: any[];
   typingUsers: any[];
   currentUserId: string;
+  currentUserName?: string;
   isAiThinking?: boolean;
-  messageStyle?: ChatBoxMessageStyleType;
+  messageAreaStyle?: ChatBoxMessageAreaStyleType;
+  ownMessageStyle?: ChatBoxOwnMessageStyleType;
+  otherMessageStyle?: ChatBoxOtherMessageStyleType;
+  aiMessageStyle?: ChatBoxAiMessageStyleType;
+  ownAvatarStyle?: ChatBoxOwnAvatarStyleType;
+  otherAvatarStyle?: ChatBoxOtherAvatarStyleType;
+  aiAvatarStyle?: ChatBoxAiAvatarStyleType;
 }
 
 export const MessageList = React.memo((props: MessageListProps) => {
-  const { messages, typingUsers, currentUserId, isAiThinking = false, messageStyle } = props;
+  const {
+    messages,
+    typingUsers,
+    currentUserId,
+    currentUserName = "",
+    isAiThinking = false,
+    messageAreaStyle,
+    ownMessageStyle,
+    otherMessageStyle,
+    aiMessageStyle,
+    ownAvatarStyle,
+    otherAvatarStyle,
+    aiAvatarStyle,
+  } = props;
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -270,7 +382,7 @@ export const MessageList = React.memo((props: MessageListProps) => {
   }, [messages.length, isAiThinking]);
 
   return (
-    <MessagesArea ref={containerRef} $messageStyle={messageStyle}>
+    <MessagesArea ref={containerRef} $areaStyle={messageAreaStyle}>
       {messages.length === 0 ? (
         <EmptyChat>
           <div style={{ fontSize: 24 }}>💬</div>
@@ -313,44 +425,66 @@ export const MessageList = React.memo((props: MessageListProps) => {
                 authorName={authorName}
                 ts={ts}
                 files={fileItems}
+                aiMessageStyle={aiMessageStyle}
+                aiAvatarStyle={aiAvatarStyle}
               />
             );
           }
 
+          const avatarName = isOwn
+            ? authorName || currentUserName || currentUserId
+            : authorName || authorId;
+          const roleStyle = isOwn ? ownMessageStyle : otherMessageStyle;
+          const avatarStyle = isOwn ? ownAvatarStyle : otherAvatarStyle;
+
           return (
-            <MessageWrapper key={id} $own={isOwn}>
-              <BubbleMeta $own={isOwn} $messageStyle={messageStyle}>{authorName}</BubbleMeta>
-              <Bubble $own={isOwn} $messageStyle={messageStyle}>
-                {fileItems.length > 0 && (
-                  <MessageAttachmentsPreview files={fileItems} tone={isOwn ? "own" : "other"} />
+            <MessageRow key={id} $own={isOwn}>
+              <MessageAvatarBadge
+                displayName={avatarName}
+                isOwn={isOwn}
+                avatarStyle={avatarStyle}
+              />
+              <MessageContentColumn $own={isOwn}>
+                <BubbleMeta $own={isOwn} $style={roleStyle}>{authorName}</BubbleMeta>
+                <Bubble $own={isOwn} $style={roleStyle}>
+                  {fileItems.length > 0 && (
+                    <MessageAttachmentsPreview files={fileItems} tone={isOwn ? "own" : "other"} />
+                  )}
+                  {text ? <UserMessageBody text={text} /> : null}
+                  {!text && fileItems.length === 0 ? (
+                    <span style={{ opacity: 0.75 }}>{trans("chatBox.emptyMessagePlaceholder")}</span>
+                  ) : null}
+                </Bubble>
+                {ts && (
+                  <BubbleTime $own={isOwn} $style={roleStyle}>
+                    {formatChatTime(ts)}
+                  </BubbleTime>
                 )}
-                {text ? <UserMessageBody text={text} /> : null}
-                {!text && fileItems.length === 0 ? (
-                  <span style={{ opacity: 0.75 }}>{trans("chatBox.emptyMessagePlaceholder")}</span>
-                ) : null}
-              </Bubble>
-              {ts && (
-                <BubbleTime $own={isOwn} $messageStyle={messageStyle}>
-                  {formatChatTime(ts)}
-                </BubbleTime>
-              )}
-            </MessageWrapper>
+              </MessageContentColumn>
+            </MessageRow>
           );
         })
       )}
 
       {isAiThinking && (
-        <AiBubbleWrapper>
-          <AiBadge>
-            <RobotOutlined style={{ fontSize: 9 }} />
-            {trans("chatBox.aiThinking")}
-          </AiBadge>
-          <LlmLoadingBubble>
-            <span />
-            <span />
-            <span />
-          </LlmLoadingBubble>
-        </AiBubbleWrapper>
+        <MessageRow $own={false}>
+          <MessageAvatarBadge
+            displayName={trans("chatBox.aiThinking")}
+            isAi
+            avatarStyle={aiAvatarStyle}
+          />
+          <MessageContentColumn $own={false}>
+            <AiBadge>
+              <RobotOutlined style={{ fontSize: 9 }} />
+              {trans("chatBox.aiThinking")}
+            </AiBadge>
+            <LlmLoadingBubble>
+              <span />
+              <span />
+              <span />
+            </LlmLoadingBubble>
+          </MessageContentColumn>
+        </MessageRow>
       )}
 
       {typingUsers.length > 0 && (
