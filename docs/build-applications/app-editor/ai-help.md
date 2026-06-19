@@ -52,6 +52,7 @@ AI Help is shown inside supported Lowcoder code editors and structured input edi
 - JavaScript queries
 - transformers
 - temporary state values
+- app-level Scripts and Styles, including JavaScript, CSS, and Global CSS
 - SQL query editors
 - HTTP and Server-Sent Events request bodies
 - GraphQL query editors
