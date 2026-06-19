@@ -19,6 +19,7 @@ import { ButtonStyleControl } from "./videobuttonCompConstants";
 import { trans } from "../../i18n/comps";
 
 import { client } from "./meetingControllerComp";
+import { parseMeetingParticipant } from "./meetingStreamUtils";
 import type { IAgoraRTCRemoteUser, ILocalVideoTrack } from "agora-rtc-sdk-ng";
 import type { CSSProperties, RefObject } from "react";
 import {
@@ -122,6 +123,11 @@ let VideoCompBuilder = (function () {
       [props.userId.value]
     );
 
+    const isScreenSharing = useMemo(
+      () => !!parseMeetingParticipant(props.userId.value)?.streamingSharing,
+      [props.userId.value]
+    );
+
     useEffect(() => {
       if (props.userId.value === "") {
         return;
@@ -130,14 +136,14 @@ let VideoCompBuilder = (function () {
         const d = JSON.parse(props.userId.value);
         setUserId(d.user);
         setUsername(d.userName ?? "");
-        setVideo(d.streamingVideo !== false);
+        setVideo(d.streamingVideo !== false && !d.streamingSharing);
       } catch {
         /* ignore */
       }
     }, [props.userId.value]);
 
     useEffect(() => {
-      if (!streamTargetUid) {
+      if (!streamTargetUid || isScreenSharing) {
         return;
       }
 
@@ -178,6 +184,11 @@ let VideoCompBuilder = (function () {
           }
           const element = document.getElementById(uidStr);
           if (element) {
+            try {
+              track.stop();
+            } catch {
+              /* ignore */
+            }
             track.play(uidStr);
           }
         } catch {
@@ -202,6 +213,20 @@ let VideoCompBuilder = (function () {
       };
 
       const resyncTracksForThisTile = async () => {
+        if (isScreenSharing) {
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+          const remote = client.remoteUsers.find(
+            (u) => String(u.uid) === targetUidStr
+          );
+          try {
+            remote?.videoTrack?.stop();
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
         if (
           client.uid !== undefined &&
           targetUidStr !== "" &&
@@ -235,6 +260,9 @@ let VideoCompBuilder = (function () {
           return;
         }
         if (mediaType === "video") {
+          if (isScreenSharing) {
+            return;
+          }
           if (user.hasVideo && isRemotePublisher(user.uid)) {
             props.onEvent("videoOn");
           }
@@ -301,7 +329,7 @@ let VideoCompBuilder = (function () {
         client.off("user-published", onUserPublished);
         client.off("user-unpublished", onUserUnpublished);
       };
-    }, [streamTargetUid]);
+    }, [streamTargetUid, isScreenSharing]);
 
     const containerStyle = useMemo(
       () =>

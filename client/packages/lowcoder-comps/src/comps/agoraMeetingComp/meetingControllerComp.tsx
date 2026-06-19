@@ -48,12 +48,14 @@ import AgoraRTC, {
   type IAgoraRTCRemoteUser,
   type UID,
   type ILocalVideoTrack,
+  type IRemoteVideoTrack,
 } from "agora-rtc-sdk-ng";
 
 import AgoraRtmSdk, { RTMEvents } from "agora-rtm-sdk";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResizeHandle } from "react-resizable";
 import { v4 as uuidv4 } from "uuid";
+import { meetingShareElementId } from "./meetingStreamUtils";
 
 const DEFAULT_SIZE = 378;
 const DEFAULT_PADDING = 16;
@@ -76,11 +78,15 @@ AgoraRTC.setLogLevel(4);
 4: NONE. Do not output any log. 
 */
 
-let audioTrack: IMicrophoneAudioTrack;
-let videoTrack: ICameraVideoTrack;
-let screenShareStream: ILocalVideoTrack;
+let audioTrack: IMicrophoneAudioTrack | undefined;
+let videoTrack: ICameraVideoTrack | undefined;
+let screenShareStream: ILocalVideoTrack | undefined;
+let screenShareTrackEndedHandler: (() => void) | null = null;
+let screenShareTeardownInFlight = false;
 let userId: UID | null | undefined;
 let rtmClient: InstanceType<typeof AgoraRtmSdk.RTM> | undefined;
+/** Serializes leave/join across app navigations (singleton RTC client). */
+let channelLeavePromise: Promise<void> = Promise.resolve();
 /** MESSAGE channel name subscribed after login (same as RTC channel / meeting name). */
 let rtmSubscribedChannelName: string | null = null;
 /** RTM channel payload: sync local mic/camera to other clients (setEnabled may not fire user-unpublished). */
@@ -98,6 +104,11 @@ function onRtmMessage(event: RTMEvents.MessageEvent) {
 
 /** Invokes broadcastLocalMeetingUserState with latest mic/video/name snapshot (see React effect). */
 const presenceRequestSinkRef: { current: null | (() => void) } = {
+  current: null,
+};
+
+/** Sync sharing control + RTM when the browser stops screen capture (track-ended). */
+const screenShareEndedSinkRef: { current: null | (() => void) } = {
   current: null,
 };
 
@@ -143,34 +154,240 @@ function meetingParticipantsDedupe(arr: any[], prop: string) {
 //     color: rgba(0, 0, 0, 0.75);
 //   }
 // `;
+function isClientInChannel(): boolean {
+  const state = client.connectionState;
+  return (
+    state === "CONNECTED" ||
+    state === "CONNECTING" ||
+    state === "RECONNECTING" ||
+    state === "DISCONNECTING"
+  );
+}
+
+function isCameraTrackUsable(
+  track: ICameraVideoTrack | undefined
+): track is ICameraVideoTrack {
+  return !!track && !(track as { closed?: boolean }).closed;
+}
+
+function isAudioTrackUsable(
+  track: IMicrophoneAudioTrack | undefined
+): track is IMicrophoneAudioTrack {
+  return !!track && !(track as { closed?: boolean }).closed;
+}
+
 const turnOnCamera = async (flag?: boolean) => {
-  if (videoTrack) {
+  if (isCameraTrackUsable(videoTrack)) {
     return videoTrack.setEnabled(flag!);
   }
   videoTrack = await AgoraRTC.createCameraVideoTrack();
-  videoTrack.play(userId + "");
+  if (userId != null && userId !== "") {
+    videoTrack.play(userId + "");
+  }
 };
 
 const turnOnMicrophone = async (flag?: boolean) => {
-  if (audioTrack) {
-    return audioTrack.setEnabled(flag!);
+  if (isAudioTrackUsable(audioTrack)) {
+    await audioTrack.setEnabled(flag!);
+    if (flag) {
+      try {
+        await client.publish(audioTrack);
+      } catch {
+        /* already published */
+      }
+    } else {
+      try {
+        await client.unpublish(audioTrack);
+      } catch {
+        /* already unpublished */
+      }
+    }
+    return;
   }
   audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-  if (!flag) {
-    await client.unpublish(audioTrack);
-  } else {
+  if (flag) {
     await client.publish(audioTrack);
   }
 };
+function playTrackWhenElementReady(
+  track: ILocalVideoTrack,
+  elementId: string,
+  attempt = 0
+) {
+  const el = document.getElementById(elementId);
+  if (el) {
+    try {
+      track.stop();
+    } catch {
+      /* not playing yet */
+    }
+    track.play(elementId);
+    return;
+  }
+  if (attempt < 30) {
+    requestAnimationFrame(() =>
+      playTrackWhenElementReady(track, elementId, attempt + 1)
+    );
+  }
+}
+
+type ScreenShareAttachState = {
+  elementId: string;
+  track: ILocalVideoTrack | IRemoteVideoTrack;
+};
+
+const screenShareAttachByUid = new Map<string, ScreenShareAttachState>();
+
+function clearScreenShareAttach(targetUid: string) {
+  screenShareAttachByUid.delete(targetUid);
+}
+
+function isScreenShareAttached(
+  targetUid: string,
+  elementId: string,
+  track: ILocalVideoTrack | IRemoteVideoTrack
+): boolean {
+  const prev = screenShareAttachByUid.get(targetUid);
+  return (
+    prev?.elementId === elementId &&
+    prev.track === track &&
+    track.isPlaying
+  );
+}
+
+/** Attach local or remote screen-share video to the tile for `targetUid`. */
+export async function playScreenShareToElement(
+  targetUid: string,
+  isLocalPublisher: boolean
+): Promise<boolean> {
+  const elementId = meetingShareElementId(targetUid);
+  const el = document.getElementById(elementId);
+  if (!el) {
+    return false;
+  }
+
+  try {
+    if (isLocalPublisher) {
+      const track =
+        screenShareStream ??
+        (client.localTracks.find(
+          (t) => t.trackMediaType === "video"
+        ) as ILocalVideoTrack | undefined);
+      if (!track) {
+        clearScreenShareAttach(targetUid);
+        return false;
+      }
+      if (isScreenShareAttached(targetUid, elementId, track)) {
+        return true;
+      }
+      try {
+        track.stop();
+      } catch {
+        /* ignore */
+      }
+      track.play(elementId);
+      screenShareAttachByUid.set(targetUid, { elementId, track });
+      return true;
+    }
+
+    const user = client.remoteUsers.find((u) => String(u.uid) === targetUid);
+    if (!user?.hasVideo) {
+      clearScreenShareAttach(targetUid);
+      return false;
+    }
+    const track =
+      user.videoTrack ?? (await client.subscribe(user, "video"));
+    if (isScreenShareAttached(targetUid, elementId, track)) {
+      return true;
+    }
+    try {
+      track.stop();
+    } catch {
+      /* ignore */
+    }
+    track.play(elementId);
+    screenShareAttachByUid.set(targetUid, { elementId, track });
+    return true;
+  } catch {
+    clearScreenShareAttach(targetUid);
+    return false;
+  }
+}
+
+function unbindScreenShareTrackEnded() {
+  if (screenShareStream && screenShareTrackEndedHandler) {
+    try {
+      screenShareStream.off("track-ended", screenShareTrackEndedHandler);
+    } catch {
+      /* ignore */
+    }
+  }
+  screenShareTrackEndedHandler = null;
+}
+
+function bindScreenShareTrackEnded(track: ILocalVideoTrack) {
+  unbindScreenShareTrackEnded();
+  screenShareTrackEndedHandler = () => {
+    void handleScreenShareStoppedByBrowser();
+  };
+  track.on("track-ended", screenShareTrackEndedHandler);
+}
+
+async function teardownScreenShareTrack(): Promise<void> {
+  unbindScreenShareTrackEnded();
+  const track = screenShareStream;
+  if (!track) {
+    return;
+  }
+  screenShareStream = undefined;
+  try {
+    await client.unpublish(track);
+  } catch {
+    /* already unpublished when the browser ended capture */
+  }
+  try {
+    track.close();
+  } catch {
+    /* ignore */
+  }
+  if (userId != null && userId !== "") {
+    clearScreenShareAttach(String(userId));
+  }
+}
+
+async function republishCameraAfterScreenShare(): Promise<void> {
+  if (!videoTrack) {
+    return;
+  }
+  try {
+    await client.publish(videoTrack);
+    if (userId != null && userId !== "") {
+      videoTrack.play(userId + "");
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function handleScreenShareStoppedByBrowser(): Promise<void> {
+  if (screenShareTeardownInFlight) {
+    return;
+  }
+  screenShareTeardownInFlight = true;
+  try {
+    await teardownScreenShareTrack();
+    await republishCameraAfterScreenShare();
+    screenShareEndedSinkRef.current?.();
+  } finally {
+    screenShareTeardownInFlight = false;
+  }
+}
+
 const shareScreen = async (sharing: boolean) => {
   try {
     if (sharing === false) {
-      await client.unpublish(screenShareStream);
-      screenShareStream.close();
-      if (videoTrack) {
-        await client.publish(videoTrack);
-        videoTrack.play(userId + "");
-      }
+      await teardownScreenShareTrack();
+      await republishCameraAfterScreenShare();
     } else {
       screenShareStream = await AgoraRTC.createScreenVideoTrack(
         {
@@ -178,33 +395,75 @@ const shareScreen = async (sharing: boolean) => {
         },
         "disable"
       );
+      bindScreenShareTrackEnded(screenShareStream);
       if (videoTrack) {
         await client.unpublish(videoTrack);
       }
-      screenShareStream.play("share-screen");
       await client.publish(screenShareStream);
+      if (userId != null && userId !== "") {
+        playTrackWhenElementReady(
+          screenShareStream,
+          meetingShareElementId(userId)
+        );
+      }
     }
   } catch (error) {
     console.error("Failed to create screen share stream:", error);
+    screenShareStream = undefined;
+    unbindScreenShareTrackEnded();
   }
 };
-const leaveChannel = async () => {
-  //stops local sharing video
+async function closeLocalMediaTracks(): Promise<void> {
+  unbindScreenShareTrackEnded();
+
   if (screenShareStream) {
-    screenShareStream.close();
+    try {
+      await client.unpublish(screenShareStream);
+    } catch {
+      /* ignore */
+    }
+    try {
+      screenShareStream.close();
+    } catch {
+      /* ignore */
+    }
+    screenShareStream = undefined;
   }
 
-  //stops local video streaming and puts off the camera
   if (videoTrack) {
-    await client.unpublish(videoTrack);
-    await turnOnCamera(false);
+    try {
+      await client.unpublish(videoTrack);
+    } catch {
+      /* ignore */
+    }
+    try {
+      videoTrack.stop();
+      videoTrack.close();
+    } catch {
+      /* ignore */
+    }
+    videoTrack = undefined;
   }
 
-  //mutes and stops locla audio stream
   if (audioTrack) {
-    await turnOnMicrophone(false);
+    try {
+      await client.unpublish(audioTrack);
+    } catch {
+      /* ignore */
+    }
+    try {
+      audioTrack.stop();
+      audioTrack.close();
+    } catch {
+      /* ignore */
+    }
+    audioTrack = undefined;
   }
-  await client.leave();
+
+  screenShareAttachByUid.clear();
+}
+
+async function teardownRtmClient(): Promise<void> {
   if (rtmClient && rtmSubscribedChannelName) {
     try {
       await rtmClient.unsubscribe(rtmSubscribedChannelName);
@@ -226,6 +485,33 @@ const leaveChannel = async () => {
     }
     rtmClient = undefined;
   }
+}
+
+async function leaveChannelInternal(): Promise<void> {
+  await closeLocalMediaTracks();
+  if (isClientInChannel()) {
+    try {
+      await client.leave();
+    } catch {
+      /* ignore */
+    }
+  }
+  await teardownRtmClient();
+}
+
+const leaveChannel = async () => {
+  channelLeavePromise = channelLeavePromise
+    .catch(() => {})
+    .then(() => leaveChannelInternal());
+  return channelLeavePromise;
+};
+
+async function ensureChannelLeft(): Promise<void> {
+  await channelLeavePromise.catch(() => {});
+  if (isClientInChannel()) {
+    await leaveChannel();
+    await channelLeavePromise.catch(() => {});
+  }
 };
 
 /** Joins RTC + RTM; publishes camera only if creation succeeds (e.g. permission granted). */
@@ -235,12 +521,17 @@ const publishVideo = async (
   rtmToken: string,
   rtcToken: string
 ): Promise<boolean> => {
+  await ensureChannelLeft();
+  videoTrack = undefined;
+  audioTrack = undefined;
   await client.join(appId, channel, rtcToken, userId);
   let videoPublished = false;
   try {
     await turnOnCamera(true);
-    await client.publish(videoTrack);
-    videoPublished = true;
+    if (isCameraTrackUsable(videoTrack)) {
+      await client.publish(videoTrack);
+      videoPublished = true;
+    }
   } catch (error) {
     console.warn(
       "Meeting: camera unavailable (permission denied or no device); joining without video.",
@@ -262,6 +553,7 @@ function broadcastLocalMeetingUserState(payload: {
   user: string;
   audiostatus: boolean;
   streamingVideo: boolean;
+  streamingSharing?: boolean;
   speaking?: boolean;
   userName?: string;
 }) {
@@ -271,6 +563,7 @@ function broadcastLocalMeetingUserState(payload: {
     user: payload.user,
     audiostatus: payload.audiostatus,
     streamingVideo: payload.streamingVideo,
+    streamingSharing: payload.streamingSharing ?? false,
     speaking: payload.speaking ?? false,
     userName: payload.userName ?? "",
   });
@@ -380,10 +673,13 @@ if (typeof ContainerCompBuilder === "function") {
         const [localUserVideo, setLocalUserVideo] =
           useState<IAgoraRTCRemoteUser>();
 
+        const sharingUserIdsRef = useRef<string[]>([]);
+
         const latestMeetingBroadcastRef = useRef({
           meetingActive: false,
           audiostatus: false,
           streamingVideo: false,
+          streamingSharing: false,
           speaking: false,
           userName: "",
         });
@@ -393,6 +689,7 @@ if (typeof ContainerCompBuilder === "function") {
             meetingActive: !!props.meetingActive.value,
             audiostatus: !!props.audioControl.value,
             streamingVideo: !!props.videoControl.value,
+            streamingSharing: !!props.sharing.value,
             speaking: !!localUserSpeaking,
             userName: String(props.localUserName.value ?? ""),
           };
@@ -400,6 +697,61 @@ if (typeof ContainerCompBuilder === "function") {
           props.meetingActive.value,
           props.audioControl.value,
           props.videoControl.value,
+          props.sharing.value,
+          props.localUserName.value,
+          localUserSpeaking,
+        ]);
+
+        useEffect(() => {
+          screenShareEndedSinkRef.current = () => {
+            if (!props.sharing.value) {
+              return;
+            }
+            props.sharing.onChange(false);
+            setLocalParticipants((prevUsers) =>
+              prevUsers.map((userInfo: any) => {
+                if (
+                  userId != null &&
+                  userId !== "" &&
+                  String(userInfo.user) === String(userId)
+                ) {
+                  return { ...userInfo, streamingSharing: false };
+                }
+                return userInfo;
+              })
+            );
+            const localObject = {
+              user: userId + "",
+              audiostatus: props.audioControl.value,
+              streamingVideo: props.videoControl.value,
+              streamingSharing: false,
+              speaking: localUserSpeaking,
+              userName: props.localUserName.value,
+            };
+            props.localUser.onChange(localObject);
+            if (
+              props.meetingActive.value &&
+              userId != null &&
+              userId !== ""
+            ) {
+              broadcastLocalMeetingUserState({
+                user: String(userId),
+                audiostatus: props.audioControl.value,
+                streamingVideo: props.videoControl.value,
+                streamingSharing: false,
+                speaking: !!localUserSpeaking,
+                userName: props.localUserName.value,
+              });
+            }
+          };
+          return () => {
+            screenShareEndedSinkRef.current = null;
+          };
+        }, [
+          props.sharing,
+          props.audioControl.value,
+          props.videoControl.value,
+          props.meetingActive.value,
           props.localUserName.value,
           localUserSpeaking,
         ]);
@@ -418,6 +770,7 @@ if (typeof ContainerCompBuilder === "function") {
               user: String(userId),
               audiostatus: snap.audiostatus,
               streamingVideo: snap.streamingVideo,
+              streamingSharing: snap.streamingSharing,
               speaking: snap.speaking,
               userName: snap.userName,
             });
@@ -456,6 +809,47 @@ if (typeof ContainerCompBuilder === "function") {
             )
           );
         }, [localParticipants, dispatch]);
+
+        const sharingUserIdsKey = useMemo(
+          () =>
+            localParticipants
+              .filter((p: any) => p.streamingSharing)
+              .map((p: any) => String(p.user))
+              .sort()
+              .join(","),
+          [localParticipants]
+        );
+
+        useEffect(() => {
+          sharingUserIdsRef.current = sharingUserIdsKey
+            ? sharingUserIdsKey.split(",")
+            : [];
+        }, [sharingUserIdsKey]);
+
+        // Re-attach only when who is sharing changes — not on every speaking/RTM tick.
+        useEffect(() => {
+          const ids = sharingUserIdsRef.current;
+          if (ids.length === 0) {
+            return;
+          }
+
+          const syncSharingTiles = () => {
+            for (const uid of ids) {
+              void playScreenShareToElement(
+                uid,
+                userId != null &&
+                  userId !== "" &&
+                  String(userId) === uid
+              );
+            }
+          };
+
+          syncSharingTiles();
+          const timers = [300, 1000, 2000].map((ms) =>
+            window.setTimeout(syncSharingTiles, ms)
+          );
+          return () => timers.forEach((id) => window.clearTimeout(id));
+        }, [sharingUserIdsKey]);
 
         // console.log("sharing", props.sharing);
 
@@ -496,6 +890,17 @@ if (typeof ContainerCompBuilder === "function") {
             userName: props.localUserName.value,
           };
           props.localUser.onChange(localObject);
+
+          if (props.meetingActive.value && userId != null && userId !== "") {
+            broadcastLocalMeetingUserState({
+              user: String(userId),
+              audiostatus: props.audioControl.value,
+              streamingVideo: props.videoControl.value,
+              streamingSharing: props.sharing.value,
+              speaking: localUserSpeaking,
+              userName: props.localUserName.value,
+            });
+          }
         }, [props.sharing.value, props.localUserName.value]);
 
         // console.log("participants ", props.participants);
@@ -531,6 +936,7 @@ if (typeof ContainerCompBuilder === "function") {
               user: userId + "",
               audiostatus: props.audioControl.value,
               streamingVideo: props.videoControl.value,
+              streamingSharing: props.sharing.value,
               speaking: localUserSpeaking,
               userName: props.localUserName.value,
             };
@@ -546,6 +952,7 @@ if (typeof ContainerCompBuilder === "function") {
             user: String(userId),
             audiostatus: props.audioControl.value,
             streamingVideo: props.videoControl.value,
+            streamingSharing: props.sharing.value,
             speaking: !!props.localUser.value?.speaking,
             userName: props.localUserName.value,
           });
@@ -612,6 +1019,10 @@ if (typeof ContainerCompBuilder === "function") {
                             parsed.userName !== undefined
                               ? parsed.userName
                               : u.userName,
+                          streamingSharing:
+                            parsed.streamingSharing !== undefined
+                              ? parsed.streamingSharing
+                              : u.streamingSharing,
                         };
                       }
                       return u;
@@ -627,6 +1038,10 @@ if (typeof ContainerCompBuilder === "function") {
                               parsed.streamingVideo !== undefined
                                 ? parsed.streamingVideo
                                 : true,
+                            streamingSharing:
+                              parsed.streamingSharing !== undefined
+                                ? parsed.streamingSharing
+                                : false,
                             speaking:
                               parsed.speaking !== undefined
                                 ? parsed.speaking
@@ -671,99 +1086,126 @@ if (typeof ContainerCompBuilder === "function") {
           };
         }, []);
         useEffect(() => {
-          if (client) {
-            //Enable Agora to send audio bytes
-            client.enableAudioVolumeIndicator();
-            //user activity listeners
-            client.on("user-joined", (user: IAgoraRTCRemoteUser) => {
-              if (
-                userId != null &&
-                userId !== "" &&
-                String(user.uid) === String(userId)
-              ) {
-                return;
-              }
-              const userData = {
-                user: user.uid,
-                audiostatus: user.hasAudio,
-                streamingVideo: true,
-                userName: "",
-              };
-              setLocalParticipants((prev) =>
-                meetingParticipantsDedupe(
-                  getData([...prev, userData]).data,
-                  "user"
-                )
-              );
-              const snap = latestMeetingBroadcastRef.current;
-              if (
-                snap.meetingActive &&
-                userId != null &&
-                userId !== ""
-              ) {
-                broadcastLocalMeetingUserState({
-                  user: String(userId),
-                  audiostatus: snap.audiostatus,
-                  streamingVideo: snap.streamingVideo,
-                  speaking: snap.speaking,
-                  userName: snap.userName,
-                });
-              }
-            });
-            client.on("user-left", (user: IAgoraRTCRemoteUser, reason: any) => {
-              setLocalParticipants((prev) => {
-                let newUsers = prev.filter(
-                  (item: any) => String(item.user) !== String(user.uid)
-                );
-                const hostExists = newUsers.some((f: any) => f.host === true);
-                if (!hostExists && newUsers.length > 0) {
-                  newUsers = [
-                    { ...newUsers[0], host: true },
-                    ...newUsers.slice(1),
-                  ];
-                }
-                return meetingParticipantsDedupe(
-                  getData(newUsers).data,
-                  "user"
-                );
-              });
-            });
-
-            //listen to user speaking,
-            client.on("volume-indicator", (volumeInfos: any) => {
-              if (volumeInfos.length === 0) return;
-              volumeInfos.map((volumeInfo: any) => {
-                //when the volume is above 30, user is probably speaking
-                const speaking = volumeInfo.level >= 30;
-                if (
-                  volumeInfo.uid === userId &&
-                  props.localUser.value.speaking != speaking
-                ) {
-                  setLocalUserSpeaking(speaking);
-                } else {
-                  setUpdateVolume({ update: speaking, userid: volumeInfo.uid });
-                }
-              });
-            });
-
-            client.on(
-              "user-published",
-              async (
-                user: IAgoraRTCRemoteUser,
-                mediaType: "video" | "audio"
-              ) => {
-                setTimeout(() => {
-                  setLocalUserVideo(user);
-                },1000)
-              }
-            );
-            client.on(
-              "user-unpublished",
-              (user: IAgoraRTCRemoteUser, mediaType: "video" | "audio") => {
-                setLocalUserVideo(user);
-              }
-            );
+          if (!client) {
+            return;
           }
+
+          client.enableAudioVolumeIndicator();
+
+          const onUserJoined = (user: IAgoraRTCRemoteUser) => {
+            if (
+              userId != null &&
+              userId !== "" &&
+              String(user.uid) === String(userId)
+            ) {
+              return;
+            }
+            const userData = {
+              user: user.uid,
+              audiostatus: user.hasAudio,
+              streamingVideo: true,
+              streamingSharing: false,
+              userName: "",
+            };
+            setLocalParticipants((prev) =>
+              meetingParticipantsDedupe(
+                getData([...prev, userData]).data,
+                "user"
+              )
+            );
+            const snap = latestMeetingBroadcastRef.current;
+            if (snap.meetingActive && userId != null && userId !== "") {
+              broadcastLocalMeetingUserState({
+                user: String(userId),
+                audiostatus: snap.audiostatus,
+                streamingVideo: snap.streamingVideo,
+                streamingSharing: snap.streamingSharing,
+                speaking: snap.speaking,
+                userName: snap.userName,
+              });
+            }
+          };
+
+          const onUserLeft = (user: IAgoraRTCRemoteUser) => {
+            setLocalParticipants((prev) => {
+              let newUsers = prev.filter(
+                (item: any) => String(item.user) !== String(user.uid)
+              );
+              const hostExists = newUsers.some((f: any) => f.host === true);
+              if (!hostExists && newUsers.length > 0) {
+                newUsers = [
+                  { ...newUsers[0], host: true },
+                  ...newUsers.slice(1),
+                ];
+              }
+              return meetingParticipantsDedupe(getData(newUsers).data, "user");
+            });
+          };
+
+          const onVolumeIndicator = (volumeInfos: any) => {
+            if (volumeInfos.length === 0) return;
+            volumeInfos.map((volumeInfo: any) => {
+              const speaking = volumeInfo.level >= 30;
+              if (
+                volumeInfo.uid === userId &&
+                props.localUser.value.speaking != speaking
+              ) {
+                setLocalUserSpeaking(speaking);
+              } else {
+                setUpdateVolume({ update: speaking, userid: volumeInfo.uid });
+              }
+            });
+          };
+
+          const onUserPublished = async (
+            user: IAgoraRTCRemoteUser,
+            mediaType: "video" | "audio"
+          ) => {
+            setTimeout(() => {
+              setLocalUserVideo(user);
+            }, 1000);
+            if (mediaType !== "video") {
+              return;
+            }
+            const uid = String(user.uid);
+            if (!sharingUserIdsRef.current.includes(uid)) {
+              return;
+            }
+            const attachShare = () => {
+              void playScreenShareToElement(
+                uid,
+                userId != null && userId !== "" && String(userId) === uid
+              );
+            };
+            attachShare();
+            [300, 1000, 2000].forEach((ms) =>
+              window.setTimeout(attachShare, ms)
+            );
+          };
+
+          const onUserUnpublished = (
+            user: IAgoraRTCRemoteUser,
+            mediaType: "video" | "audio"
+          ) => {
+            setLocalUserVideo(user);
+            if (mediaType === "video") {
+              clearScreenShareAttach(String(user.uid));
+            }
+          };
+
+          client.on("user-joined", onUserJoined);
+          client.on("user-left", onUserLeft);
+          client.on("volume-indicator", onVolumeIndicator);
+          client.on("user-published", onUserPublished);
+          client.on("user-unpublished", onUserUnpublished);
+
+          return () => {
+            client.off("user-joined", onUserJoined);
+            client.off("user-left", onUserLeft);
+            client.off("volume-indicator", onVolumeIndicator);
+            client.off("user-published", onUserPublished);
+            client.off("user-unpublished", onUserUnpublished);
+          };
         }, [client]);
 
         return (
@@ -933,6 +1375,16 @@ if (typeof ContainerCompBuilder === "function") {
         let sharing = !comp.children.sharing.getView().value;
         await shareScreen(sharing);
         comp.children.sharing.change(sharing);
+        if (userId != null && userId !== "") {
+          broadcastLocalMeetingUserState({
+            user: String(userId),
+            audiostatus: comp.children.audioControl.getView().value,
+            streamingVideo: comp.children.videoControl.getView().value,
+            streamingSharing: sharing,
+            speaking: comp.children.localUser.getView().value?.speaking ?? false,
+            userName: comp.children.localUserName.getView().value,
+          });
+        }
       },
     },
     {
@@ -948,6 +1400,7 @@ if (typeof ContainerCompBuilder === "function") {
           user: userId + "",
           audiostatus: value,
           streamingVideo: comp.children.videoControl.getView().value,
+          streamingSharing: comp.children.sharing.getView().value,
           speaking: false,
           userName: comp.children.localUserName.getView().value,
         });
@@ -958,6 +1411,7 @@ if (typeof ContainerCompBuilder === "function") {
             user: String(userId),
             audiostatus: value,
             streamingVideo: comp.children.videoControl.getView().value,
+            streamingSharing: comp.children.sharing.getView().value,
             speaking: false,
             userName: comp.children.localUserName.getView().value,
           });
@@ -975,12 +1429,14 @@ if (typeof ContainerCompBuilder === "function") {
         if (!comp.children.meetingActive.getView().value) return;
         //toggle videoControl
         let value = !comp.children.videoControl.getView().value;
-        if (videoTrack) {
+        if (isCameraTrackUsable(videoTrack)) {
           videoTrack.setEnabled(value);
         } else if (value) {
           try {
             await turnOnCamera(true);
-            await client.publish(videoTrack);
+            if (isCameraTrackUsable(videoTrack)) {
+              await client.publish(videoTrack);
+            }
           } catch {
             value = false;
           }
@@ -990,6 +1446,7 @@ if (typeof ContainerCompBuilder === "function") {
           user: userId + "",
           streamingVideo: value,
           audiostatus: comp.children.audioControl.getView().value,
+          streamingSharing: comp.children.sharing.getView().value,
           speaking: comp.children.localUser.getView().value.speaking,
           userName: comp.children.localUserName.getView().value,
         };
@@ -1001,6 +1458,7 @@ if (typeof ContainerCompBuilder === "function") {
             user: String(userId),
             audiostatus: comp.children.audioControl.getView().value,
             streamingVideo: value,
+            streamingSharing: comp.children.sharing.getView().value,
             speaking: comp.children.localUser.getView().value.speaking,
             userName: comp.children.localUserName.getView().value,
           });
@@ -1014,7 +1472,12 @@ if (typeof ContainerCompBuilder === "function") {
         params: [],
       },
       execute: async (comp: any, values: any) => {
-        if (comp.children.meetingActive.getView().value) return;
+        if (comp.children.meetingActive.getView().value) {
+          if (isClientInChannel()) {
+            return;
+          }
+          comp.children.meetingActive.change(false);
+        }
         const resolvedUserName = String(
           comp.children.localUserName.getView().value ?? ""
         ).trim();
@@ -1042,6 +1505,7 @@ if (typeof ContainerCompBuilder === "function") {
           audiostatus: false,
           speaking: false,
           streamingVideo: videoPublished,
+          streamingSharing: false,
           userName: resolvedUserName,
         });
         console.log("publishVideo ", {
@@ -1059,6 +1523,7 @@ if (typeof ContainerCompBuilder === "function") {
             user: String(userId),
             audiostatus: false,
             streamingVideo: videoPublished,
+            streamingSharing: false,
             speaking: false,
             userName: resolvedUserName,
           });
@@ -1155,6 +1620,7 @@ if (typeof ContainerCompBuilder === "function") {
         let value = !comp.children.endCall.getView().value;
         comp.children.endCall.change(value);
         comp.children.meetingActive.change(false);
+        comp.children.sharing.change(false);
 
         await leaveChannel();
 
