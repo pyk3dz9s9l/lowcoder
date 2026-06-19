@@ -1,46 +1,46 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/components/ChatPanel.tsx
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useContext, useRef, useEffect } from "react";
 import { ChatPanelContainer } from "./ChatPanelContainer";
 import { createChatStorage } from "../utils/storageFactory";
-import { N8NHandler } from "../handlers/messageHandlers";
+import { AIAssistantQueryHandler } from "../handlers/messageHandlers";
 import { ChatPanelProps } from "../types/chatTypes";
-import { trans } from "i18n";
-
-import "@assistant-ui/styles/index.css";
-import "@assistant-ui/styles/markdown.css";
+import { EditorContext } from "@lowcoder-ee/comps/editorState";
 
 // ============================================================================
-// CHAT PANEL - SIMPLIFIED BOTTOM PANEL (NO STYLING CONTROLS)
+// CHAT PANEL - SIMPLIFIED BOTTOM PANEL (QUERY-BASED + AUTOMATOR)
+// ----------------------------------------------------------------------------
+// We capture the EditorState in a ref so the message handler always reads
+// the *latest* canvas snapshot at send-time (instead of being frozen at
+// mount time, which would defeat the whole point of context awareness).
 // ============================================================================
 
 export function ChatPanel({
   tableName,
-  modelHost,
-  systemPrompt = trans("chat.defaultSystemPrompt"),
-  streaming = true,
-  onMessageUpdate
+  chatQuery,
+  onMessageUpdate,
 }: ChatPanelProps) {
+  const editorState = useContext(EditorContext);
+  const editorStateRef = useRef(editorState);
+
+  useEffect(() => {
+    editorStateRef.current = editorState;
+  }, [editorState]);
+
   const storage = useMemo(() =>
     createChatStorage(tableName),
     [tableName]
   );
 
-  const messageHandler = useMemo(() =>
-    new N8NHandler({
-      modelHost,
-      systemPrompt,
-      streaming
-    }),
-    [modelHost, systemPrompt, streaming]
+  const messageHandler = useMemo(
+    () =>
+      new AIAssistantQueryHandler({
+        chatQuery,
+        dispatch: editorState?.rootComp?.dispatch,
+        getEditorState: () => editorStateRef.current,
+      }),
+    [chatQuery, editorState?.rootComp?.dispatch]
   );
-
-  // Cleanup on unmount - delete chat data from storage
-  useEffect(() => {
-    return () => {
-      storage.cleanup();
-    };
-  }, [storage]);
 
   return (
     <ChatPanelContainer

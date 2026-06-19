@@ -37,6 +37,7 @@ import { isEqual } from "lodash";
 import {LoadingBarHideTrigger} from "@lowcoder-ee/util/hideLoading";
 import clsx from "clsx";
 import { useUnmount } from "react-use";
+import { AIHelperModal, AIHelperProvider } from "components/ai-helper";
 
 const EditorView = lazy(
   () => import("pages/editor/editorView"),
@@ -174,13 +175,16 @@ const RootView = React.memo((props: RootViewProps) => {
       <PropertySectionContext.Provider value={propertySectionContextValue}>
         <ThemeContext.Provider value={themeContextValue}>
           <EditorContext.Provider value={editorState}>
-            {Object.keys(comp.children.queries.children).map((key) => (
-              <div key={key}>{comp.children.queries.children[key].getView()}</div>
-            ))}
-            <Suspense fallback={!readOnly || isUserViewMode ? SuspenseFallback : null}>
-              <LoadingBarHideTrigger />
-              <EditorView uiComp={comp.children.ui} preloadComp={comp.children.preload} />
-            </Suspense>
+            <AIHelperProvider>
+              {Object.keys(comp.children.queries.children).map((key) => (
+                <div key={key}>{comp.children.queries.children[key].getView()}</div>
+              ))}
+              <Suspense fallback={!readOnly || isUserViewMode ? SuspenseFallback : null}>
+                <LoadingBarHideTrigger />
+                <EditorView uiComp={comp.children.ui} preloadComp={comp.children.preload} />
+              </Suspense>
+              {!readOnly && !isUserViewMode && !isModuleRoot && <AIHelperModal />}
+            </AIHelperProvider>
           </EditorContext.Provider>
         </ThemeContext.Provider>
       </PropertySectionContext.Provider>

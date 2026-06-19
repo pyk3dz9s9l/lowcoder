@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
 } from "./tooltip";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
-import { TooltipIconButton } from "../assistant-ui/tooltip-icon-button";
+import { TooltipIconButton } from "../tooltip-icon-button";
 
 // ============================================================================
 // STYLED COMPONENTS
@@ -45,16 +45,17 @@ const StyledAvatar = styled(Avatar)`
   font-size: 14px;
 `;
 
-const AttachmentContainer = styled.div`
+const AttachmentContainer = styled.div<{ $isImage?: boolean }>`
   display: flex;
-  height: 48px;
-  width: 160px;
+  height: ${({ $isImage }) => ($isImage ? "56px" : "48px")};
+  width: ${({ $isImage }) => ($isImage ? "56px" : "160px")};
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 8px;
+  border-radius: ${({ $isImage }) => ($isImage ? "12px" : "8px")};
   border: 1px solid #e2e8f0;
-  padding: 4px;
+  overflow: hidden;
+  padding: ${({ $isImage }) => ($isImage ? "0" : "4px")};
 `;
 
 const AttachmentTextContainer = styled.div`
@@ -290,8 +291,7 @@ const AttachmentUI: FC = () => {
       case "file":
         return "File";
       default:
-        const _exhaustiveCheck: never = type;
-        throw new Error(`Unknown attachment type: ${_exhaustiveCheck}`);
+        return "File";
     }
   });
   
@@ -300,14 +300,16 @@ const AttachmentUI: FC = () => {
       <AttachmentRoot>
         <AttachmentPreviewDialog>
           <TooltipTrigger asChild>
-            <AttachmentContainer>
+            <AttachmentContainer $isImage={typeLabel === "Image"}>
               <AttachmentThumb />
-              <AttachmentTextContainer>
-                <AttachmentName>
-                  <AttachmentPrimitive.Name />
-                </AttachmentName>
-                <AttachmentType>{typeLabel}</AttachmentType>
-              </AttachmentTextContainer>
+              {typeLabel !== "Image" && (
+                <AttachmentTextContainer>
+                  <AttachmentName>
+                    <AttachmentPrimitive.Name />
+                  </AttachmentName>
+                  <AttachmentType>{typeLabel}</AttachmentType>
+                </AttachmentTextContainer>
+              )}
             </AttachmentContainer>
           </TooltipTrigger>
         </AttachmentPreviewDialog>
@@ -340,7 +342,9 @@ const AttachmentRemove: FC = () => {
 export const UserMessageAttachments: FC = () => {
   return (
     <UserAttachmentsContainer>
-      <MessagePrimitive.Attachments components={{ Attachment: AttachmentUI }} />
+      <MessagePrimitive.Attachments>
+        {() => <AttachmentUI />}
+      </MessagePrimitive.Attachments>
     </UserAttachmentsContainer>
   );
 };
@@ -348,9 +352,9 @@ export const UserMessageAttachments: FC = () => {
 export const ComposerAttachments: FC = () => {
   return (
     <ComposerAttachmentsContainer>
-      <ComposerPrimitive.Attachments
-        components={{ Attachment: AttachmentUI }}
-      />
+      <ComposerPrimitive.Attachments>
+        {() => <AttachmentUI />}
+      </ComposerPrimitive.Attachments>
     </ComposerAttachmentsContainer>
   );
 };

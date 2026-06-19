@@ -18,8 +18,11 @@ export interface StyledChatContainerProps {
 
 export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   display: flex;
+  align-items: stretch;
   height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.$autoHeight ? "300px" : "unset")};
+  min-width: 0;
+  overflow: hidden;
 
   /* Main container styles */
   background: ${(props) => props.style?.background || "transparent"};
@@ -40,9 +43,12 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* Sidebar Styles */
   .aui-thread-list-root {
+    align-self: stretch;
     width: ${(props) => props.$sidebarWidth || "250px"};
     background-color: ${(props) => props.$sidebarStyle?.sidebarBackground || "#fff"};
     padding: 10px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .aui-thread-list-item-title {
@@ -51,15 +57,36 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* Messages Window Styles */
   .aui-thread-root {
-    flex: 1;
+    flex: 1 1 auto;
+    align-self: stretch;
+    min-width: 0;
+    min-height: 0;
     background-color: ${(props) => props.$messagesStyle?.messagesBackground || "#f9fafb"};
-    height: auto;
+    height: ${(props) => (props.$autoHeight ? "auto" : "100%")};
+    overflow: hidden;
+  }
+
+  .aui-thread-viewport {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   /* User Message Styles */
   .aui-user-message-content {
-    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#3b82f6"};
-    color: ${(props) => props.$messagesStyle?.userMessageText || "#ffffff"};
+    background-color: ${(props) => props.$messagesStyle?.userMessageBackground || "#e5e7eb"};
+    color: ${(props) => props.$messagesStyle?.userMessageText || "#111827"};
+  }
+
+  .aui-user-message-content:empty {
+    display: none;
+  }
+
+  .aui-user-message-content img {
+    display: block;
+    height: auto;
+    max-height: 320px;
+    max-width: 100%;
+    object-fit: contain;
   }
 
   /* Assistant Message Styles */
@@ -69,11 +96,9 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
   }
 
   /* Input Field Styles */
-  form.aui-composer-root {
-    background-color: ${(props) => props.$inputStyle?.inputBackground || "#ffffff"};
-    color: ${(props) => props.$inputStyle?.inputText || "inherit"};
-    border-color: ${(props) => props.$inputStyle?.inputBorder || "#d1d5db"};
-  }
+
+
+ 
 
   /* Send Button Styles */
   .aui-composer-send {

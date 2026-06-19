@@ -1,73 +1,50 @@
 // client/packages/lowcoder/src/comps/comps/chatComp/handlers/messageHandlers.ts
 
-import { MessageHandler, MessageResponse, N8NHandlerConfig, QueryHandlerConfig, ChatMessage } from "../types/chatTypes";
-import { CompAction, routeByNameAction, executeQueryAction } from "lowcoder-core";
+import { AIAssistantMessageHandler, MessageHandler, QueryHandlerConfig, ChatMessage } from "../types/chatTypes";
+import { routeByNameAction, executeQueryAction } from "lowcoder-core";
 import { getPromiseAfterDispatch } from "util/promiseUtils";
+import { buildAutomatorPayload } from "../../preLoadComp/actions/automator";
+import {
+  getTextFromThreadContent,
+  toAssistantMessage,
+} from "../utils/assistantMessages";
 
-// ============================================================================
-// N8N HANDLER (for Bottom Panel)
-// ============================================================================
+function buildAutomatorQueryArgs(
+  payload: ReturnType<typeof buildAutomatorPayload>
+) {
+  const ai = {
+    mode: "automator" as const,
+    messages: payload.messages,
+    tools: payload.tools,
+  };
 
-export class N8NHandler implements MessageHandler {
-  constructor(private config: N8NHandlerConfig) {}
-
-  async sendMessage(message: ChatMessage, sessionId?: string): Promise<MessageResponse> {
-    const { modelHost, systemPrompt, streaming } = this.config;
-    
-    if (!modelHost) {
-      throw new Error("Model host is required for N8N calls");
-    }
-
-    try {
-      const response = await fetch(modelHost, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId,
-          message: message.text,
-          systemPrompt: systemPrompt || "You are a helpful assistant.",
-          streaming: streaming || false
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`N8N call failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      if (data.output) {
-        const { explanation, actions } = JSON.parse(data.output);
-        return { content: explanation, actions };
-      }
-      // Extract content from various possible response formats
-      const content = data.response || data.message || data.content || data.text || String(data);
-      
-      return { content };
-    } catch (error) {
-      throw new Error(`N8N call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
+  return {
+    ai: {
+      value: ai,
+    },
+  };
 }
 
 // ============================================================================
-// QUERY HANDLER (for Canvas Components)
+// QUERY HANDLER
 // ============================================================================
 
 export class QueryHandler implements MessageHandler {
   constructor(private config: QueryHandlerConfig) {}
 
-  async sendMessage(message: ChatMessage, sessionId?: string): Promise<MessageResponse> {
+  async sendMessage(message: ChatMessage): Promise<ChatMessage> {
     const { chatQuery, dispatch} = this.config;
-    
-    // If no query selected or dispatch unavailable, return mock response
-    if (!chatQuery || !dispatch) {
-      await new Promise((res) => setTimeout(res, 500));
-      return { content: "(mock) You typed: " + message.text };
+
+    if (!chatQuery) {
+      throw new Error("Select a query before sending a message");
+    }
+
+    if (!dispatch) {
+      throw new Error("Query dispatch is unavailable");
     }
 
     try {
+      console.log("Executing query:", chatQuery);
       const result: any = await getPromiseAfterDispatch(
         dispatch,
         routeByNameAction(
@@ -75,14 +52,14 @@ export class QueryHandler implements MessageHandler {
           executeQueryAction({
             // Pass the full message object so attachments are available in queries
             args: { 
-              message: { value: message }, // Full ChatMessage object with attachments
-              prompt: { value: message.text }, // Keep backward compatibility
+              message: { value: message },
+              prompt: { value: getTextFromThreadContent(message.content) },
             },
           })
         )
       );
-
-      return result.message
+      console.log("Query result:", result);
+      return toAssistantMessage(result);
     } catch (e: any) {
       throw new Error(e?.message || "Query execution failed");
     }
@@ -90,15 +67,73 @@ export class QueryHandler implements MessageHandler {
 }
 
 // ============================================================================
-// MOCK HANDLER (for testing/fallbacks)
+// AI ASSISTANT QUERY HANDLER (bottom panel)
+// ----------------------------------------------------------------------------
+// This handler owns the Lowcoder side of the Automator flow:
+//   1. snapshot the current editor state,
+//   2. build the system prompt, tools, catalogs, and live context,
+//   3. pass that payload to the selected user query,
+//   4. accept an Assistant UI `ThreadMessageLike` assistant message.
+//
+// Provider-specific parsing belongs in the selected query/backend bridge.
 // ============================================================================
 
-export class MockHandler implements MessageHandler {
-  constructor(private delay: number = 1000) {}
+export class AIAssistantQueryHandler implements AIAssistantMessageHandler {
+  constructor(private config: QueryHandlerConfig) {}
 
-  async sendMessage(message: ChatMessage): Promise<MessageResponse> {
-    await new Promise(resolve => setTimeout(resolve, this.delay));
-    return { content: `Mock response: ${message.text}` };
+  async sendMessage(
+    _message: ChatMessage,
+    _sessionId: string | undefined,
+    conversationHistory: ChatMessage[]
+  ): Promise<ChatMessage> {
+    const { chatQuery, dispatch, getEditorState } = this.config;
+    const history = conversationHistory;
+
+    // Conversation history in the OpenAI {role, content} shape.
+    const rawHistory = history.map((msg) => ({
+      role: msg.role,
+      content: getTextFromThreadContent(msg.content),
+    }));
+
+    if (!chatQuery) {
+      throw new Error("Select an Automator query before sending a message");
+    }
+
+    if (!dispatch) {
+      throw new Error("Automator dispatch is unavailable");
+    }
+
+    if (!getEditorState) {
+      throw new Error("Automator editor state is unavailable");
+    }
+
+    const editorState = getEditorState();
+    const payload = buildAutomatorPayload({
+      history: rawHistory,
+      editorState,
+    });
+
+    try {
+      console.log("[Automator] running query:", chatQuery, {
+        contextComponents: payload.context.components.length,
+        contextQueries: payload.context.queries.length,
+        messageCount: payload.messages.length,
+      });
+
+      const result: any = await getPromiseAfterDispatch(
+        dispatch,
+        routeByNameAction(
+          chatQuery,
+          executeQueryAction({
+            args: buildAutomatorQueryArgs(payload),
+          })
+        )
+      );
+
+      return toAssistantMessage(result);
+    } catch (e: any) {
+      throw new Error(e?.message || "AI assistant query execution failed");
+    }
   }
 }
 
@@ -107,19 +142,13 @@ export class MockHandler implements MessageHandler {
 // ============================================================================
 
 export function createMessageHandler(
-  type: "n8n" | "query" | "mock",
-  config: N8NHandlerConfig | QueryHandlerConfig
+  type: "query",
+  config: QueryHandlerConfig
 ): MessageHandler {
   switch (type) {
-    case "n8n":
-      return new N8NHandler(config as N8NHandlerConfig);
-    
     case "query":
-      return new QueryHandler(config as QueryHandlerConfig);
-    
-    case "mock":
-      return new MockHandler();
-    
+      return new QueryHandler(config);
+
     default:
       throw new Error(`Unknown message handler type: ${type}`);
   }

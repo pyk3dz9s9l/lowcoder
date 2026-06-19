@@ -1,12 +1,17 @@
-import { CompleteAttachment } from "@assistant-ui/react";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 
-export interface ChatMessage {
+export type ChatMessageContent = Exclude<ThreadMessageLike["content"], string>;
+
+export type ChatMessage = Omit<
+  ThreadMessageLike,
+  "id" | "role" | "content" | "createdAt" | "attachments"
+> & {
     id: string;
     role: "user" | "assistant";
-    text: string;
-    timestamp: number;
-    attachments?: CompleteAttachment[];
-  }
+    content: ChatMessageContent;
+    createdAt: Date;
+    attachments?: ThreadMessageLike["attachments"];
+  };
   
   export interface ChatThread {
     threadId: string;
@@ -40,29 +45,26 @@ export interface ChatMessage {
   // ============================================================================
   
   export interface MessageHandler {
-    sendMessage(message: ChatMessage, sessionId?: string): Promise<MessageResponse>;
-    // Future: sendMessageStream?(message: ChatMessage): AsyncGenerator<MessageResponse>;
+    sendMessage(message: ChatMessage, sessionId?: string): Promise<ChatMessage>;
+    // Future: sendMessageStream?(message: ChatMessage): AsyncGenerator<ChatMessage>;
   }
-  
-  export interface MessageResponse {
-    content: string;
-    metadata?: any;
-    actions?: any[];
+
+  export interface AIAssistantMessageHandler {
+    sendMessage(message: ChatMessage, sessionId: string | undefined, conversationHistory: ChatMessage[]): Promise<ChatMessage>;
   }
   
   // ============================================================================
   // CONFIGURATION TYPES (simplified)
   // ============================================================================
   
-  export interface N8NHandlerConfig {
-    modelHost: string;
-    systemPrompt?: string;
-    streaming?: boolean;
-  }
-  
   export interface QueryHandlerConfig {
     chatQuery: string;
     dispatch: any;
+    /**
+     * Snapshot accessor for the live editor state. The handler calls this
+     * lazily on every send so it always has the *current* canvas state.
+     */
+    getEditorState?: () => any;
   }
   
 // ============================================================================
@@ -93,8 +95,6 @@ export interface ChatCoreProps {
 // Bottom Panel Props (simplified, no styling controls)
 export interface ChatPanelProps {
   tableName: string;
-  modelHost: string;
-  systemPrompt?: string;
-  streaming?: boolean;
+  chatQuery: string;
   onMessageUpdate?: (message: string) => void;
 }

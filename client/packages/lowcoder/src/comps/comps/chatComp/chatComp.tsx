@@ -14,9 +14,10 @@ import { ChatProvider } from "./components/context/ChatContext";
 import { ChatPropertyView } from "./chatPropertyView";
 import { createChatStorage } from "./utils/storageFactory";
 import { QueryHandler } from "./handlers/messageHandlers";
-import { useMemo, useRef, useEffect } from "react";  
+import { useMemo, useRef } from "react";  
 import { changeChildAction } from "lowcoder-core";
 import { ChatMessage } from "./types/chatTypes";
+import { getTextFromThreadContent } from "./utils/assistantMessages";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { styleControl } from "comps/controls/styleControl";
@@ -31,8 +32,8 @@ import {
 } from "comps/controls/styleControlConstants";
 import { AnimationStyle } from "comps/controls/styleControlConstants";
 
-import "@assistant-ui/styles/index.css";
-import "@assistant-ui/styles/markdown.css";
+// Assistant UI layout is styled locally with AntD and styled-components.
+// Markdown-specific styles are imported by components/assistant-ui/markdown-text.tsx.
 
 // ============================================================================
 // CHAT-SPECIFIC EVENTS
@@ -98,8 +99,8 @@ export function addSystemPromptToHistory(
   const formattedHistory = conversationHistory.map(msg => {
     const baseMessage = {
       role: msg.role,
-      content: msg.text,
-      timestamp: msg.timestamp
+      content: getTextFromThreadContent(msg.content),
+      timestamp: msg.createdAt.getTime()
     };
 
     // Include attachment metadata if present (for API calls and external integrations)
@@ -248,16 +249,6 @@ const ChatTmpComp = new UICompBuilder(
         props.onEvent("messageReceived");
       }
     };
-
-    // Cleanup on unmount
-    useEffect(() => {
-      return () => {
-        const tableName = uniqueTableName.current;
-        if (tableName) {
-          storage.cleanup();
-        }
-      };
-    }, []);
 
     // custom styles
     const styles = {

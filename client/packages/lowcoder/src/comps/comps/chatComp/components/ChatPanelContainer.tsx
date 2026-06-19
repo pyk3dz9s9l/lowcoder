@@ -4,31 +4,117 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
-  AppendMessage,
   AssistantRuntimeProvider,
-  ExternalStoreThreadListAdapter,
-  TextContentPart,
-  ThreadUserContentPart
 } from "@assistant-ui/react";
-import { Thread } from "./assistant-ui/thread";
-import { ThreadList } from "./assistant-ui/thread-list";
+import type {
+  AppendMessage,
+  ExternalStoreThreadData,
+  ExternalStoreThreadListAdapter,
+} from "@assistant-ui/react";
+import { Thread } from "components/assistant-ui/thread";
+import { ThreadList } from "components/assistant-ui/thread-list";
 import { 
   ChatProvider,
   useChatContext, 
-  RegularThreadData, 
-  ArchivedThreadData 
+  RegularThreadData,
 } from "./context/ChatContext";
-import { MessageHandler, ChatMessage } from "../types/chatTypes";
+import { AIAssistantMessageHandler, ChatMessage } from "../types/chatTypes";
 import styled from "styled-components";
 import { trans } from "i18n";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
+import {
+  createAssistantErrorMessage,
+  createUserMessage,
+  generateThreadTitle,
+  getAutomatorActionsFromMessage,
+  getTextFromAppendMessage,
+  getTextFromThreadContent,
+  shouldGenerateThreadTitle,
+  toChatMessage,
+} from "../utils/assistantMessages";
 
-import "@assistant-ui/styles/index.css";
-import "@assistant-ui/styles/markdown.css";
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
+import { ActionConfig, ActionExecuteParams } from "../../preLoadComp/types";
 import { configureComponentAction } from "../../preLoadComp/actions/componentConfiguration";
-import { addComponentAction, moveComponentAction, nestComponentAction, resizeComponentAction } from "../../preLoadComp/actions/componentManagement";
-import { applyThemeAction, configureAppMetaAction, setCanvasSettingsAction } from "../../preLoadComp/actions/appConfiguration";
+import {
+  addComponentAction,
+  moveComponentAction,
+  nestComponentAction,
+  resizeComponentAction,
+  deleteComponentAction,
+  renameComponentAction,
+} from "../../preLoadComp/actions/componentManagement";
+import {
+  applyThemeAction,
+  configureAppMetaAction,
+  setCanvasSettingsAction,
+  applyGlobalJSAction,
+  applyCSSAction,
+  publishAppAction,
+} from "../../preLoadComp/actions/appConfiguration";
+import { applyStyleAction } from "../../preLoadComp/actions/componentStyling";
+import { addEventHandlerAction } from "../../preLoadComp/actions/componentEvents";
+import { alignComponentAction } from "../../preLoadComp/actions/componentLayout";
+import { deleteQueryAction } from "../../preLoadComp/actions/queryManagement";
+
+// ============================================================================
+// ACTION REGISTRY — maps LLM action names to their executor configs.
+// Adding a new action is one line here + one entry in actionsCatalog.ts.
+// ============================================================================
+
+const ACTION_REGISTRY: Record<string, ActionConfig> = {
+  place_component: addComponentAction,
+  nest_component: nestComponentAction,
+  move_component: moveComponentAction,
+  resize_component: resizeComponentAction,
+  delete_component: deleteComponentAction,
+  delete_query: deleteQueryAction,
+  rename_component: renameComponentAction,
+  set_properties: configureComponentAction,
+  set_style: applyStyleAction,
+  set_theme: applyThemeAction,
+  set_app_metadata: configureAppMetaAction,
+  set_canvas_setting: setCanvasSettingsAction,
+  set_global_javascript: applyGlobalJSAction,
+  set_global_css: applyCSSAction,
+  publish_app: publishAppAction,
+  add_event_handler: addEventHandlerAction,
+  align_component: alignComponentAction,
+};
+
+/**
+ * Translate an LLM action object into the ActionExecuteParams shape that
+ * the legacy executor functions expect. Centralises the field-mapping so
+ * each executor doesn't need to know about the automator format.
+ */
+function buildExecuteParams(
+  actionItem: Record<string, any>,
+  editorState: any
+): ActionExecuteParams {
+  const ap = actionItem.action_parameters || {};
+
+  let actionValue = "";
+  switch (actionItem.action) {
+    case "rename_component":       actionValue = ap.new_name || ""; break;
+    case "align_component":        actionValue = ap.alignment || "center"; break;
+    case "add_event_handler":      actionValue = `${ap.event || "click"}: ${ap.action_type || "message"}`; break;
+    case "set_global_javascript":  actionValue = ap.code || ""; break;
+    case "set_global_css":         actionValue = ap.code || ""; break;
+  }
+
+  return {
+    actionKey: actionItem.action,
+    actionValue,
+    actionPayload: actionItem,
+    selectedComponent: actionItem.component || null,
+    selectedEditorComponent: actionItem.component_name || null,
+    selectedNestComponent: null,
+    editorState,
+    selectedDynamicLayoutIndex: null,
+    selectedTheme: null,
+    selectedCustomShortcutAction: null,
+  };
+}
 
 // ============================================================================
 // STYLED CONTAINER - SIMPLE FIXED STYLING FOR BOTTOM PANEL
@@ -41,6 +127,8 @@ const StyledChatContainer = styled.div<{
   display: flex;
   height: ${(props) => (props.autoHeight ? "auto" : "100%")};
   min-height: ${(props) => (props.autoHeight ? "300px" : "unset")};
+  min-width: 0;
+  overflow: hidden;
 
   p {
     margin: 0;
@@ -50,12 +138,21 @@ const StyledChatContainer = styled.div<{
     width: ${(props) => props.sidebarWidth || "250px"};
     background-color: #fff;
     padding: 10px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .aui-thread-root {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     background-color: #f9fafb;
-    height: auto;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .aui-thread-viewport {
+    min-height: 0;
   }
 
   .aui-thread-list-item {
@@ -73,11 +170,9 @@ const StyledChatContainer = styled.div<{
 // CHAT PANEL CONTAINER - DIRECT RENDERING
 // ============================================================================
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
 export interface ChatPanelContainerProps {
   storage: any;
-  messageHandler: MessageHandler;
+  messageHandler: AIAssistantMessageHandler;
   placeholder?: string;
   onMessageUpdate?: (message: string) => void;
 }
@@ -98,205 +193,100 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const performAction = async (actions: any[]) => {
     if (!editorStateRef.current) {
-      console.error("No editorStateRef found");
+      console.error("[Automator] no editorState — skipping actions");
       return;
     }
-  
-    const comp = editorStateRef.current.getUIComp().children.comp;
-    if (!comp) {
-      console.error("No comp found");
-      return;
-    }
-    // const layout = comp.children.layout.getView();
-    // console.log("LAYOUT", layout);
-  
+
+    console.log(`[Automator] executing ${actions.length} action(s)`);
+    let executed = 0;
+
     for (const actionItem of actions) {
-      const { action, component, ...action_payload } = actionItem;
-  
-      switch (action) {
-        case "place_component":
-          await addComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "nest_component":
-          await nestComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "move_component":
-          await moveComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "resize_component":
-          await resizeComponentAction.execute({
-            actionKey: action,
-            actionValue: "",
-            actionPayload: action_payload,
-            selectedComponent: component,
-            selectedEditorComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_properties":
-          await configureComponentAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_theme":
-          await applyThemeAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_app_metadata":
-          await configureAppMetaAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        case "set_canvas_setting":
-          await setCanvasSettingsAction.execute({
-            actionKey: action,
-            actionValue: component,
-            actionPayload: action_payload,
-            selectedEditorComponent: null,
-            selectedComponent: null,
-            selectedNestComponent: null,
-            editorState: editorStateRef.current,
-            selectedDynamicLayoutIndex: null,
-            selectedTheme: null,
-            selectedCustomShortcutAction: null
-          });
-          break;
-        default:
-          break;
+      const executor = ACTION_REGISTRY[actionItem.action];
+      if (!executor) {
+        console.warn(`[Automator] unsupported action: ${actionItem.action}`);
+        continue;
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        const params = buildExecuteParams(actionItem, editorStateRef.current);
+        await executor.execute(params);
+        executed++;
+      } catch (err) {
+        console.error(`[Automator] action "${actionItem.action}" failed:`, err);
+      }
+      await new Promise((r) => setTimeout(r, 500));
     }
+
+    console.log(`[Automator] done: ${executed}/${actions.length} succeeded`);
   };
 
-  const convertMessage = (message: ChatMessage): ThreadMessageLike => {
-    const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
-    
-    return {
-      role: message.role,
-      content,
-      id: message.id,
-      createdAt: new Date(message.timestamp),
-    };
+  const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
+
+  const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
+    const currentThread = state.threadList.find(
+      (thread) => thread.threadId === state.currentThreadId
+    );
+    const defaultTitle = trans("chat.newChatTitle");
+
+    if (
+      !shouldGenerateThreadTitle(
+        currentThread?.title,
+        defaultTitle,
+        currentMessages.length
+      )
+    ) {
+      return;
+    }
+
+    const title = generateThreadTitle(userMessage);
+    if (!title || title === currentThread?.title) return;
+
+    await actions.updateThread(state.currentThreadId, { title });
   };
 
   const onNew = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
   
     if (!text) {
       throw new Error("Cannot send an empty message");
     }
   
-    const userMessage: ChatMessage = {
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-    };
+    const userMessage = createUserMessage(text);
+  
+    const conversationHistory = [...currentMessages, userMessage];
   
     await actions.addMessage(state.currentThreadId, userMessage);
+    await updateInitialThreadTitle(userMessage);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(userMessage, state.currentThreadId);
-      onMessageUpdate?.(userMessage.text);
-      
-      if (response?.actions?.length) {
-        performAction(response.actions);
+      const assistantMessage = await messageHandler.sendMessage(
+        userMessage,
+        state.currentThreadId,
+        conversationHistory
+      );
+      onMessageUpdate?.(getTextFromThreadContent(userMessage.content));
+
+      const automatorActions = getAutomatorActionsFromMessage(assistantMessage);
+      if (automatorActions.length) {
+        await performAction(automatorActions);
       }
 
-      await actions.addMessage(state.currentThreadId, {
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      });
+      await actions.addMessage(
+        state.currentThreadId,
+        assistantMessage
+      );
     } catch (error) {
-      await actions.addMessage(state.currentThreadId, {
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      await actions.addMessage(
+        state.currentThreadId,
+        createAssistantErrorMessage(trans("chat.errorUnknown"))
+      );
     } finally {
       setIsRunning(false);
     }
   };
 
   const onEdit = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
   
     if (!text) {
       throw new Error("Cannot send an empty message");
@@ -305,44 +295,47 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
     const index = currentMessages.findIndex((m) => m.id === message.parentId) + 1;
     const newMessages = [...currentMessages.slice(0, index)];
   
-    newMessages.push({
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-    });
+    newMessages.push(createUserMessage(text));
   
     await actions.updateMessages(state.currentThreadId, newMessages);
     setIsRunning(true);
   
     try {
-      const response = await messageHandler.sendMessage(newMessages[newMessages.length - 1]);
+      const assistantMessage = await messageHandler.sendMessage(
+        newMessages[newMessages.length - 1],
+        state.currentThreadId,
+        newMessages
+      );
       onMessageUpdate?.(text);
-  
-      newMessages.push({
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      });
+
+      const automatorActions = getAutomatorActionsFromMessage(assistantMessage);
+      if (automatorActions.length) {
+        await performAction(automatorActions);
+      }
+
+      newMessages.push(assistantMessage);
       await actions.updateMessages(state.currentThreadId, newMessages);
     } catch (error) {
-      newMessages.push({
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      newMessages.push(createAssistantErrorMessage(trans("chat.errorUnknown")));
       await actions.updateMessages(state.currentThreadId, newMessages);
     } finally {
       setIsRunning(false);
     }
   };
 
+  const toExternalThreadData = (
+    thread: RegularThreadData,
+  ): ExternalStoreThreadData<"regular"> => ({
+    id: thread.threadId,
+    status: "regular",
+    title: thread.title,
+  });
+
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
-    threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
-    archivedThreads: state.threadList.filter((t): t is ArchivedThreadData => t.status === "archived"),
+    threads: state.threadList
+      .filter((t): t is RegularThreadData => t.status === "regular")
+      .map(toExternalThreadData),
 
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
@@ -357,10 +350,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       await actions.updateThread(threadId, { title: newTitle });
     },
 
-    onArchive: async (threadId) => {
-      await actions.updateThread(threadId, { status: "archived" });
-    },
-
     onDelete: async (threadId) => {
       await actions.deleteThread(threadId);
     },
@@ -368,7 +357,11 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => actions.updateMessages(state.currentThreadId, messages),
+    setMessages: (messages) =>
+      actions.updateMessages(
+        state.currentThreadId,
+        messages.map(toChatMessage)
+      ),
     convertMessage,
     isRunning,
     onNew,

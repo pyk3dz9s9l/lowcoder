@@ -4,30 +4,37 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useExternalStoreRuntime,
   ThreadMessageLike,
-  AppendMessage,
   AssistantRuntimeProvider,
-  ExternalStoreThreadListAdapter,
-  CompleteAttachment,
-  TextContentPart,
-  ThreadUserContentPart
 } from "@assistant-ui/react";
-import { Thread } from "./assistant-ui/thread";
-import { ThreadList } from "./assistant-ui/thread-list";
+import type {
+  AppendMessage,
+  CompleteAttachment,
+  ExternalStoreThreadData,
+  ExternalStoreThreadListAdapter,
+} from "@assistant-ui/react";
+import { Thread } from "components/assistant-ui/thread";
+import { ThreadList } from "components/assistant-ui/thread-list";
 import { 
   useChatContext, 
-  RegularThreadData, 
-  ArchivedThreadData 
+  RegularThreadData,
 } from "./context/ChatContext";
 import { MessageHandler, ChatMessage, ChatCoreProps } from "../types/chatTypes";
 import { trans } from "i18n";
 import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
+import {
+  createAssistantErrorMessage,
+  createUserMessage,
+  generateThreadTitle,
+  getTextFromAppendMessage,
+  getTextFromThreadContent,
+  shouldGenerateThreadTitle,
+  toChatMessage,
+} from "../utils/assistantMessages";
 import { StyledChatContainer } from "./ChatContainerStyles";
 
 // ============================================================================
 //   CHAT CONTAINER 
 // ============================================================================
-
-const generateId = () => Math.random().toString(36).substr(2, 9);
 
 function ChatContainerView(props: ChatCoreProps) {
   const { state, actions } = useChatContext();
@@ -52,32 +59,33 @@ function ChatContainerView(props: ChatCoreProps) {
     onEventRef.current?.("componentLoad");
   }, []);
 
-  const convertMessage = (message: ChatMessage): ThreadMessageLike => {
-    const content: ThreadUserContentPart[] = [{ type: "text", text: message.text }];
-    
-    if (message.attachments && message.attachments.length > 0) {
-      for (const attachment of message.attachments) {
-        if (attachment.content) {
-          content.push(...attachment.content);
-        }
-      }
+  const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
+
+  const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
+    const currentThread = state.threadList.find(
+      (thread) => thread.threadId === state.currentThreadId
+    );
+    const defaultTitle = trans("chat.newChatTitle");
+
+    if (
+      !shouldGenerateThreadTitle(
+        currentThread?.title,
+        defaultTitle,
+        currentMessages.length
+      )
+    ) {
+      return;
     }
-    
-    return {
-      role: message.role,
-      content,
-      id: message.id,
-      createdAt: new Date(message.timestamp),
-      ...(message.attachments && message.attachments.length > 0 && { attachments: message.attachments }),
-    };
+
+    const title = generateThreadTitle(userMessage);
+    if (!title || title === currentThread?.title) return;
+
+    await actions.updateThread(state.currentThreadId, { title });
+    props.onEvent?.("threadUpdated");
   };
 
   const onNew = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
@@ -86,47 +94,29 @@ function ChatContainerView(props: ChatCoreProps) {
       throw new Error("Cannot send an empty message");
     }
   
-    const userMessage: ChatMessage = {
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-      attachments: completeAttachments,
-    };
+    const userMessage = createUserMessage(text, completeAttachments);
   
     await actions.addMessage(state.currentThreadId, userMessage);
+    await updateInitialThreadTitle(userMessage);
     setIsRunning(true);
   
     try {
-      const response = await props.messageHandler.sendMessage(userMessage);
-      props.onMessageUpdate?.(userMessage.text);
-      
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      };
+      const assistantMessage = await props.messageHandler.sendMessage(userMessage);
+      props.onMessageUpdate?.(getTextFromThreadContent(userMessage.content));
   
       await actions.addMessage(state.currentThreadId, assistantMessage);
     } catch (error) {
-      await actions.addMessage(state.currentThreadId, {
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      await actions.addMessage(
+        state.currentThreadId,
+        createAssistantErrorMessage(trans("chat.errorUnknown"))
+      );
     } finally {
       setIsRunning(false);
     }
   };
 
   const onEdit = async (message: AppendMessage) => {
-    const textPart = (message.content as ThreadUserContentPart[]).find(
-      (part): part is TextContentPart => part.type === "text"
-    );
-  
-    const text = textPart?.text?.trim() ?? "";
+    const text = getTextFromAppendMessage(message);
     const completeAttachments = (message.attachments ?? []).filter(
       (att): att is CompleteAttachment => att.status.type === "complete"
     );
@@ -138,48 +128,39 @@ function ChatContainerView(props: ChatCoreProps) {
     const index = currentMessages.findIndex((m) => m.id === message.parentId) + 1;
     const newMessages = [...currentMessages.slice(0, index)];
   
-    const editedMessage: ChatMessage = {
-      id: generateId(),
-      role: "user",
-      text,
-      timestamp: Date.now(),
-      attachments: completeAttachments,
-    };
+    const editedMessage = createUserMessage(text, completeAttachments);
   
     newMessages.push(editedMessage);
     await actions.updateMessages(state.currentThreadId, newMessages);
     setIsRunning(true);
   
     try {
-      const response = await props.messageHandler.sendMessage(editedMessage);
-      props.onMessageUpdate?.(editedMessage.text);
-  
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        text: response.content,
-        timestamp: Date.now(),
-      };
+      const assistantMessage = await props.messageHandler.sendMessage(editedMessage);
+      props.onMessageUpdate?.(getTextFromThreadContent(editedMessage.content));
   
       newMessages.push(assistantMessage);
       await actions.updateMessages(state.currentThreadId, newMessages);
     } catch (error) {
-      newMessages.push({
-        id: generateId(),
-        role: "assistant",
-        text: trans("chat.errorUnknown"),
-        timestamp: Date.now(),
-      });
+      newMessages.push(createAssistantErrorMessage(trans("chat.errorUnknown")));
       await actions.updateMessages(state.currentThreadId, newMessages);
     } finally {
       setIsRunning(false);
     }
   };
 
+  const toExternalThreadData = (
+    thread: RegularThreadData,
+  ): ExternalStoreThreadData<"regular"> => ({
+    id: thread.threadId,
+    status: "regular",
+    title: thread.title,
+  });
+
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
-    threads: state.threadList.filter((t): t is RegularThreadData => t.status === "regular"),
-    archivedThreads: state.threadList.filter((t): t is ArchivedThreadData => t.status === "archived"),
+    threads: state.threadList
+      .filter((t): t is RegularThreadData => t.status === "regular")
+      .map(toExternalThreadData),
 
     onSwitchToNewThread: async () => {
       const threadId = await actions.createThread(trans("chat.newChatTitle"));
@@ -196,11 +177,6 @@ function ChatContainerView(props: ChatCoreProps) {
       props.onEvent?.("threadUpdated");
     },
 
-    onArchive: async (threadId) => {
-      await actions.updateThread(threadId, { status: "archived" });
-      props.onEvent?.("threadUpdated");
-    },
-
     onDelete: async (threadId) => {
       await actions.deleteThread(threadId);
       props.onEvent?.("threadDeleted");
@@ -209,7 +185,11 @@ function ChatContainerView(props: ChatCoreProps) {
 
   const runtime = useExternalStoreRuntime({
     messages: currentMessages,
-    setMessages: (messages) => actions.updateMessages(state.currentThreadId, messages),
+    setMessages: (messages) =>
+      actions.updateMessages(
+        state.currentThreadId,
+        messages.map(toChatMessage)
+      ),
     convertMessage,
     isRunning,
     onNew,
@@ -239,7 +219,7 @@ function ChatContainerView(props: ChatCoreProps) {
         $animationStyle={props.animationStyle}
       >
         <ThreadList />
-        <Thread placeholder={props.placeholder} />
+        <Thread placeholder={props.placeholder} autoHeight={props.autoHeight} />
       </StyledChatContainer>
     </AssistantRuntimeProvider>
   );
