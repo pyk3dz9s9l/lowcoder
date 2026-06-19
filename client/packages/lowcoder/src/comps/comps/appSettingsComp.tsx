@@ -458,7 +458,7 @@ function AppCanvasSettingsModal(props: ChildrenInstance) {
         }}
       >
         <DivStyled>
-          {!isAggregation && maxWidth.propertyView({
+          {maxWidth.propertyView({
             dropdownLabel: trans("appSetting.canvasMaxWidth"),
             inputLabel: trans("appSetting.userDefinedMaxWidth"),
             inputPlaceholder: trans("appSetting.inputUserDefinedPxValue"),
