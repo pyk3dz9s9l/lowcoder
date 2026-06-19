@@ -498,6 +498,14 @@ export function compTablePropertyView<T extends MultiBaseComp<TableChildrenType>
             <div className={tableDataDivClassName}>
               {comp.children.data.propertyView({
                 label: dataLabel,
+                enableAIHelp: true,
+                aiHelp: {
+                  targetKind: "json",
+                  label: "Table Lite data",
+                  fieldName: "data",
+                  fieldDescription:
+                    "JSON array of row objects for the Table Lite component. Generate rows with consistent object keys so table columns can be created from the data shape.",
+                },
               })}
             </div>
           )}

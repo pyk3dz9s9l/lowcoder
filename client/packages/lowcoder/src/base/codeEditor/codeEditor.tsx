@@ -15,6 +15,7 @@ import type { CodeEditorProps, StyleName } from "./codeEditorTypes";
 import { useClickCompNameEffect } from "./clickCompName";
 import { Layers } from "../../constants/Layers";
 import { debounce } from "lodash";
+import { CodeEditorAIHelpButton } from "components/ai-helper";
 
 type StyleConfig = {
   minHeight: string;
@@ -214,6 +215,7 @@ function useCodeMirror(
 ) {
   const { value, onChange } = props;
   const viewRef = useRef<EditorView>();
+  const [viewVersion, setViewVersion] = useState(0);
 
   // will not trigger view.setState when typing inputs, to avoid focus chaos
   const isTypingRef = useRef(0);
@@ -250,6 +252,7 @@ function useCodeMirror(
         view.setState(state);
       } else {
         viewRef.current = new EditorView({ state, parent: container.current });
+        setViewVersion((version) => version + 1);
       }
     }
   }, [container, value, extensions]);
@@ -262,7 +265,7 @@ function useCodeMirror(
     };
   }, []);
 
-  return { view: viewRef.current, isFocus };
+  return { view: viewRef.current, isFocus, viewVersion };
 }
 
 function clickCompNameCss(enableClickCompName?: boolean) {
@@ -338,6 +341,20 @@ const CodeEditorPanelContainer = styled.div<{
 
 const CodeEditorWrapper = styled.div`
   height: 100%;
+  position: relative;
+
+  .code-editor-ai-help-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  &:hover {
+    .code-editor-ai-help-button {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
 `;
 
 function canShowCard(props: CodeEditorProps) {
@@ -358,6 +375,21 @@ function CodeEditorCommon(
     <CodeEditorWrapper onClick={onClick ? (e) => view && onClick(e, view) : undefined}>
       {!disabled && view && props.widgetPopup?.(view)}
       {children}
+      {!disabled && props.enableAIHelp && view && (
+        <CodeEditorAIHelpButton
+          view={view}
+          label={props.aiHelp?.label ?? (typeof props.label === "string" ? props.label : undefined)}
+          language={props.language}
+          targetKind={props.aiHelp?.targetKind}
+          datasourceId={props.aiHelp?.datasourceId}
+          queryType={props.aiHelp?.queryType}
+          queryName={props.aiHelp?.queryName}
+          componentName={props.aiHelp?.componentName}
+          fieldName={props.aiHelp?.fieldName}
+          fieldDescription={props.aiHelp?.fieldDescription}
+          targetId={props.aiHelp?.targetId}
+        />
+      )}
       <PopupCard
         cardStyle={cardStyle}
         editorFocus={!disabled && isFocus && canShowCard(props)}

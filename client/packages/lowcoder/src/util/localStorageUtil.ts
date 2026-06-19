@@ -121,3 +121,17 @@ export function getLocalThemeId() {
 export function setLocalThemeId(themeId: string) {
   return localStorage.setItem("theme_id", themeId);
 }
+
+const AIQueryStorageKey = "lc_ai_selected_query";
+
+export function getSelectedAIQueryName(): string {
+  return localStorage.getItem(AIQueryStorageKey) ?? "";
+}
+
+export function saveSelectedAIQueryName(queryName: string) {
+  if (queryName) {
+    localStorage.setItem(AIQueryStorageKey, queryName);
+  } else {
+    localStorage.removeItem(AIQueryStorageKey);
+  }
+}

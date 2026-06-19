@@ -7,6 +7,18 @@ export type StyleName = "medium" | "higher" | "window";
 
 export type Language = "sql" | "javascript" | "css" | "html" | "json";
 
+export interface CodeEditorAIHelp {
+  label?: string;
+  targetKind?: "sql" | "javascript" | "echarts-option" | "json" | "component-field";
+  datasourceId?: string;
+  queryType?: string;
+  queryName?: string;
+  componentName?: string;
+  fieldName?: string;
+  fieldDescription?: string;
+  targetId?: string;
+}
+
 export interface CodeEditorControlParams {
   placeholder?: string;
   styleName?: StyleName;
@@ -25,6 +37,8 @@ export interface CodeEditorControlParams {
   cardRichContent?: (s: string) => ReactNode;
   cardTips?: ReactNode;
   enableMetaCompletion?: boolean;
+  enableAIHelp?: boolean;
+  aiHelp?: CodeEditorAIHelp;
 }
 
 export interface CodeEditorProps extends CodeEditorControlParams {

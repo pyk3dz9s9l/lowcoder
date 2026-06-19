@@ -83,7 +83,17 @@ let JsonExplorerTmpComp = (function () {
       return (
         <>
           <Section name={sectionNames.basic}>
-             {children.value.propertyView({ label: trans("export.jsonEditorDesc") })}
+             {children.value.propertyView({
+               label: trans("export.jsonEditorDesc"),
+               enableAIHelp: true,
+               aiHelp: {
+                 targetKind: "json",
+                 label: "JSON Explorer value",
+                 fieldName: "value",
+                 fieldDescription:
+                   "JSON object or array displayed by the JSON Explorer component. Generate valid JSON that is useful to inspect as a nested data structure.",
+               },
+             })}
           </Section>
 
           {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
