@@ -163,6 +163,8 @@ Use `llm` when the room is associated with an AI workflow.
 
 The room can store an `llmQueryName` field so your app knows which query or backend flow should respond in that room.
 
+The Chat Box only records whether the user **@-mentioned the AI** on the last send (`chatBox1.lastSentMessageTagsLlm`). Your app should **run the mapped LLM query only when that flag is true**, so normal messages in an LLM room stay human-to-human until someone tags the assistant.
+
 Typical examples:
 
 - GPT assistant
@@ -240,9 +242,12 @@ Each invite should look like:
 ### Message State
 
 - `{{ chatBox1.lastSentMessageText }}`
+- `{{ chatBox1.lastSentMessageTagsLlm }}`
 - `{{ chatBox1.messageText }}`
 
 Use `lastSentMessageText` when saving a message after `messageSent`.
+
+Use `lastSentMessageTagsLlm` when deciding whether to run the room’s LLM query: it is `true` only if the user inserted an **@-mention of the AI** (serialized as `@[…](u:__llm_bot__)` inside `lastSentMessageText`).
 
 Use `messageText` when you want the current draft value.
 
@@ -286,7 +291,7 @@ The normal message flow is:
 1. the user types in the chat input
 2. `chatBox1` emits `startTyping`
 3. the user sends the message
-4. `chatBox1.lastSentMessageText` becomes available
+4. `chatBox1.lastSentMessageText` and `chatBox1.lastSentMessageTagsLlm` become available
 5. `chatBox1` emits `messageSent`
 6. your `saveMessage` query stores the message
 7. your app tells connected users to refresh
@@ -464,7 +469,7 @@ This gives your app a room-level mapping to the AI query or workflow that should
 A common pattern is:
 
 1. user sends a message in an LLM room
-2. your app detects the room type or `llmQueryName`
+2. your app detects the room type or `llmQueryName`, and **`chatBox1.lastSentMessageTagsLlm === true`** (user @-mentioned the AI)
 3. you trigger the AI query
 4. set thinking state:
 
@@ -530,10 +535,12 @@ Then inspect:
 Typical condition:
 
 ```js
-currentRoom?.type === "llm" && currentRoom?.llmQueryName
+currentRoom?.type === "llm" &&
+  currentRoom?.llmQueryName &&
+  chatBox1.lastSentMessageTagsLlm === true
 ```
 
-If that condition is false, stop after the normal save/reload flow.
+If that condition is false, stop after the normal save/reload flow (the message is still saved like any other chat message).
 
 If it is true, continue into the AI flow.
 
@@ -582,6 +589,7 @@ Typical values:
 ```js
 {{ chatController1.currentRoomId }}
 {{ chatBox1.lastSentMessageText }}
+{{ chatBox1.lastSentMessageTagsLlm }}
 {{ (loadRooms.data || []).find(r => r.id === chatController1.currentRoomId) }}
 {{ loadMessages.data || [] }}
 ```
@@ -642,13 +650,15 @@ The full flow usually looks like this:
 2. save the user message
 3. notify the room to reload
 4. resolve the current room
-5. if the room is an `llm` room:
+5. if the room is an `llm` room **and** `chatBox1.lastSentMessageTagsLlm` is true:
 6. set AI thinking to `true`
 7. run the AI query mapped by `llmQueryName`
 8. save the assistant response
 9. notify the room again
 10. set AI thinking to `false`
 11. reload messages
+
+If the room is `llm` but the user did not @-mention the AI, skip steps 6–10 and only keep the normal chat persistence/reload path.
 
 ### Practical Note
 

@@ -54,15 +54,21 @@ export function getComponentCategories() {
     });
   });
   return cats;
-} 
-export function getEditorComponentInfo(editorState: EditorState, componentName?: string): {
+}
+
+export type EditorComponentInfo = {
   componentKey: string | null;
   currentLayout: any;
   simpleContainer: any;
   componentType?: string | null;
   items: any;
   allAppComponents: any[];
-} | null {
+};
+
+export function getEditorComponentInfo(
+  editorState: EditorState,
+  componentName?: string
+): EditorComponentInfo | null {
   try {
     // Get the UI component container
     if (!editorState) {

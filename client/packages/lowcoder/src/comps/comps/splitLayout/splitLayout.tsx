@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Splitter } from "antd";
 import styled from "styled-components";
 import { DispatchType, RecordConstructorToView, wrapDispatch } from "lowcoder-core";
@@ -94,6 +94,9 @@ type ColumnContainerProps = Omit<ContainerBaseProps, "style"> & {
   margin: string;
 };
 
+const parseColumnSize = (value: string | undefined): string | undefined =>
+  value !== undefined && value !== "" ? value : undefined;
+
 const ColumnContainer = (props: ColumnContainerProps) => {
   return (
     <InnerGrid
@@ -112,6 +115,24 @@ const ColumnContainer = (props: ColumnContainerProps) => {
 };
 
 const SplitLayout = (props: SplitLayoutProps) => {
+  const widthKey = props.columns.map((col) => col.width ?? "").join("|");
+  const configuredSizes = useMemo(
+    () => props.columns.map((col) => parseColumnSize(col.width)),
+    [widthKey]
+  );
+  const hasControlledSizes = configuredSizes.some((size) => size !== undefined);
+
+  const [panelSizes, setPanelSizes] = useState<(string | number | undefined)[]>(() => configuredSizes);
+
+  useEffect(() => {
+    if (hasControlledSizes) {
+      setPanelSizes(configuredSizes);
+    }
+  }, [widthKey, hasControlledSizes, configuredSizes]);
+
+  const handleResize = useCallback((sizes: number[]) => {
+    setPanelSizes(sizes);
+  }, []);
 
   return (
     <BackgroundColorContext.Provider value={props.columnStyle.background}>
@@ -123,11 +144,20 @@ const SplitLayout = (props: SplitLayoutProps) => {
               height: props.autoHeight && props.orientation === 'vertical' ? '500px' : '100%',
             }}
             layout={props.orientation}
+            {...(hasControlledSizes ? { onResize: handleResize } : {})}
           >
             {props.columns.map((col, index) => {
               const id = String(col.id);
               const childDispatch = wrapDispatch(wrapDispatch(props.dispatch, "containers"), id);
               const containerProps = props.containers[id]?.children;
+              const configuredSize = parseColumnSize(col.width);
+              const sizeProps = hasControlledSizes
+                ? panelSizes[index] !== undefined
+                  ? { size: panelSizes[index] }
+                  : {}
+                : configuredSize !== undefined
+                  ? { defaultSize: configuredSize }
+                  : {};
 
               return (
                 <SplitPanelWrapper 
@@ -135,7 +165,7 @@ const SplitLayout = (props: SplitLayoutProps) => {
                   collapsible={col.collapsible}
                   {...(col.minWidth !== undefined ? { min: col.minWidth } : {})}
                   {...(col.maxWidth !== undefined ? { max: col.maxWidth } : {})}
-                  {...(col.width !== undefined ? { defaultSize: col.width } : {})}
+                  {...sizeProps}
                 >
                   <ColumnContainer
                     layout={containerProps.layout.getView()}
