@@ -1,11 +1,21 @@
 import { createContext, useContext } from "react";
+import type { JSONObject } from "util/jsonTypes";
 import type { ChatRoom, OnlineUser, PendingRoomInvite } from "./store";
 import type {
   ChatBoxContainerStyleType,
   ChatBoxSidebarStyleType,
   ChatBoxHeaderStyleType,
-  ChatBoxMessageStyleType,
-  ChatBoxInputStyleType,
+  ChatBoxMessageAreaStyleType,
+  ChatBoxOwnMessageStyleType,
+  ChatBoxOtherMessageStyleType,
+  ChatBoxAiMessageStyleType,
+  ChatBoxOwnAvatarStyleType,
+  ChatBoxOtherAvatarStyleType,
+  ChatBoxAiAvatarStyleType,
+  ChatBoxInputAreaStyleType,
+  ChatBoxInputFieldStyleType,
+  ChatBoxInputSendButtonStyleType,
+  ChatBoxInputAttachButtonStyleType,
   AnimationStyleType,
 } from "comps/controls/styleControlConstants";
 
@@ -18,11 +28,23 @@ type ChatEventName =
   | "roomCreate"
   | "inviteSend"
   | "inviteAccept"
-  | "inviteDecline";
+  | "inviteDecline"
+  | "fileUpload";
 
 interface ExposedState {
   value: string;
   onChange: (v: string) => void;
+}
+
+interface BooleanExposedState {
+  value: boolean;
+  onChange: (v: boolean) => void;
+}
+
+/** Imperative handle registered on the ChatBox comp for external actions (e.g. event handlers). */
+export interface ChatBoxMessageUploadHandle {
+  /** Opens the same native file picker as the message input paperclip. */
+  openFilePicker: () => void;
 }
 
 export interface ChatBoxContextValue {
@@ -35,6 +57,8 @@ export interface ChatBoxContextValue {
   currentUserName: string;
   typingUsers: any[];
   onlineUsers: OnlineUser[];
+  /** Raw mention picker config from the property panel; empty array uses room/online fallback. */
+  mentionCandidatesConfig: unknown[];
   pendingInvites: PendingRoomInvite[];
   isAiThinking: boolean;
 
@@ -42,6 +66,8 @@ export interface ChatBoxContextValue {
   chatTitle: ExposedState;
   messageText: ExposedState;
   lastSentMessageText: ExposedState;
+  /** True when the last sent message tagged the AI (`@[…](u:__llm_bot__)`). Use to gate LLM queries. */
+  lastSentMessageTagsLlm: BooleanExposedState;
 
   // UI config
   showHeader: boolean;
@@ -53,8 +79,29 @@ export interface ChatBoxContextValue {
   animationStyle: AnimationStyleType;
   sidebarStyle: ChatBoxSidebarStyleType;
   headerStyle: ChatBoxHeaderStyleType;
-  messageStyle: ChatBoxMessageStyleType;
-  inputStyle: ChatBoxInputStyleType;
+  messageAreaStyle: ChatBoxMessageAreaStyleType;
+  ownMessageStyle: ChatBoxOwnMessageStyleType;
+  otherMessageStyle: ChatBoxOtherMessageStyleType;
+  aiMessageStyle: ChatBoxAiMessageStyleType;
+  ownAvatarStyle: ChatBoxOwnAvatarStyleType;
+  otherAvatarStyle: ChatBoxOtherAvatarStyleType;
+  aiAvatarStyle: ChatBoxAiAvatarStyleType;
+  inputAreaStyle: ChatBoxInputAreaStyleType;
+  inputFieldStyle: ChatBoxInputFieldStyleType;
+  inputSendButtonStyle: ChatBoxInputSendButtonStyleType;
+  inputAttachButtonStyle: ChatBoxInputAttachButtonStyleType;
+
+  /** Message input attachments (same shape as File component `files`). */
+  allowMessageFileUpload: boolean;
+  maxMessageFiles: number;
+  messageFileType: string[];
+  messageFiles: JSONObject[];
+  messageFileValues: Array<string | null>;
+  setMessageAttachments: (files: JSONObject[], values: Array<string | null>) => void;
+  clearMessageAttachments: () => void;
+  onFileUploadEvent: () => void;
+  /** Ref setter from `messageUploadRef` child — used to expose `openMessageFilePicker` methods. */
+  messageUploadRef: (instance: ChatBoxMessageUploadHandle | null) => void;
 
   // Events
   onEvent: (event: ChatEventName) => any;

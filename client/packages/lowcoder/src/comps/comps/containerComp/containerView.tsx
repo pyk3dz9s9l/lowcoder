@@ -125,6 +125,11 @@ type ExtraProps = {
   enableGridLines?: boolean;
   horizontalGridCells?: number;
   onRowCountChange?: (rowHeight: number) => void;
+  /**
+   * When a module (CanvasView) is used inside a ListView/Grid, each instance
+   * must not reuse the app-wide canvas id or portals / queries collide.
+   */
+  canvasContainerId?: string;
 };
 
 type DispatchProps = { dispatch: DispatchType };
