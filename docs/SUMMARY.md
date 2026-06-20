@@ -52,6 +52,8 @@
     * [Chat Box](build-applications/app-editor/visual-components/chat-box.md)
     * [AI Chat](build-applications/app-editor/visual-components/ai-chat.md)
     * [Chat Controller](build-applications/app-editor/visual-components/chat-controller.md)
+  * [Automator](build-applications/app-editor/automator.md)
+  * [AI Help](build-applications/app-editor/ai-help.md)
   * [Date handling](build-applications/app-editor/date-handling.md)
   * [Bulk Editing](build-applications/app-editor/bulk-editing.md)
   * [Layers](build-applications/app-editor/layers.md)

@@ -25,6 +25,15 @@ export function JavaScriptTabPane(props: { comp: ConstructorToComp<typeof Script
         codeType: "Function",
         language: "javascript",
         placeholder: codePlaceholder,
+        enableAIHelp: true,
+        aiHelp: {
+          targetKind: "javascript",
+          label: "App JavaScript",
+          fieldName: "preloadJavaScript",
+          targetId: "preload.script",
+          fieldDescription:
+            "Application-level JavaScript loaded for the current app. Help generate, explain, or improve global methods and variables that can be used by app logic.",
+        },
       })}
     </>
   );
@@ -45,6 +54,15 @@ export function CSSTabPane(props: { comp: CSSComp, isGlobal?: boolean }) {
         placeholder: codePlaceholder,
         styleName: "window",
         language: "css",
+        enableAIHelp: true,
+        aiHelp: {
+          label: props.isGlobal ? "App Global CSS" : "App CSS",
+          fieldName: props.isGlobal ? "preloadGlobalCSS" : "preloadCSS",
+          targetId: props.isGlobal ? "preload.globalCSS" : "preload.css",
+          fieldDescription: props.isGlobal
+            ? "Global CSS rules for the current app. Help generate, explain, or improve CSS that applies globally."
+            : "Application-level CSS rules for the current app. Help generate, explain, or improve CSS for app styling.",
+        },
       })}
     </>
   );
