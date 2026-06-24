@@ -205,6 +205,10 @@ export class HookComp extends HookTmpComp {
     return this.children.comp.exposingInfo();
   }
 
+  override getRef() {
+    return this.children.comp.getRef?.();
+  }
+
   override getView() {
     const view = this.children?.comp?.getView();
     if (!view) {
