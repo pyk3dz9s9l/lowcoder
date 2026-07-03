@@ -173,8 +173,10 @@ const TableCellView = React.memo((props: {
       currentRow: record,
     });
 
+    const explicitBackground = cellColor || rowColor || columnStyle.background;
+
     return {
-      background: cellColor || rowColor || columnStyle.background || columnsStyle.background,
+      background: explicitBackground || 'inherit',
       margin: columnStyle.margin || columnsStyle.margin,
       text: columnStyle.text || columnsStyle.text,
       border: columnStyle.border || columnsStyle.border,

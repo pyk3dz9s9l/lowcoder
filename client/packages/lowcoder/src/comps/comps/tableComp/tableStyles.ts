@@ -46,17 +46,6 @@ export const getStyle = (
         }
       `}
 
-      > tr.ant-table-row-selected > td.ant-table-cell,
-      > tr:nth-of-type(2n):not(.ant-table-row-selected) > td.ant-table-cell {
-        background: transparent !important;
-      }
-
-      ${hasHoverRowBackground && css`
-        > tr:hover:not(.ant-table-row-selected) > td.ant-table-cell {
-          background: transparent !important;
-        }
-      `}
-
       > tr.ant-table-expanded-row {
         background: ${background};
       }

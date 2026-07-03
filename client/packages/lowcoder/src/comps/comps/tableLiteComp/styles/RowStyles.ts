@@ -27,17 +27,6 @@ export const RowStyleProvider = styled.div<{
       background: ${props.$rowStyle.hoverRowBackground} !important;
     }
   `}
-
-  .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell,
-  .ant-table-tbody > tr:nth-of-type(2n):not(.ant-table-row-selected) > td.ant-table-cell {
-    background: transparent !important;
-  }
-
-  ${(props) => !isTransparentColor(props.$rowStyle.hoverRowBackground) && css`
-    .ant-table-tbody > tr:hover:not(.ant-table-row-selected) > td.ant-table-cell {
-      background: transparent !important;
-    }
-  `}
   
   /* Horizontal grid borders */
   ${(props) => props.$showHRowGridBorder && `
