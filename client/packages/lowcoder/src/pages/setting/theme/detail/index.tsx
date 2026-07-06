@@ -44,6 +44,7 @@ import { Card, Divider, Flex, List, Tooltip } from 'antd';
 
 import { ThemeCompPanel } from "pages/setting/theme/ThemeCompPanel";
 import { JSONObject } from "@lowcoder-ee/util/jsonTypes";
+import { exportThemeAsJSONFile } from "../themeImportExport";
 
 const ThemeSettingsView = styled.div`
   font-size: 14px;
@@ -186,6 +187,18 @@ class ThemeDetailPage extends React.Component<ThemeDetailPageProps, ThemeDetailP
 
   goList = () => {
     history.push(THEME_SETTING);
+  };
+
+  handleExport = () => {
+    if (!this.state.name || !this.state.theme) {
+      return;
+    }
+    exportThemeAsJSONFile({
+      name: this.state.name,
+      id: this.id,
+      updateTime: Date.now(),
+      theme: this.state.theme,
+    });
   };
 
   render() {
@@ -891,10 +904,14 @@ class ThemeDetailPage extends React.Component<ThemeDetailPageProps, ThemeDetailP
             >
               {trans("reset")}
             </ResetButton>
+            <ResetButton onClick={this.handleExport} disabled={!this.state.name || !this.state.theme}>
+              {trans("theme.exportTheme")}
+            </ResetButton>
             <SaveButton
               type="primary"
               disabled={this.isThemeNotChange() || !this.state.name}
               onClick={() => this.handleSave()}
+              style={{ marginLeft: "auto" }}
             >
               {trans("theme.saveBtn")}
             </SaveButton>
