@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { TableCellContext } from "./tableContext";
-import { TableColumnStyleType, TableColumnLinkStyleType, ThemeDetail } from "comps/controls/styleControlConstants";
+import { TableColumnStyleType, TableGlobalColumnStyleType, TableColumnLinkStyleType, ThemeDetail } from "comps/controls/styleControlConstants";
 import { RowColorViewType, RowHeightViewType } from "./tableTypes";
 import { CellColorViewType } from "./column/tableColumnComp";
 import { RecordType, OB_ROW_ORI_INDEX } from "./tableUtils";
@@ -136,7 +136,7 @@ export const TableCellView = React.forwardRef<HTMLTableCellElement, {
   cellColorFn: CellColorViewType;
   rowIndex: number;
   children: any;
-  columnsStyle: TableColumnStyleType;
+  columnsStyle: TableGlobalColumnStyleType;
   columnStyle: TableColumnStyleType;
   rowStyle: any;
   linkStyle: TableColumnLinkStyleType;

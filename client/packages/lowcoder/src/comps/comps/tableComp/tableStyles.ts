@@ -50,6 +50,24 @@ export const getStyle = (
         background: ${background};
       }
     }
+
+    .ant-table-tbody-virtual .ant-table-row {
+      background: ${rowBackground};
+
+      &:nth-child(2n):not(.ant-table-row-selected) {
+        background: ${alternateBackground};
+      }
+
+      &.ant-table-row-selected {
+        background: ${selectedRowBackground} !important;
+      }
+
+      ${hasHoverRowBackground && css`
+        &:hover:not(.ant-table-row-selected) {
+          background: ${hoverRowBackground} !important;
+        }
+      `}
+    }
   `;
 };
 

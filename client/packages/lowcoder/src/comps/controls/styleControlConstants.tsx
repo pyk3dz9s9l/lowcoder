@@ -1962,6 +1962,17 @@ export const TableColumnStyle = [
   FONT_STYLE,
 ] as const;
 
+export const TableGlobalColumnStyle = [
+  getStaticBorder(),
+  MARGIN,
+  RADIUS,
+  TEXT,
+  TEXT_SIZE,
+  TEXT_WEIGHT,
+  FONT_FAMILY,
+  FONT_STYLE,
+] as const;
+
 export const TableColumnLinkStyle = [...LinkTextStyle] as const;
 
 export const TableSummaryRowStyle = [
@@ -2568,6 +2579,7 @@ export type TableHeaderStyleType = StyleConfigType<typeof TableHeaderStyle>;
 export type TableToolbarStyleType = StyleConfigType<typeof TableToolbarStyle>;
 export type TableRowStyleType = StyleConfigType<typeof TableRowStyle>;
 export type TableColumnStyleType = StyleConfigType<typeof TableColumnStyle>;
+export type TableGlobalColumnStyleType = StyleConfigType<typeof TableGlobalColumnStyle>;
 export type TableColumnLinkStyleType = StyleConfigType<
   typeof TableColumnLinkStyle
 >;

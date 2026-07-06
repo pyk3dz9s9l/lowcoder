@@ -16,4 +16,11 @@ export const CellStyleProvider = styled.div<{
     ${props => props.$columnsStyle?.textAlign && `text-align: ${props.$columnsStyle.textAlign};`}
     ${props => props.$columnsStyle?.customCSS || ''}
   }
+
+  /* Virtual mode cell styles */
+  .ant-table-tbody-virtual .ant-table-row > td.ant-table-cell {
+    color: ${props => props.$rowStyle?.color || 'rgba(0, 0, 0, 0.85)'};
+    border-color: ${props => props.$rowStyle?.border || '#f0f0f0'};
+    ${props => props.$columnsStyle?.textAlign && `text-align: ${props.$columnsStyle.textAlign};`}
+  }
 `;

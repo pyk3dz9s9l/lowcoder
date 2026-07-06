@@ -27,10 +27,33 @@ export const RowStyleProvider = styled.div<{
       background: ${props.$rowStyle.hoverRowBackground} !important;
     }
   `}
+
+  /* Virtual mode row styles */
+  .ant-table-tbody-virtual .ant-table-row {
+    background: ${(props) => props.$rowStyle.background};
+
+    &:nth-child(2n):not(.ant-table-row-selected) {
+      background: ${(props) => props.$rowStyle.alternateBackground} !important;
+    }
+
+    &.ant-table-row-selected {
+      background: ${(props) => props.$rowStyle.selectedRowBackground} !important;
+    }
+  }
+
+  ${(props) => !isTransparentColor(props.$rowStyle.hoverRowBackground) && css`
+    .ant-table-tbody-virtual .ant-table-row:hover:not(.ant-table-row-selected) {
+      background: ${props.$rowStyle.hoverRowBackground} !important;
+    }
+  `}
   
   /* Horizontal grid borders */
   ${(props) => props.$showHRowGridBorder && `
     .ant-table-tbody > tr > td {
+      border-bottom: ${props.$rowStyle.borderWidth} ${props.$rowStyle.borderStyle} ${props.$rowStyle.border};
+    }
+
+    .ant-table-tbody-virtual .ant-table-row > td.ant-table-cell {
       border-bottom: ${props.$rowStyle.borderWidth} ${props.$rowStyle.borderStyle} ${props.$rowStyle.border};
     }
   `}
