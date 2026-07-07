@@ -1,6 +1,7 @@
 import { ThemeDetail, ThemeType } from "api/commonSettingApi";
 import { genQueryId } from "comps/utils/idGenerator";
 import { trans } from "i18n";
+import { saveDataAsFile } from "util/fileUtils";
 
 export const THEME_EXPORT_VERSION = 1;
 export const THEME_EXPORT_TYPE = "lowcoder-theme";
@@ -95,19 +96,11 @@ export function exportThemeAsJSONFile(theme: ThemeType) {
     type: THEME_EXPORT_TYPE,
     theme,
   };
-
-  const link = document.createElement("a");
-  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {
-    type: "application/json",
+  void saveDataAsFile({
+    data: exportObj,
+    filename: `${theme.name}.json`,
+    fileType: "json",
   });
-  const url = URL.createObjectURL(blob);
-  link.href = url;
-  const safeName = theme.name.replace(/[^\w\s-]/g, "").trim() || "theme";
-  link.download = `${safeName}.json`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 export function readThemeFile(file: File): Promise<ThemeType> {

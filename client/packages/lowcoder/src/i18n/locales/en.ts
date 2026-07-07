@@ -3454,7 +3454,7 @@ export const en = {
     "exportTheme": "Export Theme",
     "importTheme": "Import Theme",
     "importSuccessMsg": "Theme Imported Successfully",
-    "importError": "Failed to Import Theme: {{message}}",
+    "importError": "Failed to Import Theme: {message}",
     "importParseError": "Invalid Theme File: Could Not Parse JSON",
     "importFormatError": "Invalid Theme File: Missing Required Theme Data",
     "importFileError": "Failed to Read Theme File",
