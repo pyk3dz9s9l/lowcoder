@@ -38,6 +38,12 @@ services:
       timeout: 3s
       retries: 10
 
+  hocuspocus:
+    image: lowcoderorg/lowcoder-hocuspocus:latest
+    container_name: hocuspocus
+    restart: unless-stopped
+    environment:
+      HOCUSPOCUS_SECRET: "s3cr3t! - CHANGE THIS!"
 
   ##
   ## Start Lowcoder backend services (api-service and node-service)
