@@ -3193,7 +3193,7 @@ export const en = {
     "placement" : "Tabs Placement",
     "showTabs": "Show Tabs",
     "gutter" : "Gap",
-    "gutterTooltip" : "The distance between tabs in px",
+    "gutterTooltip" : "Gap between tabs in px (Ant Design tabBarGutter). Leave empty for the default.",
     "tabsCentered" : "Centered Tabs",
     "destroyInactiveTab": "Destroy Inactive TabPane",
     "tabBehavior": "Tab Behavior",
