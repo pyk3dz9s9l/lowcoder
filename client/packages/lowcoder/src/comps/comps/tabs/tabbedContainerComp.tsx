@@ -73,7 +73,7 @@ const childrenMap = {
   headerStyle: styleControl(ContainerHeaderStyle , 'headerStyle'),
   bodyStyle: styleControl(TabBodyStyle , 'bodyStyle'),
   animationStyle: styleControl(AnimationStyle , 'animationStyle'),
-  tabsGutter: NumberControl,
+  tabsGutter: withDefault(NumberControl, 32),
   tabsCentered: withDefault(BoolControl, false),
 };
 
@@ -322,7 +322,7 @@ const TabbedContainer = (props: TabbedContainerProps) => {
           }}
           animated
           items={tabItems}
-          tabBarGutter={props.tabsGutter > 0 ? props.tabsGutter : undefined}
+          tabBarGutter={props.tabsGutter}
           centered={props.tabsCentered}
         />
       </BackgroundColorContext.Provider>
