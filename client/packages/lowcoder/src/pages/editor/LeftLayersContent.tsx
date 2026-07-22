@@ -29,6 +29,7 @@ import { default as Button } from "antd/es/button";
 import { default as Divider } from "antd/es/divider";
 import { default as Dropdown } from "antd/es/dropdown";
 import { default as Flex } from "antd/es/flex";
+import { useEditorStore } from "comps/editorStore";
 import { default as Input } from "antd/es/input";
 import { default as Menu } from "antd/es/menu";
 import { default as Space } from "antd/es/space";
@@ -152,6 +153,7 @@ const CustomDropdown = styled(Dropdown)`
 export const LeftLayersContent = (props: LeftLayersContentProps) => {
   const { uiComp } = props;
   const editorState = useContext(EditorContext);
+  const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
   const [expandedKeys, setExpandedKeys] = useState<Array<React.Key>>([]);
   const dispatch = useDispatch();
   const applicationId = useApplicationId();
@@ -426,7 +428,7 @@ export const LeftLayersContent = (props: LeftLayersContentProps) => {
     const selectedComponentsOnCanvas: string[] = [];
     const compTree = editorState.getUIComp().getTree();
     const explorerData: NodeItem[] = getTree(compTree, []);
-    for (let value of editorState.selectedCompNames) {
+    for (let value of selectedCompNames) {
       for (let key of explorerData) {
         if (key.title === value) {
           selectedComponentsOnCanvas.push(key.key);
@@ -434,7 +436,7 @@ export const LeftLayersContent = (props: LeftLayersContentProps) => {
       }
     }
     setCheckedKeys(selectedComponentsOnCanvas);
-  }, [editorState]);
+  }, [editorState, selectedCompNames]);
 
   // make sure to handle the selectedActionKey for the changed input fields
   /* useEffect(() => {

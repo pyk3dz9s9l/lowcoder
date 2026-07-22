@@ -38,6 +38,7 @@ import UrlParamsHookComp from "./UrlParamsHookComp";
 import { UtilsComp } from "./utilsComp";
 import { ScreenInfoHookComp } from "./screenInfoComp";
 import { ChatControllerComp } from "./chatControllerComp";
+import { useEditorStore } from "comps/editorStore";
 
 window._ = _;
 window.dayjs = dayjs;
@@ -133,7 +134,12 @@ function SelectHookView(props: {
   comp: ConstructorToComp<HookCompConstructor>;
 }) {
   const editorState = useContext(EditorContext);
-  const selectedComp = editorState.selectedComp();
+  const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
+  const selectSource = useEditorStore((state) => state.selectSource);
+  const selectedComp = useMemo(
+    () => editorState.selectedComp(selectedCompNames),
+    [editorState, selectedCompNames]
+  );
 
   // Memoize the comp tree calculation
   const compTree = useMemo(() => {
@@ -159,8 +165,8 @@ function SelectHookView(props: {
         props.compType !== "drawer" &&
         props.compType !== "meeting") ||
       !selectedComp ||
-      (editorState.selectSource !== "addComp" &&
-        editorState.selectSource !== "leftPanel")
+      (selectSource !== "addComp" &&
+        selectSource !== "leftPanel")
     ) {
       return;
     } else if (
@@ -191,7 +197,7 @@ function SelectHookView(props: {
         );
       }
     }
-  }, [selectedComp, editorState.selectSource, allChildComp]);
+  }, [selectedComp, selectSource, allChildComp]);
 
   return (
     <div onClick={handleClick}>

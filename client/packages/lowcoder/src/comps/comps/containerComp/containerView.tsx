@@ -54,6 +54,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useEditorStore } from "comps/editorStore";
 import { ResizePayload, useResizeDetector } from "react-resize-detector";
 import styled from "styled-components";
 import { checkIsMobile } from "util/commonUtils";
@@ -354,6 +355,7 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
   const [currentRowCount, setRowCount] = useState(rowCount || Infinity);
   const [currentRowHeight, setRowHeight] = useState(positionParams.rowHeight || DEFAULT_ROW_HEIGHT);
   const editorState = useContext(EditorContext);
+  const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
   const { readOnly } = useContext(ExternalEditorContext);
   const appSettingsComp = editorState?.getAppSettingsComp().getView();
 
@@ -377,10 +379,10 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
       getExtraLayout(
         props.items,
         props.layout,
-        editorState?.selectedCompNames,
+        selectedCompNames,
         props.dragSelectedComps
       ),
-    [props.items, props.layout, editorState?.selectedCompNames, props.dragSelectedComps]
+    [props.items, props.layout, selectedCompNames, props.dragSelectedComps]
   );
 
   const [containerSelectNames, setContainerSelectNames] = useState<Set<string>>(new Set([]));
@@ -397,8 +399,8 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
   }, [extraLayout, containerSelectNames]);
 
   const canAddSelect = useMemo(
-    () => _.size(containerSelectNames) === _.size(editorState?.selectedCompNames),
-    [containerSelectNames, editorState?.selectedCompNames]
+    () => _.size(containerSelectNames) === _.size(selectedCompNames),
+    [containerSelectNames, selectedCompNames]
   );
 
   const dispatchPositionParamsTimerRef = useRef(0);

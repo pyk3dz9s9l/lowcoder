@@ -18,6 +18,11 @@ import { checkName } from "./utils/rename";
 import { trans } from "i18n";
 import type { UiLayoutType } from "./comps/uiComp";
 import { getEditorModeStatus, saveCollisionStatus } from "util/localStorageUtil";
+import {
+  createEditorStore,
+  type EditorStoreApi,
+  type SelectSourceType,
+} from "./editorStore";
 
 type RootComp = InstanceType<typeof RootCompTmp>;
 
@@ -33,8 +38,6 @@ export type CompInfo = {
   dataDesc: Record<string, ReactNode>;
 };
 
-type SelectSourceType = "editor" | "leftPanel" | "addComp" | "rightPanel";
-
 export type DeviceType = "desktop" | "tablet" | "mobile";
 export type DeviceOrientation = "landscape" | "portrait";
 
@@ -47,8 +50,6 @@ export type DeviceOrientation = "landscape" | "portrait";
  */
 export class EditorState {
   readonly rootComp: RootComp;
-  readonly showPropertyPane: boolean = false;
-  readonly selectedCompNames: Set<string> = new Set();
   readonly editorModeStatus: string = "";
   readonly collisionStatus: boolean = false;
   readonly isDragging: boolean = false;
@@ -58,7 +59,6 @@ export class EditorState {
   readonly selectedBottomResName: string = "";
   readonly selectedBottomResType?: BottomResTypeEnum;
   readonly showResultCompName: string = "";
-  readonly selectSource?: SelectSourceType; // the source of select type
   readonly deviceType: DeviceType = "desktop";
   readonly deviceOrientation: DeviceOrientation = "portrait";
 
@@ -71,6 +71,7 @@ export class EditorState {
     setEditorState: (fn: (editorState: EditorState) => EditorState) => void,
     initialEditorModeStatus: string = getEditorModeStatus(),
     isModuleRoot: boolean = false,
+    private readonly editorStore: EditorStoreApi = createEditorStore(),
   ) {
     this.rootComp = rootComp;
     this.setEditorState = setEditorState;
@@ -95,6 +96,18 @@ export class EditorState {
 
   private changeState(params: ChangeableProps) {
     this.changeStateFn(() => params);
+  }
+
+  get showPropertyPane() {
+    return this.editorStore.getState().showPropertyPane;
+  }
+
+  get selectedCompNames() {
+    return this.editorStore.getState().selectedCompNames;
+  }
+
+  get selectSource() {
+    return this.editorStore.getState().selectSource;
   }
 
   getAllCompMap() {
@@ -286,18 +299,18 @@ export class EditorState {
   /**
    * @deprecated
    */
-  selectedComp(): OptionalComp {
+  selectedComp(selectedCompNames: Set<string> = this.selectedCompNames): OptionalComp {
     // temporary glue code
     const compType = this.getUIComp().children.compType.getView();
     if (compType !== "normal" && compType !== "module") {
       return this.getUIComp().children.comp;
     }
     const compMap = this.getAllCompMap();
-    if (this.selectedCompNames.size > 1) {
+    if (selectedCompNames.size > 1) {
       return undefined;
     }
     return Object.values(compMap).find((item) =>
-      this.selectedCompNames.has(item.children.name.getView())
+      selectedCompNames.has(item.children.name.getView())
     );
   }
 
@@ -306,10 +319,10 @@ export class EditorState {
     return this.getUIComp().getComp()?.getPositionParams();
   }
 
-  selectedComps() {
+  selectedComps(selectedCompNames: Set<string> = this.selectedCompNames) {
     const compMap = this.getAllCompMap();
     const selectedComps = _.pickBy(compMap, (item) =>
-      this.selectedCompNames.has(item.children.name.getView())
+      selectedCompNames.has(item.children.name.getView())
     );
     return selectedComps;
   }
@@ -402,7 +415,7 @@ export class EditorState {
   }
 
   setShowPropertyPane(showPropertyPane: boolean) {
-    this.changeState({ showPropertyPane: showPropertyPane });
+    this.editorStore.getState().setShowPropertyPane(showPropertyPane);
   }
 
   setComp(compFn: (comp: RootComp) => RootComp) {
@@ -415,14 +428,7 @@ export class EditorState {
     selectedCompNames: Set<string>,
     selectSource?: SelectSourceType
   ) {
-    if (selectedCompNames.size === 0 && this.selectedCompNames.size === 0) {
-      return;
-    }
-    this.changeState({
-      selectedCompNames: selectedCompNames,
-      showPropertyPane: selectedCompNames.size > 0,
-      selectSource: selectSource,
-    });
+    this.editorStore.getState().setSelectedCompNames(selectedCompNames, selectSource);
   }
 
   setSelectedBottomRes(name: string, type?: BottomResTypeEnum) {

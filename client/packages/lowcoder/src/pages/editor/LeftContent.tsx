@@ -32,6 +32,7 @@ import type { UICompType } from "comps/uiCompRegistry";
 import { CollapseWrapper, DirectoryTreeStyle, Node } from "./styledComponents";
 import { DataNode, EventDataNode } from "antd/es/tree";
 import { isAggregationApp } from "util/appUtils";
+import { useEditorStore } from "comps/editorStore";
 import Modal from "antd/es/modal/Modal";
 
 const CollapseTitleWrapper = styled.div`
@@ -282,6 +283,7 @@ const LeftContentWrapper = styled.div`
 export const LeftContent = (props: LeftContentProps) => {
   const { uiComp } = props;
   const editorState = useContext(EditorContext);
+  const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
   const [expandedKeys, setExpandedKeys] = useState<Array<React.Key>>([]);
   const [showData, setShowData] = useState<NodeInfo[]>([]);
 
@@ -483,8 +485,8 @@ export const LeftContent = (props: LeftContentProps) => {
         : editorState.getHooksComp().getUITree();
     const explorerData: NodeItem[] = getTree(tree, []);
     let selectedKeys = [];
-    if (editorState.selectedCompNames.size === 1) {
-      const key = Object.keys(editorState.selectedComps())[0];
+    if (selectedCompNames.size === 1) {
+      const key = Object.keys(editorState.selectedComps(selectedCompNames))[0];
       const parentKeys = getParentNodeKeysByKey(explorerData, key);
       if (parentKeys && parentKeys.length) {
         let needSet = false;

@@ -65,6 +65,7 @@ import { AppSettingContext, AppSettingType } from "@lowcoder-ee/comps/utils/appS
 import { getBrandingSetting } from "@lowcoder-ee/redux/selectors/enterpriseSelectors";
 import Flex from "antd/es/flex";
 import { PreviewContainerID } from "constants/domLocators";
+import { useEditorStore } from "comps/editorStore";
 // import { BottomSkeleton } from "./bottom/BottomContent";
 
 const Header = lazy(
@@ -412,6 +413,7 @@ function EditorView(props: EditorViewProps) {
   const { uiComp } = props;
   const params = useParams<AppPathParams>();
   const editorState = useContext(EditorContext);
+  const showPropertyPane = useEditorStore((state) => state.showPropertyPane);
   const { readOnly, hideHeader } = useContext(ExternalEditorContext);
   const application = useSelector(currentApplication);
   const isPublicApp = useSelector(isPublicApplication);
@@ -781,7 +783,7 @@ function EditorView(props: EditorViewProps) {
                 <RightPanel
                   uiComp={uiComp}
                   onCompDrag={onCompDrag}
-                  showPropertyPane={editorState.showPropertyPane}
+                  showPropertyPane={showPropertyPane}
                   onTabChange={setShowPropertyPane} />
               )}
             </Suspense>

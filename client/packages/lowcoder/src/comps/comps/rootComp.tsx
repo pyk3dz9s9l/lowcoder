@@ -38,6 +38,8 @@ import {LoadingBarHideTrigger} from "@lowcoder-ee/util/hideLoading";
 import clsx from "clsx";
 import { useUnmount } from "react-use";
 import { AIHelperModal, AIHelperProvider } from "components/ai-helper";
+import { createEditorStore, EditorStoreProvider } from "comps/editorStore";
+import { useStore } from "zustand";
 
 const EditorView = lazy(
   () => import("pages/editor/editorView"),
@@ -65,6 +67,8 @@ const RootView = React.memo((props: RootViewProps) => {
   const previewTheme = useContext(ThemeContext);
   const { comp, isModuleRoot, ...divProps } = props;
   const [editorState, setEditorState] = useState<EditorState>();
+  const [editorStore] = useState(createEditorStore);
+  const selectedCompNames = useStore(editorStore, (state) => state.selectedCompNames);
   const [propertySectionState, setPropertySectionState] = useState<PropertySectionState>({});
   const { readOnly } = useContext(ExternalEditorContext);
   const isUserViewMode = useUserViewMode();
@@ -101,7 +105,7 @@ const RootView = React.memo((props: RootViewProps) => {
           return (oldState ? changeEditorStateFn(oldState) : undefined)
         });
       }
-    }, undefined, isModuleRoot);
+    }, undefined, isModuleRoot, editorStore);
     editorStateRef.current = newEditorState;
     setEditorState(newEditorState);
 
@@ -110,7 +114,7 @@ const RootView = React.memo((props: RootViewProps) => {
         editorStateRef.current = undefined;
       }
     };
-  }, [isModuleRoot]);
+  }, [isModuleRoot, editorStore]);
 
   useEffect(() => {
     if (!mountedRef.current || !editorState) return;
@@ -138,7 +142,7 @@ const RootView = React.memo((props: RootViewProps) => {
   );
 
   const propertySectionContextValue = useMemo<PropertySectionContextType>(() => {
-    const compName = Object.keys(editorState?.selectedComps() || {})[0];
+    const compName = Object.keys(editorState?.selectedComps(selectedCompNames) || {})[0];
     return {
       compName,
       state: propertySectionState,
@@ -154,7 +158,7 @@ const RootView = React.memo((props: RootViewProps) => {
         });
       },
     };
-  }, [editorState, propertySectionState]);
+  }, [editorState, propertySectionState, selectedCompNames]);
 
   if (!editorState && !isUserViewMode && readOnly) {
     return <ModuleLoading />;
@@ -172,22 +176,24 @@ const RootView = React.memo((props: RootViewProps) => {
             divProps.id, 
           )} 
        style={{height: '100%'}}>
-      <PropertySectionContext.Provider value={propertySectionContextValue}>
-        <ThemeContext.Provider value={themeContextValue}>
-          <EditorContext.Provider value={editorState}>
-            <AIHelperProvider>
-              {Object.keys(comp.children.queries.children).map((key) => (
-                <div key={key}>{comp.children.queries.children[key].getView()}</div>
-              ))}
-              <Suspense fallback={!readOnly || isUserViewMode ? SuspenseFallback : null}>
-                <LoadingBarHideTrigger />
-                <EditorView uiComp={comp.children.ui} preloadComp={comp.children.preload} />
-              </Suspense>
-              {!readOnly && !isUserViewMode && !isModuleRoot && <AIHelperModal />}
-            </AIHelperProvider>
-          </EditorContext.Provider>
-        </ThemeContext.Provider>
-      </PropertySectionContext.Provider>
+      <EditorStoreProvider store={editorStore}>
+        <PropertySectionContext.Provider value={propertySectionContextValue}>
+          <ThemeContext.Provider value={themeContextValue}>
+            <EditorContext.Provider value={editorState}>
+              <AIHelperProvider>
+                {Object.keys(comp.children.queries.children).map((key) => (
+                  <div key={key}>{comp.children.queries.children[key].getView()}</div>
+                ))}
+                <Suspense fallback={!readOnly || isUserViewMode ? SuspenseFallback : null}>
+                  <LoadingBarHideTrigger />
+                  <EditorView uiComp={comp.children.ui} preloadComp={comp.children.preload} />
+                </Suspense>
+                {!readOnly && !isUserViewMode && !isModuleRoot && <AIHelperModal />}
+              </AIHelperProvider>
+            </EditorContext.Provider>
+          </ThemeContext.Provider>
+        </PropertySectionContext.Provider>
+      </EditorStoreProvider>
     </div>
   );
 }, (prevProps, nextProps) => {
