@@ -152,7 +152,6 @@ const StyledTabs = styled(Tabs)<{
   $showHeader?: boolean;
   $animationStyle: AnimationStyleType;
   $isDestroyPane?: boolean;
-  $placement?: string;
 }>`
   &.ant-tabs {
     height: 100%;
@@ -167,15 +166,15 @@ const StyledTabs = styled(Tabs)<{
     height: 100%;
   }
 
+  /* Keep AntD flex nav so overflow "..." stays on the right. */
   .ant-tabs-nav {
-    display: ${(props) => (props.$showHeader ? "block" : "none")};
+    ${(props) => !props.$showHeader && `display: none;`}
     margin: 0px;
   }
 
-  .ant-tabs-tab + .ant-tabs-tab {
-    ${(props) => (props.$placement === "left" || props.$placement === "right") 
-      ? `margin: 20px 0 0 0;` 
-      : `margin: 0 0 0 20px;`}
+  /* tabBarGutter also margins the more button; keep "..." flush like AntD default. */
+  .ant-tabs-nav-more {
+    margin-inline-start: 0 !important;
   }
 
   ${(props) => props.$style && getStyle(props.$style, props.$headerStyle, props.$bodyStyle)}
@@ -315,7 +314,6 @@ const TabbedContainer = (props: TabbedContainerProps) => {
           $bodyStyle={bodyStyle}
           $showHeader={showHeader}
           $isDestroyPane={tabBehavior === "destroy"}
-          $placement={props.placement}
           onChange={(key) => {
             if (key !== props.selectedTabKey.value) {
               props.selectedTabKey.onChange(key);
@@ -384,7 +382,10 @@ export const TabbedContainerBaseComp = (function () {
               <Section name={sectionNames.layout}>
                 {children.placement.propertyView({ label: trans("tabbedContainer.placement"), radioButton: true })}
                 {children.tabsCentered.propertyView({ label: trans("tabbedContainer.tabsCentered")})}
-                { children.tabsGutter.propertyView({ label: trans("tabbedContainer.gutter"), tooltip : trans("tabbedContainer.gutterTooltip") })}
+                {children.tabsGutter.propertyView({
+                  label: trans("tabbedContainer.gutter"),
+                  tooltip: trans("tabbedContainer.gutterTooltip"),
+                })}
                 {children.horizontalGridCells.propertyView({
                   label: trans('prop.horizontalGridCells'),
                 })}
