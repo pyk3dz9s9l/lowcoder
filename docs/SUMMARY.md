@@ -54,6 +54,7 @@
     * [Chat Controller](build-applications/app-editor/visual-components/chat-controller.md)
   * [Automator](build-applications/app-editor/automator.md)
   * [AI Help](build-applications/app-editor/ai-help.md)
+  * [NPM Template Plugins](build-applications/app-editor/npm-template-plugins.md)
   * [Date handling](build-applications/app-editor/date-handling.md)
   * [Bulk Editing](build-applications/app-editor/bulk-editing.md)
   * [Layers](build-applications/app-editor/layers.md)

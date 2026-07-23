@@ -145,8 +145,10 @@ export const en = {
     "extensionTab": "Extensions",
     "modulesTab": "Modules",
     "moduleListTitle": "Modules",
+    "templateListTitle": "Templates",
     "pluginListTitle": "Plugins",
     "emptyModules": "Modules are reusable Mikro-Apps. You can embed them in your App.",
+    "emptyTemplates": "No templates added yet. Add npm templates with layout drop-zones to enhance your project.",
     "searchNotFound": "Can't find the right component?",
     "emptyPlugins": "No plugins added yet. Add npm plugins to enhance your project.",
     "contactUs": "Contact Us",
@@ -4672,13 +4674,18 @@ export const en = {
   "npm": {
     "invalidNpmPackageName": "Invalid npm Package Name or URL.",
     "pluginExisted": "This npm Plugin Already Existed",
+    "templateExisted": "This npm Template Already Existed",
     "compNotFound": "Component {compName} Not Found.",
     "addPluginModalTitle": "Add Plugin from a npm Repository",
+    "addTemplateModalTitle": "Add Template from a npm Repository",
     "pluginNameLabel": "npm Package's URL or Name",
+    "templateNameLabel": "npm Package's URL or Name",
     "noCompText": "No Components.",
     "compsLoading": "Loading...",
     "removePluginBtnText": "Remove",
-    "addPluginBtnText": "Add npm Plugin"
+    "removeTemplateBtnText": "Remove",
+    "addPluginBtnText": "Add npm Plugin",
+    "addTemplateBtnText": "Add npm Template"
   },
   "toggleButton": {
     "valueDesc": "The Default Value of the Toggle Button, For Example: False",
