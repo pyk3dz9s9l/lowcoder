@@ -30,6 +30,7 @@ import { default as Divider } from "antd/es/divider";
 import { default as Dropdown } from "antd/es/dropdown";
 import { default as Flex } from "antd/es/flex";
 import { useEditorStore } from "comps/editorStore";
+import { selectCompsFromLeftPanel } from "comps/hooks/hookSelection";
 import { default as Input } from "antd/es/input";
 import { default as Menu } from "antd/es/menu";
 import { default as Space } from "antd/es/space";
@@ -214,7 +215,7 @@ export const LeftLayersContent = (props: LeftLayersContentProps) => {
 
   const uiCollapseClick = useCallback(
     (compName: string) => {
-      editorState.setSelectedCompNames(new Set([compName]), "leftPanel");
+      selectCompsFromLeftPanel(editorState, new Set([compName]));
     },
     [editorState]
   );
@@ -450,7 +451,7 @@ export const LeftLayersContent = (props: LeftLayersContentProps) => {
     for (let key of e.checkedNodes){
       checkedComponents.add(key.title);
     }
-    editorState.setSelectedCompNames(checkedComponents, "leftPanel");
+    selectCompsFromLeftPanel(editorState, checkedComponents);
   }
 
   const getCheckedKeys = () => {

@@ -17,6 +17,7 @@ import {
 } from "lowcoder-design";
 import React, { ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { hookCompCategory } from "comps/hooks/hookCompTypes";
+import { selectCompsFromLeftPanel } from "comps/hooks/hookSelection";
 import _ from "lodash";
 import styled from "styled-components";
 import { leftCompListClassName } from "pages/tutorials/tutorialsConstant";
@@ -353,7 +354,7 @@ export const LeftContent = (props: LeftContentProps) => {
 
   const uiCollapseClick = useCallback(
     (compName: string) => {
-      editorState.setSelectedCompNames(new Set([compName]), "leftPanel");
+      selectCompsFromLeftPanel(editorState, new Set([compName]));
     },
     [editorState]
   );

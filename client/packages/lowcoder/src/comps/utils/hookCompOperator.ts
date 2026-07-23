@@ -1,6 +1,7 @@
 import { HookComp } from "comps/hooks/hookComp";
 import { EditorState } from "comps/editorState";
 import { singletonHookComp } from "comps/hooks/hookCompTypes";
+import { shouldOpenOverlayOnCreate } from "comps/hooks/hookSelection";
 import { wrapActionExtraInfo } from "lowcoder-core";
 import {
   writeHookOnlyToClipboard,
@@ -57,7 +58,9 @@ export class HookCompOperator {
         ...(item.fullValue || {}),
         name: newName,
         compType: item.compType,
-        comp: item.comp,
+        comp: shouldOpenOverlayOnCreate(item.compType)
+          ? { ...item.comp, visible: true }
+          : item.comp,
       };
 
       hooksComp.dispatch(

@@ -24,11 +24,6 @@ import { getGlobalSettings } from "comps/utils/globalSettings";
 import { getCurrentTheme } from "comps/utils/themeUtil";
 import { DataChangeResponderListComp } from "./dataChangeResponderComp";
 import { FolderListComp } from "./folderListComp";
-import {
-  PropertySectionContext,
-  PropertySectionContextType,
-  PropertySectionState,
-} from "lowcoder-design";
 import RefTreeComp from "./refTreeComp";
 import { ExternalEditorContext } from "util/context/ExternalEditorContext";
 import { useUserViewMode } from "util/hooks";
@@ -39,7 +34,7 @@ import clsx from "clsx";
 import { useUnmount } from "react-use";
 import { AIHelperModal, AIHelperProvider } from "components/ai-helper";
 import { createEditorStore, EditorStoreProvider } from "comps/editorStore";
-import { useStore } from "zustand";
+import { EditorPropertySectionProvider } from "comps/editorPropertySectionContext";
 
 const EditorView = lazy(
   () => import("pages/editor/editorView"),
@@ -68,8 +63,6 @@ const RootView = React.memo((props: RootViewProps) => {
   const { comp, isModuleRoot, ...divProps } = props;
   const [editorState, setEditorState] = useState<EditorState>();
   const [editorStore] = useState(createEditorStore);
-  const selectedCompNames = useStore(editorStore, (state) => state.selectedCompNames);
-  const [propertySectionState, setPropertySectionState] = useState<PropertySectionState>({});
   const { readOnly } = useContext(ExternalEditorContext);
   const isUserViewMode = useUserViewMode();
   const mountedRef = useRef(true);
@@ -127,7 +120,6 @@ const RootView = React.memo((props: RootViewProps) => {
 
   useUnmount(() => {
     setEditorState(undefined);
-    setPropertySectionState({});
     if (editorStateRef.current) {
       editorStateRef.current = undefined;
     }
@@ -140,25 +132,6 @@ const RootView = React.memo((props: RootViewProps) => {
     }),
     [theme, themeId]
   );
-
-  const propertySectionContextValue = useMemo<PropertySectionContextType>(() => {
-    const compName = Object.keys(editorState?.selectedComps(selectedCompNames) || {})[0];
-    return {
-      compName,
-      state: propertySectionState,
-      toggle: (compName: string, sectionName: string) => {
-        if (!mountedRef.current) return;
-        
-        setPropertySectionState((oldState) => {
-          const nextSectionState: PropertySectionState = { ...oldState };
-          const compState = nextSectionState[compName] || {};
-          compState[sectionName] = compState[sectionName] === false;
-          nextSectionState[compName] = compState;
-          return nextSectionState;
-        });
-      },
-    };
-  }, [editorState, propertySectionState, selectedCompNames]);
 
   if (!editorState && !isUserViewMode && readOnly) {
     return <ModuleLoading />;
@@ -177,7 +150,7 @@ const RootView = React.memo((props: RootViewProps) => {
           )} 
        style={{height: '100%'}}>
       <EditorStoreProvider store={editorStore}>
-        <PropertySectionContext.Provider value={propertySectionContextValue}>
+        <EditorPropertySectionProvider editorState={editorState}>
           <ThemeContext.Provider value={themeContextValue}>
             <EditorContext.Provider value={editorState}>
               <AIHelperProvider>
@@ -192,7 +165,7 @@ const RootView = React.memo((props: RootViewProps) => {
               </AIHelperProvider>
             </EditorContext.Provider>
           </ThemeContext.Provider>
-        </PropertySectionContext.Provider>
+        </EditorPropertySectionProvider>
       </EditorStoreProvider>
     </div>
   );

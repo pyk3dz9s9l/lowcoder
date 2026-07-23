@@ -2,6 +2,7 @@ import { EditorContext, EditorState } from "comps/editorState";
 import { sameTypeMap, stateComp, valueComp } from "comps/generators";
 import { addMapChildAction, addMapCompChildAction } from "comps/generators/sameTypeMap";
 import { hookCompCategory, HookCompType } from "comps/hooks/hookCompTypes";
+import { shouldOpenOverlayOnCreate } from "comps/hooks/hookSelection";
 import { UICompLayoutInfo, uiCompRegistry, UICompType } from "comps/uiCompRegistry";
 import { genRandomKey } from "comps/utils/idGenerator";
 import { parseCompType } from "comps/utils/remote";
@@ -216,13 +217,16 @@ const onDrop = async (
   // log.debug("layout: onDrop start. layout: ", layout, " items: ", items, " compType: ", compType);
   if (hookCompCategory(compType) === "ui") {
     const compName = editorState.getNameGenerator().genItemName(compType);
+    const hookValue = {
+      name: compName,
+      compType: compType as HookCompType,
+      ...(shouldOpenOverlayOnCreate(compType) && { comp: { visible: true } }),
+    };
     editorState
       .getHooksComp()
       .dispatch(
         wrapActionExtraInfo(
-          editorState
-            .getHooksComp()
-            .pushAction({ name: compName, compType: compType as HookCompType }),
+          editorState.getHooksComp().pushAction(hookValue),
           { compInfos: [{ compName: compName, compType: compType, type: "add" }] }
         )
       );
