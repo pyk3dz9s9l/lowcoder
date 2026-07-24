@@ -52,6 +52,7 @@ import {
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { fixOldInputCompData } from "../textInputComp/textInputConstants";
 
@@ -458,7 +459,7 @@ let NumberInputTmpComp = (function () {
 
         <FormDataPropertyView {...children} />
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.validation}>
             {requiredPropertyView(children)}
             {children.showValidationWhenEmpty.propertyView({label: trans("prop.showEmptyValidation")})}
@@ -475,11 +476,11 @@ let NumberInputTmpComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           children.label.getPropertyView()
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <Section name={sectionNames.advanced}>
             {children.step.propertyView({ label: trans("numberInput.step") })}
             {children.precision.propertyView({ label: trans("numberInput.precision") })}
@@ -494,7 +495,7 @@ let NumberInputTmpComp = (function () {
           </Section>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}

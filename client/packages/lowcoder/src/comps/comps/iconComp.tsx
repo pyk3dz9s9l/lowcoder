@@ -31,6 +31,7 @@ import {
 } from "../controls/eventHandlerControl";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { AssetType, IconscoutControl } from "@lowcoder-ee/comps/controls/iconscoutControl";
 import { dropdownControl } from "../controls/dropdownControl";
 import { useCompClickEventHandler } from "../utils/useCompClickEventHandler";
@@ -166,7 +167,7 @@ let IconBasicComp = (function () {
           })}
         </Section> 
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -174,7 +175,7 @@ let IconBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><Section name={sectionNames.layout}>
             {children.autoHeight.propertyView({
             label: trans("iconComp.autoSize"),

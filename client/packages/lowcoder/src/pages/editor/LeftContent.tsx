@@ -285,6 +285,7 @@ export const LeftContent = (props: LeftContentProps) => {
   const { uiComp } = props;
   const editorState = useContext(EditorContext);
   const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
+  const selectedBottomResName = useEditorStore((state) => state.selectedBottomResName);
   const [expandedKeys, setExpandedKeys] = useState<Array<React.Key>>([]);
   const [showData, setShowData] = useState<NodeInfo[]>([]);
 
@@ -546,11 +547,11 @@ export const LeftContent = (props: LeftContentProps) => {
           name={item.name}
           desc={item.dataDesc}
           data={item.data}
-          isSelected={editorState.selectedBottomResName === item.name}
+          isSelected={selectedBottomResName === item.name}
           onClick={() => handleBottomResItemClick(item.type as BottomResTypeEnum, item.name)}
         />
       ));
-  }, [editorState, handleBottomResItemClick]);
+  }, [editorState, selectedBottomResName, handleBottomResItemClick]);
 
   const hookCompsCollapse = useMemo(() => {
     return _.sortBy(

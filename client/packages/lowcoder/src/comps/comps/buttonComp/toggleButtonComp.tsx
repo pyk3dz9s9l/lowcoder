@@ -26,6 +26,7 @@ import { BoolControl } from "comps/controls/boolControl";
 import { RefControl } from "comps/controls/refControl";
 import React, { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState"; 
+import { useEditorStore } from "comps/editorStore";
 import { Tooltip } from "antd";
 
 const IconWrapper = styled.div`
@@ -112,7 +113,7 @@ const ToggleTmpComp = (function () {
           })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -143,8 +144,8 @@ const ToggleTmpComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" ||
-          useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
+          useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
             <Section name={sectionNames.style}>
               {children.showBorder.propertyView({

@@ -12,6 +12,7 @@ import { EventData, EventTypeEnum } from "./types";
 import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { AnimationStyle, AnimationStyleType, CustomStyle, CustomStyleType } from "@lowcoder-ee/comps/controls/styleControlConstants";
 import { styleControl } from "@lowcoder-ee/comps/controls/styleControl";
 // TODO: eventually to embedd in container so we have styling?
@@ -243,7 +244,7 @@ const CustomCompBase = new UICompBuilder(childrenMap, (props, dispatch) => {
   .setPropertyViewFn((children) => {
     return (
       <>
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.interaction}>
               {children.model.propertyView({ label: trans("customComp.data") })}
               {children.code.propertyView({ label: trans("customComp.code"), language: "html" })}

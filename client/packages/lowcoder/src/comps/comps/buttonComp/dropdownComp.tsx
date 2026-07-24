@@ -11,6 +11,7 @@ import { Section, sectionNames } from "lowcoder-design";
 import { trans } from "i18n";
 import React, { ReactElement, useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import styled from "styled-components";
 import EllipsisOutlined from "@ant-design/icons/EllipsisOutlined";
 import { IconControl } from "comps/controls/iconControl";
@@ -256,7 +257,7 @@ const DropdownTmpComp = (function () {
           {children.options.propertyView({})}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.interaction}>
               {!children.onlyMenu.getView() && !children.onlyIcon.getView()
                 ? children.onEvent.getPropertyView()
@@ -267,7 +268,7 @@ const DropdownTmpComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
             <Section name={sectionNames.layout}>
               {children.text.propertyView({ label: trans("label") })}

@@ -29,6 +29,7 @@ import { formDataChildren, FormDataPropertyView } from "./formComp/formDataConst
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const Wrapper = styled.div<{ $style: SignatureStyleType; $isEmpty: boolean }>`
   height: 100%;
@@ -235,7 +236,7 @@ let SignatureTmpComp = (function () {
 
           <FormDataPropertyView {...children} />
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -245,11 +246,11 @@ let SignatureTmpComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             children.label.getPropertyView()
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

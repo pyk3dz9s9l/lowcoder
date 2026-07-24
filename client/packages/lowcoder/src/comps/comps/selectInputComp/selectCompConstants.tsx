@@ -59,6 +59,7 @@ import { refMethods } from "comps/generators/withMethodExposing";
 import { blurMethod, focusMethod } from "comps/utils/methodUtils";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { styleControl } from "comps/controls/styleControl";
 import SupaDemoDisplay from "comps/utils/supademoDisplay";
 
@@ -345,7 +346,7 @@ export const SelectPropertyView = (
       {placeholderPropertyView(children)}
     </Section>
 
-    {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <>
         <>
           <SelectInputValidationSection {...children} />
@@ -361,10 +362,10 @@ export const SelectPropertyView = (
       </>
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) &&
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) &&
       children.label.getPropertyView()}
 
-    {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <Section name={sectionNames.advanced}>
         {allowClearPropertyView(children)}
         {showSearchPropertyView(children)}
@@ -372,7 +373,7 @@ export const SelectPropertyView = (
     )}
 
     {["layout", "both"].includes(
-      useContext(EditorContext).editorModeStatus
+      useEditorStore((state) => state.editorModeStatus)
     ) && (
         <>
           <Section name={sectionNames.style}>

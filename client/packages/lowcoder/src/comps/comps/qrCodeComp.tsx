@@ -14,6 +14,7 @@ import { StringControl } from "comps/controls/codeControl";
 
 import { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { withDefault } from "../generators";
 
 // TODO: add styling for image (size)
@@ -90,7 +91,7 @@ let QRCodeBasicComp = (function () {
           })}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
@@ -107,7 +108,7 @@ let QRCodeBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.style}>
             {children.style.getPropertyView()}

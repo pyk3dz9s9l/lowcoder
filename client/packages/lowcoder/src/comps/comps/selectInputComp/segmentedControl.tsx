@@ -25,6 +25,7 @@ import { RefControl } from "comps/controls/refControl";
 
 import { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
 import { fixOldInputCompData } from "../textInputComp/textInputConstants";
 
@@ -126,7 +127,7 @@ let SegmentedControlBasicComp = (function () {
           {children.defaultValue.propertyView({ label: trans("prop.defaultValue") })}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><SelectInputValidationSection {...children} />
           <FormDataPropertyView {...children} />
           <Section name={sectionNames.interaction}>
@@ -136,11 +137,11 @@ let SegmentedControlBasicComp = (function () {
           </Section></>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           children.label.getPropertyView()
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}

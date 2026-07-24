@@ -28,6 +28,7 @@ import { TreeEventHandlerControl } from "comps/controls/eventHandlerControl";
 import { trans } from "i18n";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
 import { showDataLoadingIndicatorsPropertyView } from "@lowcoder-ee/comps/utils/propertyUtils";
 
@@ -145,7 +146,7 @@ let TreeBasicComp = (function () {
           {treeDataPropertyView(children)}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><SelectInputValidationSection {...children} />
             {formSection(children)}
             <Section name={sectionNames.interaction}>
@@ -164,7 +165,7 @@ let TreeBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.layout}>
             {children.autoHeight.getPropertyView()}
             {!children.autoHeight.getView() && 
@@ -178,9 +179,9 @@ let TreeBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (children.label.getPropertyView())}
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (children.label.getPropertyView())}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
             <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

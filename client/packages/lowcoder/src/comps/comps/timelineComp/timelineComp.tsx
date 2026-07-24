@@ -49,6 +49,7 @@ import { timelineDate, timelineNode, TimelineDataTooltip } from "./timelineConst
 import { convertTimeLineData } from "./timelineUtils";
 import { default as Timeline } from "antd/es/timeline";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { styled } from "styled-components";
 import { useCompClickEventHandler } from "@lowcoder-ee/comps/utils/useCompClickEventHandler";
 
@@ -201,7 +202,7 @@ let TimeLineBasicComp = (function () {
           })}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -209,7 +210,7 @@ let TimeLineBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
               {!children.autoHeight.getView() && 

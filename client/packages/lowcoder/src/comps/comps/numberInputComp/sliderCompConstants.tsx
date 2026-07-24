@@ -14,6 +14,7 @@ import { IconControl } from "comps/controls/iconControl";
 import { trans } from "i18n";
 import { memo, useCallback, useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const getStyle = (style: SliderStyleType, vertical: boolean, disabledStyle?: DisabledSliderStyleType) => {
   return css`
@@ -112,7 +113,7 @@ export const SliderChildren = {
 };
 
 const InteractionSection = memo(({ children }: { children: RecordConstructorToComp<typeof SliderChildren & { hidden: typeof BoolCodeControl }> }) => {
-  const editorModeStatus = useContext(EditorContext).editorModeStatus;
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
   
   if (!["logic", "both"].includes(editorModeStatus)) {
     return null;
@@ -130,7 +131,7 @@ const InteractionSection = memo(({ children }: { children: RecordConstructorToCo
 });
 
 const LayoutSection = memo(({ children }: { children: RecordConstructorToComp<typeof SliderChildren & { hidden: typeof BoolCodeControl }> }) => {
-  const editorModeStatus = useContext(EditorContext).editorModeStatus;
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
   
   if (!["layout", "both"].includes(editorModeStatus)) {
     return null;

@@ -15,6 +15,7 @@ import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps
 import { mediaCommonChildren, mediaMethods } from "./mediaUtils";
 import { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const Container = styled.div<{ $style: any; $animationStyle: AnimationStyleType }>`
 ${props => props.$style};
@@ -87,7 +88,7 @@ let AudioBasicComp = (function () {
             })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}

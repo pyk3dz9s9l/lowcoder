@@ -12,6 +12,7 @@ import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps
 import { trans } from "i18n";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { AutoHeightControl } from "../controls/autoHeightControl";
 import { BoolControl } from "../controls/boolControl";
 
@@ -109,7 +110,7 @@ let FileViewerBasicComp = (function () {
             })}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {showDataLoadingIndicatorsPropertyView(children)}
@@ -124,7 +125,7 @@ let FileViewerBasicComp = (function () {
                 )}
           </Section>
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>
               {children.style.getPropertyView()}

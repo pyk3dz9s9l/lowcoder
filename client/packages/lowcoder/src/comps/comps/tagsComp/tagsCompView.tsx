@@ -2,6 +2,7 @@ import styled from "styled-components";
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { Tag, App } from "antd";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { PresetStatusColorTypes } from "antd/es/_util/colors";
 import { hashToNum } from "util/stringUtils";
 import { TagsCompOptionsControl } from "comps/controls/optionsControl";
@@ -343,7 +344,7 @@ const multiTags = (function () {
             {children.editable.propertyView({ label: "Editable" })}           
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -351,7 +352,7 @@ const multiTags = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
           )}
         </>

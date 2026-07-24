@@ -37,6 +37,7 @@ import { BoolCodeControl, NumberControl, StringControl } from "comps/controls/co
 
 import { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
@@ -259,14 +260,14 @@ export const ResponsiveLayoutBaseComp = (function () {
             })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
@@ -291,7 +292,7 @@ export const ResponsiveLayoutBaseComp = (function () {
             </>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

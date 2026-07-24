@@ -20,6 +20,7 @@ import { PaddingControl } from "../controls/paddingControl";
 
 import React, { useContext, useEffect, useRef, useMemo } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { clickEvent, doubleClickEvent, eventHandlerControl } from "../controls/eventHandlerControl";
 import { NewChildren } from "../generators/uiCompBuilder";
 import { RecordConstructorToComp } from "lowcoder-core";
@@ -160,8 +161,7 @@ type ChildrenType = NewChildren<RecordConstructorToComp<typeof childrenMap>>;
 const TextPropertyView = React.memo((props: {
   children: ChildrenType
 }) => {
-  const editorContext = useContext(EditorContext);
-  const editorModeStatus = useMemo(() => editorContext.editorModeStatus, [editorContext.editorModeStatus]);
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
 
   const basicSection = useMemo(() => (
     <Section name={sectionNames.basic}>

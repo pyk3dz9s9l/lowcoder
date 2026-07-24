@@ -46,6 +46,7 @@ import { DraggerUpload } from "./draggerUpload";
 import { ImageCaptureModal } from "./ImageCaptureModal";
 import  { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { checkIsMobile } from "@lowcoder-ee/util/commonUtils";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
 
@@ -535,7 +536,7 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
 
       <FormDataPropertyView {...children} />
 
-      {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+      {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
         <><Section name={sectionNames.validation}>
           {children.uploadType.getView() !== "single" && children.maxFiles.propertyView({ label: trans("file.maxFiles") })}
           {commonValidationFields(children)}
@@ -580,7 +581,7 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
         </>
       )}
 
-      {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+      {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
         <>
           <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>

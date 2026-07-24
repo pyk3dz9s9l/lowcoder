@@ -18,6 +18,7 @@ import { RefControl } from "comps/controls/refControl";
 import { dropdownControl } from "comps/controls/dropdownControl";
 import { useContext, useState, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { getBackgroundStyle } from "@lowcoder-ee/util/styleUtils";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
 
@@ -245,7 +246,7 @@ let StepControlBasicComp = (function () {
           {children.initialValue.propertyView({ label: trans("step.initialValue"), tooltip : trans("step.initialValueTooltip")})}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
@@ -257,7 +258,7 @@ let StepControlBasicComp = (function () {
           </Section></>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.layout}>
             {children.autoHeight.getPropertyView()}
             {children.size.propertyView({
@@ -298,7 +299,7 @@ let StepControlBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}

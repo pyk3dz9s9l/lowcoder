@@ -50,6 +50,7 @@ import { RefControl } from "comps/controls/refControl";
 // import { CommonPickerMethods } from "antd/es/date-picker/generatePicker/interface";
 import { DateRangeUIView } from "comps/comps/dateComp/dateRangeUIView";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { dropdownControl } from "comps/controls/dropdownControl";
 import { timeZoneOptions } from "./timeZone";
 import { migrateOldData } from "@lowcoder-ee/comps/generators/simpleGenerators";
@@ -312,7 +313,7 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
 
         <FormDataPropertyView {...children} />
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.validation}>
             {requiredPropertyView(children)}
             {children.showValidationWhenEmpty.propertyView({
@@ -333,24 +334,24 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
         )}
 
         {/*{commonAdvanceSection(children, children.dateType.value === "date")}*/}
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && children.label.getPropertyView()}
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <Section name={sectionNames.layout}>
             {formatPropertyView({ children, placeholder: DATE_FORMAT })}
             {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
           </Section>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.advanced}>
             {timeFields(children, isMobile)}
             {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
           </Section></>
         )}
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && !isMobile && commonAdvanceSection(children)}
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && !isMobile && commonAdvanceSection(children)}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
             <Section name={sectionNames.style}>
               {children.style.getPropertyView()}
@@ -534,7 +535,7 @@ let DateRangeTmpCmp = (function () {
           
           <FormDataPropertyView {...children} />
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <><Section name={sectionNames.validation}>
               {requiredPropertyView(children)}
               {children.showValidationWhenEmpty.propertyView({
@@ -554,24 +555,24 @@ let DateRangeTmpCmp = (function () {
             </>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && children.label.getPropertyView()}
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.layout}>
               {formatPropertyView({ children })}
               {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <><Section name={sectionNames.advanced}>
               {timeFields(children, isMobile)}
               {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
             </Section></>
           )}
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && commonAdvanceSection(children)}
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && commonAdvanceSection(children)}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

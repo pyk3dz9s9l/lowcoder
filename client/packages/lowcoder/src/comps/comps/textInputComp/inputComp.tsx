@@ -37,6 +37,7 @@ import { NumberControl } from "comps/controls/codeControl";
 
 import React, { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 /**
  * Input Comp
@@ -106,11 +107,11 @@ let InputBasicComp = new UICompBuilder(childrenMap, (props) => {
         <TextInputBasicSection {...children} />
         <FormDataPropertyView {...children} />
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           children.label.getPropertyView()
         )}
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><TextInputInteractionSection {...children} />
             <Section name={sectionNames.layout}>{hiddenPropertyView(children)}</Section>
             <Section name={sectionNames.advanced}>
@@ -123,7 +124,7 @@ let InputBasicComp = new UICompBuilder(childrenMap, (props) => {
             <TextInputValidationSection {...children} />
           </>
         )}
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
             <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

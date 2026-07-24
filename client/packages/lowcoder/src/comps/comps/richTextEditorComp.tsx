@@ -27,6 +27,7 @@ import { RichTextEditorStyle, RichTextEditorStyleType } from "comps/controls/sty
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const localizeStyle = css`
   & .ql-snow {
@@ -409,7 +410,7 @@ const RichTextEditorCompBase = new UICompBuilder(childrenMap, (props) => {
 
         <FormDataPropertyView {...children} />
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -419,7 +420,7 @@ const RichTextEditorCompBase = new UICompBuilder(childrenMap, (props) => {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}

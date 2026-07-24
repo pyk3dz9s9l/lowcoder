@@ -13,6 +13,7 @@ import styled from "styled-components";
 import { useContext, ReactElement, useEffect } from "react";
 import { MultiCompBuilder, stateComp, withDefault } from "../generators";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { IconControl } from "../controls/iconControl";
 import { ColorControl } from "../controls/colorControl";
 import { optionsControl } from "../controls/optionsControl";
@@ -150,7 +151,7 @@ let AvatarGroupBasicComp = (function () {
 )}) 
     .setPropertyViewFn((children) => (
       <>
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.basic}>
               {children.avatars.propertyView({})}
@@ -175,7 +176,7 @@ let AvatarGroupBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
           <Section name={sectionNames.avatarStyle}>
             {children.avatar.getPropertyView()}

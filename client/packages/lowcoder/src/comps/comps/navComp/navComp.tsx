@@ -35,6 +35,7 @@ import { trans } from "i18n";
 
 import { useContext, useState, useCallback } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { createNavItemsControl } from "./components/NavItemsControl";
 import { Layers } from "constants/Layers";
 import { CanvasContainerID } from "constants/domLocators";
@@ -774,7 +775,7 @@ const NavCompBase = new UICompBuilder(childrenMap, (props) => {
   );
 })
   .setPropertyViewFn((children) => {
-    const mode = useContext(EditorContext).editorModeStatus;
+    const mode = useEditorStore((state) => state.editorModeStatus);
     const showLogic = mode === "logic" || mode === "both";
     const showLayout = mode === "layout" || mode === "both";
     const [styleSegment, setStyleSegment] = useState<MenuItemStyleOptionValue>("normal");

@@ -31,6 +31,7 @@ import { trans } from "i18n";
 import { BoolCodeControl, NumberControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 import { BoolControl } from "comps/controls/boolControl";
 import { PositionControl,dropdownControl } from "comps/controls/dropdownControl";
@@ -351,7 +352,7 @@ export const TabbedContainerBaseComp = (function () {
             {children.selectedTabKey.propertyView({ label: trans("prop.defaultValue") })}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -379,7 +380,7 @@ export const TabbedContainerBaseComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.layout}>
                 {children.placement.propertyView({ label: trans("tabbedContainer.placement"), radioButton: true })}

@@ -23,6 +23,7 @@ import { styleControl } from "comps/controls/styleControl";
 import { AnimationStyle, TextContainerStyle } from "comps/controls/styleControlConstants";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { alignWithJustifyControl } from "comps/controls/alignControl";
 
 const typeOptions = [
@@ -76,12 +77,12 @@ export const ContainerBaseComp = (function () {
             {children.text.propertyView({})}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.layout}>
                 {children.container.getPropertyView()}

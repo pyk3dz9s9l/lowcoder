@@ -41,6 +41,7 @@ import { hasIcon } from "comps/utils";
 import { RefControl } from "comps/controls/refControl";
 import React, { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { NumberControl } from "comps/controls/codeControl";
 
@@ -106,11 +107,11 @@ let PasswordTmpComp = (function () {
           <TextInputBasicSection {...children} />
           <FormDataPropertyView {...children} />
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             children.label.getPropertyView()
           )}
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <><TextInputInteractionSection {...children} />
               <Section name={sectionNames.layout}>{hiddenPropertyView(children)}</Section>
               <Section name={sectionNames.advanced}>
@@ -130,7 +131,7 @@ let PasswordTmpComp = (function () {
               </Section></>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
               <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

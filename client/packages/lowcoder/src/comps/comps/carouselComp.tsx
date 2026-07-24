@@ -17,6 +17,7 @@ import { AnimationStyle, AnimationStyleType, CarouselStyle } from "comps/control
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 // TODO: dots at top position needs proper margin (should be the same as bottom position)
 
@@ -90,7 +91,7 @@ let CarouselBasicComp = (function () {
             {children.data.propertyView({ label: trans("data") })}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <><FormDataPropertyView {...children} />
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
@@ -98,7 +99,7 @@ let CarouselBasicComp = (function () {
               {children.autoPlay.propertyView({ label: trans("carousel.autoPlay") })}
             </Section></>
           )}
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <><Section name={sectionNames.layout}>
                 {children.showDots.propertyView({ label: trans("carousel.showDots") })}
                 {children.dotPosition.propertyView({

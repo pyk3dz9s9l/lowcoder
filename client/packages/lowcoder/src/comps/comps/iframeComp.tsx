@@ -12,6 +12,7 @@ import log from "loglevel";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const Wrapper = styled.div<{$style: IframeStyleType; $animationStyle:AnimationStyleType}>`
   width: 100%;
@@ -73,7 +74,7 @@ let IFrameCompBase = new UICompBuilder(
         {children.url.propertyView({ label: "Source URL", placeholder: "https://example.com", tooltip: trans("iframe.URLDesc") })}
       </Section>
 
-      {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
         <Section name={sectionNames.interaction}>
           {hiddenPropertyView(children)}
           {children.allowDownload.propertyView({ label: trans("iframe.allowDownload") })}
@@ -85,7 +86,7 @@ let IFrameCompBase = new UICompBuilder(
         </Section>
       )}
 
-      {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
         <>
         <Section name={sectionNames.style}>
           {children.style.getPropertyView()}

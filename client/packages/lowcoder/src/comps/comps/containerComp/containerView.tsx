@@ -333,10 +333,10 @@ const GridItemWrapper = React.memo(React.forwardRef(
     props: React.PropsWithChildren<HTMLAttributes<HTMLDivElement>>,
     ref: React.ForwardedRef<HTMLDivElement>
   ) => {
-    const editorState = useContext(EditorContext);
+    const disableInteract = useEditorStore((state) => state.disableInteract);
     const { children, ...divProps } = props;
     return (
-      <ItemWrapper ref={ref} $disableInteract={editorState?.disableInteract} {...divProps}>
+      <ItemWrapper ref={ref} $disableInteract={disableInteract} {...divProps}>
         {props.children}
       </ItemWrapper>
     );
@@ -360,6 +360,8 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
   const [currentRowHeight, setRowHeight] = useState(positionParams.rowHeight || DEFAULT_ROW_HEIGHT);
   const editorState = useContext(EditorContext);
   const selectedCompNames = useEditorStore((state) => state.selectedCompNames);
+  const isDragging = useEditorStore((state) => state.isDragging);
+  const showGridLines = useEditorStore((state) => state.isDragging || state.forceShowGrid);
   const { readOnly } = useContext(ExternalEditorContext);
   const appSettingsComp = editorState?.getAppSettingsComp().getView();
 
@@ -538,7 +540,7 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
       style={props.style}
       scrollContainerRef={props.scrollContainerRef}
       width={width ?? 0}
-      showGridLines={editorState?.showGridLines() && (isDroppable || enableGridLines)}
+      showGridLines={showGridLines && (isDroppable || enableGridLines)}
       isRowCountLocked={isRowCountLocked}
       isDraggable={isDraggable}
       isResizable={isResizable}
@@ -596,12 +598,12 @@ export const InnerGrid = React.memo((props: ViewPropsWithSelect) => {
       minHeight={props.minHeight}
       bgColor={props.bgColor}
       radius={props.radius}
-      hintPlaceholder={!editorState?.isDragging && !readOnly && props.hintPlaceholder}
+      hintPlaceholder={!isDragging && !readOnly && props.hintPlaceholder}
       selectedSize={_.size(containerSelectNames)}
       clickItem={clickItem}
       isCanvas={props.isCanvas}
       showName={props.showName}
-      disableDirectionKey={editorState?.isDragging || readOnly}
+      disableDirectionKey={isDragging || readOnly}
     >
       {itemViews}
     </ReactGridLayout>

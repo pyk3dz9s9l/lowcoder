@@ -17,6 +17,7 @@ import { AutoHeightControl } from "comps/controls/autoHeightControl";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 type IProps = DividerProps & {
   $style: DividerStyleType;
@@ -131,13 +132,13 @@ const DividerTempComp = migrateOldData(
          {children.title.propertyView({ label: trans("divider.title") })}
          </Section>}
         
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.layout}>
                 {!_.isEmpty(children.title.getView()) &&

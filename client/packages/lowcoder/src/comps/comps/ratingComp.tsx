@@ -17,6 +17,7 @@ import { trans } from "i18n";
 
 import { useContext, useEffect, useRef } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const EventOptions = [changeEvent] as const;
 
@@ -124,7 +125,7 @@ const RatingBasicComp = (function () {
 
           <FormDataPropertyView {...children} />
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <><Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -140,11 +141,11 @@ const RatingBasicComp = (function () {
             </>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             children.label.getPropertyView()
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

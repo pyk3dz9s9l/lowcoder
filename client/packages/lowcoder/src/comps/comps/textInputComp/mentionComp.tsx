@@ -56,6 +56,7 @@ import {
 
 import React, { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 
 const Wrapper = styled.div<{
@@ -228,7 +229,7 @@ let MentionTmpComp = (function () {
           {children.placeholder.propertyView({
             label: trans("prop.placeholder"),
           })}
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             children.mentionList.propertyView({
               label: trans("mention.mentionList"),
             })
@@ -236,11 +237,11 @@ let MentionTmpComp = (function () {
         </Section>
         <FormDataPropertyView {...children} />
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           children.label.getPropertyView()
         )}
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {disabledPropertyView(children)}
@@ -259,7 +260,7 @@ let MentionTmpComp = (function () {
             </Section></>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.style}>
             {children.style.getPropertyView()}

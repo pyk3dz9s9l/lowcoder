@@ -42,6 +42,7 @@ import {
 import { RefControl } from "comps/controls/refControl";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { trans } from "i18n";
 
 import { ChatBoxView } from "./components/ChatBoxView";
@@ -187,7 +188,7 @@ const avatarStyleOptions = [
 
 const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   const { children } = props;
-  const editorMode = useContext(EditorContext).editorModeStatus;
+  const editorMode = useEditorStore((state) => state.editorModeStatus);
   const [messageStyleSegment, setMessageStyleSegment] = useState<MessageStyleSegment>("own");
   const [avatarStyleSegment, setAvatarStyleSegment] = useState<MessageStyleSegment>("own");
 

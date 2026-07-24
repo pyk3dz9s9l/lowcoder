@@ -22,6 +22,7 @@ import { RefControl } from "comps/controls/refControl";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { withDefault } from "@lowcoder-ee/comps/generators";
 
 export const RadioLayoutOptions = [
@@ -66,7 +67,7 @@ export const RadioPropertyView = (
       {children.defaultValue.propertyView({ label: trans("prop.defaultValue") })}
     </Section>
 
-    {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <><SelectInputValidationSection {...children} />
       <FormDataPropertyView {...children} />
       <Section name={sectionNames.interaction}>
@@ -79,7 +80,7 @@ export const RadioPropertyView = (
       </>
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <Section name={sectionNames.layout}>
         {children.layout.propertyView({
           label: trans("radio.options"),
@@ -94,11 +95,11 @@ export const RadioPropertyView = (
       </Section>
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && ( 
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && ( 
       children.label.getPropertyView() 
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <>
       <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
       <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

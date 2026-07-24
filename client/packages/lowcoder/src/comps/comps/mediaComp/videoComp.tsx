@@ -23,6 +23,7 @@ import { mediaCommonChildren, mediaMethods } from "./mediaUtils";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import styled, { css } from "styled-components";
 
 const EventOptions = [
@@ -141,7 +142,7 @@ let VideoBasicComp = (function () {
             })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
 
             <><Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}

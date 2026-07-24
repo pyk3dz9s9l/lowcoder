@@ -22,6 +22,7 @@ import { hasIcon } from "comps/utils";
 import { RefControl } from "comps/controls/refControl";
 
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import React, { useContext, useEffect } from "react";
 
 const Link = styled(Button)<{
@@ -126,7 +127,7 @@ const LinkTmpComp = (function () {
             {children.text.propertyView({ label: trans("text") })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <><Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -141,7 +142,7 @@ const LinkTmpComp = (function () {
               </Section></>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
               <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>

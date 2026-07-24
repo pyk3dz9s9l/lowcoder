@@ -25,6 +25,7 @@ import { BoolCodeControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
 import React, { useContext, useEffect, useState } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 export const ContainerBaseComp = (function () {
   const childrenMap = {
@@ -49,8 +50,8 @@ export const ContainerBaseComp = (function () {
               IconType: "All",
             })}
           </Section>
-          {(useContext(EditorContext).editorModeStatus === "logic" ||
-            useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
+            useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
@@ -58,8 +59,8 @@ export const ContainerBaseComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" ||
-            useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
+            useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.container.getPropertyView()}

@@ -24,6 +24,7 @@ import { PaddingControl } from "../../controls/paddingControl";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 export const defaultDataSource = JSON.stringify(i18nObjs.cascader, null, " ");
 
@@ -57,7 +58,7 @@ export const CascaderPropertyView = (
       {placeholderPropertyView(children)}
     </Section>
 
-    {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <Section name={sectionNames.interaction}>
         {children.onEvent.getPropertyView()}
         {disabledPropertyView(children)}
@@ -67,18 +68,18 @@ export const CascaderPropertyView = (
       </Section>
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       children.label.getPropertyView()
     )}
 
-    {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <Section name={sectionNames.advanced}>
         {allowClearPropertyView(children)}
         {showSearchPropertyView(children)}
       </Section>
     )}
 
-    {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
       <>
         <Section name={sectionNames.style}>
           {children.style.getPropertyView()}

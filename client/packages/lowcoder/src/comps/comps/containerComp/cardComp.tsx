@@ -11,6 +11,7 @@ import { BoolCodeControl, StringControl } from "comps/controls/codeControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { useContext, useEffect, useRef, useState } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { Card } from "antd";
 import styled from "styled-components";
 import { AnimationStyle, AnimationStyleType, CardHeaderStyle, CardHeaderStyleType, CardStyle, CardStyleType } from "comps/controls/styleControlConstants";
@@ -278,7 +279,7 @@ export const ContainerBaseComp = (function () {
     .setPropertyViewFn((children) => {
       return (
         <>
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.basic}>
                 {children.size.propertyView({
@@ -337,7 +338,7 @@ export const ContainerBaseComp = (function () {
             </>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.cardType.propertyView({

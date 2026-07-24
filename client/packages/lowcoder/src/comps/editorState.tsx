@@ -17,11 +17,13 @@ import { NameAndExposingInfo } from "./utils/exposingTypes";
 import { checkName } from "./utils/rename";
 import { trans } from "i18n";
 import type { UiLayoutType } from "./comps/uiComp";
-import { getEditorModeStatus, saveCollisionStatus } from "util/localStorageUtil";
+import { saveCollisionStatus } from "util/localStorageUtil";
 import {
   createEditorStore,
   type EditorStoreApi,
   type SelectSourceType,
+  type DeviceType,
+  type DeviceOrientation,
 } from "./editorStore";
 
 type RootComp = InstanceType<typeof RootCompTmp>;
@@ -38,8 +40,7 @@ export type CompInfo = {
   dataDesc: Record<string, ReactNode>;
 };
 
-export type DeviceType = "desktop" | "tablet" | "mobile";
-export type DeviceOrientation = "landscape" | "portrait";
+export type { DeviceType, DeviceOrientation };
 
 /**
  * All editor states are placed here and are still immutable.
@@ -50,17 +51,7 @@ export type DeviceOrientation = "landscape" | "portrait";
  */
 export class EditorState {
   readonly rootComp: RootComp;
-  readonly editorModeStatus: string = "";
   readonly collisionStatus: boolean = false;
-  readonly isDragging: boolean = false;
-  readonly draggingCompType: string = "button";
-  readonly forceShowGrid: boolean = false; // show grid lines
-  readonly disableInteract: boolean = false; // disable comp's interaction (such as click button event)
-  readonly selectedBottomResName: string = "";
-  readonly selectedBottomResType?: BottomResTypeEnum;
-  readonly showResultCompName: string = "";
-  readonly deviceType: DeviceType = "desktop";
-  readonly deviceOrientation: DeviceOrientation = "portrait";
 
   private readonly setEditorState: (
     fn: (editorState: EditorState) => EditorState
@@ -69,13 +60,11 @@ export class EditorState {
   constructor(
     rootComp: RootComp,
     setEditorState: (fn: (editorState: EditorState) => EditorState) => void,
-    initialEditorModeStatus: string = getEditorModeStatus(),
     isModuleRoot: boolean = false,
     private readonly editorStore: EditorStoreApi = createEditorStore(),
   ) {
     this.rootComp = rootComp;
     this.setEditorState = setEditorState;
-    this.editorModeStatus = initialEditorModeStatus;
 
     // save collision status from app dsl to localstorage
     // but only for apps, not for modules (to prevent modules from overwriting the app's setting)
@@ -84,18 +73,11 @@ export class EditorState {
     }
   }
 
-  /**
-   * use changeState most of the time, and you can use this method to get the latest editorState. (similar to react's setState method)
-   */
   private changeStateFn(fn: (editorState: EditorState) => ChangeableProps) {
     this.setEditorState((oldState) => {
       const stateChanges = fn(oldState);
       return setFields(oldState, stateChanges);
     });
-  }
-
-  private changeState(params: ChangeableProps) {
-    this.changeStateFn(() => params);
   }
 
   get showPropertyPane() {
@@ -108,6 +90,46 @@ export class EditorState {
 
   get selectSource() {
     return this.editorStore.getState().selectSource;
+  }
+
+  get isDragging() {
+    return this.editorStore.getState().isDragging;
+  }
+
+  get draggingCompType() {
+    return this.editorStore.getState().draggingCompType;
+  }
+
+  get forceShowGrid() {
+    return this.editorStore.getState().forceShowGrid;
+  }
+
+  get disableInteract() {
+    return this.editorStore.getState().disableInteract;
+  }
+
+  get editorModeStatus() {
+    return this.editorStore.getState().editorModeStatus;
+  }
+
+  get selectedBottomResName() {
+    return this.editorStore.getState().selectedBottomResName;
+  }
+
+  get selectedBottomResType() {
+    return this.editorStore.getState().selectedBottomResType;
+  }
+
+  get showResultCompName() {
+    return this.editorStore.getState().showResultCompName;
+  }
+
+  get deviceType() {
+    return this.editorStore.getState().deviceType;
+  }
+
+  get deviceOrientation() {
+    return this.editorStore.getState().deviceOrientation;
   }
 
   getAllCompMap() {
@@ -376,42 +398,35 @@ export class EditorState {
   }
 
   setEditorModeStatus(newEditorModeStatus: string) {
-    this.changeState({ editorModeStatus: newEditorModeStatus });
+    this.editorStore.getState().setEditorModeStatus(newEditorModeStatus);
   }
 
   setDeviceType(type: DeviceType) {
-    this.changeState({ deviceType: type });
+    this.editorStore.getState().setDeviceType(type);
   }
 
   setDeviceOrientation(orientation: DeviceOrientation) {
-    this.changeState({ deviceOrientation: orientation });
+    this.editorStore.getState().setDeviceOrientation(orientation);
   }
 
   setDragging(dragging: boolean) {
-    if (this.isDragging === dragging) {
-      return;
-    }
-    this.changeState({ isDragging: dragging });
+    this.editorStore.getState().setDragging(dragging);
   }
 
   setDraggingCompType(draggingComp: string) {
-    this.changeState({ draggingCompType: draggingComp, isDragging: true });
+    this.editorStore.getState().setDraggingCompType(draggingComp);
   }
 
   setForceShowGrid(forceShowGrid: boolean) {
-    if (this.forceShowGrid !== forceShowGrid) {
-      this.changeState({ forceShowGrid });
-    }
+    this.editorStore.getState().setForceShowGrid(forceShowGrid);
   }
 
   showGridLines() {
-    return this.isDragging || this.forceShowGrid;
+    return this.editorStore.getState().showGridLines();
   }
 
   setDisableInteract(disableInteract: boolean) {
-    if (this.disableInteract !== disableInteract) {
-      this.changeState({ disableInteract });
-    }
+    this.editorStore.getState().setDisableInteract(disableInteract);
   }
 
   setShowPropertyPane(showPropertyPane: boolean) {
@@ -432,14 +447,11 @@ export class EditorState {
   }
 
   setSelectedBottomRes(name: string, type?: BottomResTypeEnum) {
-    this.changeState({
-      selectedBottomResName: name,
-      selectedBottomResType: type,
-    });
+    this.editorStore.getState().setSelectedBottomRes(name, type);
   }
 
   setShowResultCompName(showResultCompName: string | undefined) {
-    this.changeState({ showResultCompName });
+    this.editorStore.getState().setShowResultCompName(showResultCompName);
   }
 
   getUIComp() {

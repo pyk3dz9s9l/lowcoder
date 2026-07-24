@@ -17,6 +17,7 @@ import { trans } from "i18n";
 import { ContainerBaseProps, gridItemCompToGridItems, InnerGrid } from "../containerComp/containerView";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
@@ -202,13 +203,13 @@ export const SplitLayoutBaseComp = (function () {
           {children.columns.propertyView({ title: trans("splitLayout.column") })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
             </Section>
           )}
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
             <Section name={sectionNames.layout}>
               {children.orientation.propertyView({

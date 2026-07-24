@@ -12,6 +12,7 @@ import styled from "styled-components";
 import { useContext, useState, useEffect, useMemo } from "react";
 import { stateComp } from "../generators";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { dropdownControl } from "../controls/dropdownControl";
 import { stringExposingStateControl } from "comps/controls/codeStateControl";
 import { BoolControl } from "comps/controls/boolControl";
@@ -229,7 +230,7 @@ const TimerCompPropertyView = React.memo((props: {
 }) => {
   return (
     <>
-      {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
         <>
           <Section name={sectionNames.basic}>
             {props.children.timerType.propertyView({
@@ -250,7 +251,7 @@ const TimerCompPropertyView = React.memo((props: {
         </>
       )}
 
-      {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
         <>
         <Section name={sectionNames.style}>
           {props.children.style.getPropertyView()}

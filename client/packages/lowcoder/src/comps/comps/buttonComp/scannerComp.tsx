@@ -34,6 +34,7 @@ import { arrayStringExposingStateControl, stringExposingStateControl } from "com
 import { BoolControl } from "comps/controls/boolControl";
 import { RefControl } from "comps/controls/refControl";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const Error = styled.div`
   color: #f5222d;
@@ -290,8 +291,8 @@ const ScannerTmpComp = (function () {
           {children.text.propertyView({ label: trans("text") })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" ||
-          useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
+          useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
@@ -315,8 +316,8 @@ const ScannerTmpComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" ||
-          useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
+          useEditorStore((state) => state.editorModeStatus) === "both") && (
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
           </Section>

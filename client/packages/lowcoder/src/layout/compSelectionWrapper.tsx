@@ -1,4 +1,4 @@
-import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { UICompType } from "comps/uiCompRegistry";
 import { Layers } from "constants/Layers";
 import { ModulePrimaryColor, PrimaryColor } from "constants/style";
@@ -10,7 +10,6 @@ import React, {
   MouseEvent,
   MouseEventHandler,
   useCallback,
-  useContext,
   useMemo,
   useRef,
   useState,
@@ -280,7 +279,7 @@ export const CompSelectionWrapper = React.memo((props: {
   resizeIconSize: "small" | "normal";
 }) => {
   const nameDivRef = useRef<HTMLDivElement>(null);
-  const editorState = useContext(EditorContext);
+  const showGridLines = useEditorStore((state) => state.isDragging || state.forceShowGrid);
   const [hover, setHover] = useState(false);
 
   // Cleanup on unmount
@@ -329,7 +328,7 @@ export const CompSelectionWrapper = React.memo((props: {
           onMouseOut,
           onClick: props.onClick,
           $hover: hover || undefined,
-          $showDashLine: editorState.showGridLines() || props.hidden,
+          $showDashLine: showGridLines || props.hidden,
           $isSelected: props.isSelected,
           $isHidden: props.hidden,
         }

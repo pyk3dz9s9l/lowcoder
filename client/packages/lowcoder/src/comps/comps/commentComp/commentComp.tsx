@@ -28,6 +28,7 @@ import {
   doubleClickEvent,
 } from "comps/controls/eventHandlerControl"; 
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 
 // Introducing styles
@@ -387,7 +388,7 @@ let CommentBasicComp = (function () {
           })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
           <Section name={sectionNames.data}>
             {children.value.propertyView({
@@ -418,7 +419,7 @@ let CommentBasicComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
           <><Section name={sectionNames.layout}>
             {children.sendCommentAble.getView() &&
               children.buttonText.propertyView({

@@ -13,6 +13,7 @@ import { dropdownControl } from "../controls/dropdownControl";
 import { NumberControl } from "../controls/codeControl";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { 
   ProgressTypeOptions, 
   StrokeLinecapOptions, 
@@ -184,13 +185,13 @@ let ProgressCircleTmpComp = (function () {
             </Section>
           )}
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

@@ -12,6 +12,7 @@ import { trans } from "i18n";
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const getStyle = (style: ProgressStyleType) => {
   return css`
@@ -76,7 +77,7 @@ const ProgressBasicComp = (function () {
             })}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {children.showInfo.propertyView({
@@ -86,7 +87,7 @@ const ProgressBasicComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <>
               <Section name={sectionNames.style}>
               {children.style.getPropertyView()}

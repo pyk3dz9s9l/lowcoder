@@ -42,6 +42,7 @@ import { RowColorComp, RowHeightComp, TableChildrenView, TableInitComp } from ".
 
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { tableMethodExposings } from "./methods/tableMethodExposings";
 import { buildSortedDataNode, buildFilteredDataNode, buildOriDisplayDataNode, buildColumnAggrNode } from "./nodes/dataNodes";
 
@@ -242,7 +243,7 @@ let TableTmpComp = withViewFn(TableImplComp, (comp) => {
 });
 
 const withEditorModeStatus = (Component:any) => (props:any) => {
-  const editorModeStatus = useContext(EditorContext).editorModeStatus;
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
   const {ref, ...otherProps} = props;
   return <Component {...otherProps} editorModeStatus={editorModeStatus} />;
 };

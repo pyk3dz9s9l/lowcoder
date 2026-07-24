@@ -3,6 +3,7 @@ import { dropdownControl } from "comps/controls/dropdownControl";
 import { ButtonEventHandlerControl } from "comps/controls/eventHandlerControl";
 import { IconControl } from "comps/controls/iconControl";
 import { CompNameContext, EditorContext, EditorState } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { withDefault } from "comps/generators";
 import { UICompBuilder } from "comps/generators/uiCompBuilder";
 import _ from "lodash";
@@ -337,8 +338,8 @@ let ButtonTmpComp = (function () {
           })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" ||
-          useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
+          useEditorStore((state) => state.editorModeStatus) === "both") && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {disabledPropertyView(children)}
@@ -348,8 +349,8 @@ let ButtonTmpComp = (function () {
           </Section>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" ||
-          useContext(EditorContext).editorModeStatus === "both") && (
+        {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
+          useEditorStore((state) => state.editorModeStatus) === "both") && (
           <>
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}

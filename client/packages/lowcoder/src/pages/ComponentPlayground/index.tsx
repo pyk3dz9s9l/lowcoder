@@ -52,7 +52,7 @@ const Wrapper = styled.div`
 `;
 
 const editorStore = createEditorStore();
-const editorState = new EditorState(new RootComp({ value: {} }), () => {}, undefined, false, editorStore);
+const editorState = new EditorState(new RootComp({ value: {} }), () => {}, false, editorStore);
 
 export default function ComponentPlayground() {
   window.__LOWCODER_ORG__ = {};

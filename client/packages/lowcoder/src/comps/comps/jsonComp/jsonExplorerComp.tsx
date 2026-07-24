@@ -10,6 +10,7 @@ import { ArrayOrJSONObjectControl, NumberControl } from "comps/controls/codeCont
 import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { useContext, useEffect } from "react";
 import { AnimationStyle, AnimationStyleType } from "@lowcoder-ee/comps/controls/styleControlConstants";
 import { styleControl } from "@lowcoder-ee/comps/controls/styleControl";
@@ -96,7 +97,7 @@ let JsonExplorerTmpComp = (function () {
              })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {children.expandToggle.propertyView({ label: trans("jsonExplorer.expandToggle") })}
@@ -104,7 +105,7 @@ let JsonExplorerTmpComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.advanced}>
               {children.indent.propertyView({ label: trans("jsonExplorer.indent") })}
             </Section>
@@ -117,8 +118,8 @@ let JsonExplorerTmpComp = (function () {
               label: trans('prop.showVerticalScrollbar'),
             })}
           </Section>}
-          {(useContext(EditorContext).editorModeStatus === 'layout' ||
-            useContext(EditorContext).editorModeStatus === 'both') && (
+          {(useEditorStore((state) => state.editorModeStatus) === 'layout' ||
+            useEditorStore((state) => state.editorModeStatus) === 'both') && (
             <>
               <Section name={sectionNames.style}>
                 {children.theme.propertyView({

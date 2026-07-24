@@ -37,6 +37,7 @@ import { BaseSelectRef } from "rc-select";
 import { RefControl } from "comps/controls/refControl";
 import { useContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const StyledTreeSelect = styled(TreeSelect)<{ $style: TreeSelectStyleType }>`
   width: 100%;
@@ -160,7 +161,7 @@ let TreeBasicComp = (function () {
           {placeholderPropertyView(children)}
         </Section>
 
-        {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <><SelectInputValidationSection {...children} />
             {formSection(children)}
             <Section name={sectionNames.interaction}>
@@ -179,7 +180,7 @@ let TreeBasicComp = (function () {
           </>
         )}
       
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <Section name={sectionNames.layout}>
             {children.expanded.propertyView({ label: trans("tree.expanded") })}
             {children.defaultExpandAll.propertyView({ label: trans("tree.defaultExpandAll") })}
@@ -188,9 +189,9 @@ let TreeBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && ( children.label.getPropertyView() )}
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && ( children.label.getPropertyView() )}
 
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
           <>
           <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
           <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

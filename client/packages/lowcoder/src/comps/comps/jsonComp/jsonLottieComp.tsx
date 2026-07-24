@@ -19,6 +19,7 @@ import {
 } from "../../generators/withExposing";
 import { defaultLottie } from "./jsonConstants";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { AssetType, IconscoutControl } from "@lowcoder-ee/comps/controls/iconscoutControl";
 import { DotLottie } from "@lottiefiles/dotlottie-react";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
@@ -292,7 +293,7 @@ let JsonLottieTmpComp = (function () {
             {children.sourceMode.getView() === 'asset-library' && children.iconScoutAsset.propertyView({})}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <><Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}
                 {children.speed.propertyView({ label: trans("jsonLottie.speed")})}
@@ -305,7 +306,7 @@ let JsonLottieTmpComp = (function () {
             </>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
               {children.aspectRatio.propertyView({
@@ -316,7 +317,7 @@ let JsonLottieTmpComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.container.getPropertyView()}

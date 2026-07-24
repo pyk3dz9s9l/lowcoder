@@ -20,6 +20,7 @@ import { fixOldInputCompData } from "./textInputComp/textInputConstants";
 
 import { useCallback, useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const EventOptions = [
   changeEvent,
@@ -140,7 +141,7 @@ let SwitchTmpComp = (function () {
     });
   })
     .setPropertyViewFn((children) => {
-      const editorModeStatus = useContext(EditorContext).editorModeStatus;
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       const isLogicMode = ["logic", "both"].includes(editorModeStatus);
       const isLayoutMode = ["layout", "both"].includes(editorModeStatus);
 

@@ -24,6 +24,7 @@ import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps
 import { AutoHeightControl } from "../../controls/autoHeightControl";
 import { useContext, useEffect, useRef, useState, createContext } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import ObjectFieldTemplate from './ObjectFieldTemplate';
 import ArrayFieldTemplate from './ArrayFieldTemplate';
 import { Select } from 'antd';
@@ -380,8 +381,8 @@ let FormBasicComp = (function () {
           : "JSONForms UI schema object for configuring controls, scopes, layouts, categories, rules, and renderer options. It should match the JSON Schema fields.";
       return (
         <>
-          {(useContext(EditorContext).editorModeStatus === "logic" ||
-            useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
+            useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.basic}>
               {children.formType.propertyView({
                 radioButton: true,
@@ -514,7 +515,7 @@ let FormBasicComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -524,7 +525,7 @@ let FormBasicComp = (function () {
               {showDataLoadingIndicatorsPropertyView(children)}
             </Section>
           )}
-          {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.autoHeight.getPropertyView()}

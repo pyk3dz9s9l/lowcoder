@@ -193,7 +193,7 @@ const externalState: ExternalEditorContextState = {
 };
 
 const editorStore = createEditorStore();
-const editorState = new EditorState(new RootComp({ value: {} }), () => {}, undefined, false, editorStore);
+const editorState = new EditorState(new RootComp({ value: {} }), () => {}, false, editorStore);
 
 export default function Example(props: IProps) {
   const {
