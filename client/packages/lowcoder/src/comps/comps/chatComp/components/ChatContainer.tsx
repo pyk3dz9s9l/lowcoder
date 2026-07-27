@@ -9,7 +9,6 @@ import {
 import type {
   AppendMessage,
   CompleteAttachment,
-  ExternalStoreThreadData,
   ExternalStoreThreadListAdapter,
 } from "@assistant-ui/react";
 import { Thread } from "components/assistant-ui/thread";
@@ -24,11 +23,11 @@ import { universalAttachmentAdapter } from "../utils/attachmentAdapter";
 import {
   createAssistantErrorMessage,
   createUserMessage,
-  generateThreadTitle,
   getTextFromAppendMessage,
   getTextFromThreadContent,
-  shouldGenerateThreadTitle,
+  maybeUpdateInitialThreadTitle,
   toChatMessage,
+  toExternalThreadData,
 } from "../utils/assistantMessages";
 import { StyledChatContainer } from "./ChatContainerStyles";
 
@@ -50,10 +49,10 @@ function ChatContainerView(props: ChatCoreProps) {
   const currentMessages = actions.getCurrentMessages();
 
   useEffect(() => {
-    if (currentMessages.length > 0 && !isRunning) {
+    if (currentMessages.length > 0) {
       onConversationUpdateRef.current?.(currentMessages);
     }
-  }, [currentMessages, isRunning]);
+  }, [currentMessages]);
 
   useEffect(() => {
     onEventRef.current?.("componentLoad");
@@ -62,26 +61,14 @@ function ChatContainerView(props: ChatCoreProps) {
   const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
 
   const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
-    const currentThread = state.threadList.find(
-      (thread) => thread.threadId === state.currentThreadId
+    const updated = await maybeUpdateInitialThreadTitle(
+      userMessage,
+      state.threadList,
+      state.currentThreadId,
+      currentMessages.length,
+      actions.updateThread
     );
-    const defaultTitle = trans("chat.newChatTitle");
-
-    if (
-      !shouldGenerateThreadTitle(
-        currentThread?.title,
-        defaultTitle,
-        currentMessages.length
-      )
-    ) {
-      return;
-    }
-
-    const title = generateThreadTitle(userMessage);
-    if (!title || title === currentThread?.title) return;
-
-    await actions.updateThread(state.currentThreadId, { title });
-    props.onEvent?.("threadUpdated");
+    if (updated) props.onEvent?.("threadUpdated");
   };
 
   const onNew = async (message: AppendMessage) => {
@@ -147,14 +134,6 @@ function ChatContainerView(props: ChatCoreProps) {
       setIsRunning(false);
     }
   };
-
-  const toExternalThreadData = (
-    thread: RegularThreadData,
-  ): ExternalStoreThreadData<"regular"> => ({
-    id: thread.threadId,
-    status: "regular",
-    title: thread.title,
-  });
 
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,

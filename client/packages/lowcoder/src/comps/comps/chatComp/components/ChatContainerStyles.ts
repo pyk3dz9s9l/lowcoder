@@ -91,6 +91,10 @@ export const StyledChatContainer = styled.div<StyledChatContainerProps>`
 
   /* Assistant Message Styles */
   .aui-assistant-message-content {
+    display: inline-block;
+    max-width: 85%;
+    padding: 10px 16px;
+    border-radius: 16px;
     background-color: ${(props) => props.$messagesStyle?.assistantMessageBackground || "#ffffff"};
     color: ${(props) => props.$messagesStyle?.assistantMessageText || "inherit"};
   }

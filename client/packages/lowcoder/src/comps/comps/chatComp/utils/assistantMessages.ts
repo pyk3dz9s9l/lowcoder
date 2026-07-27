@@ -1,11 +1,13 @@
 import type {
   AppendMessage,
   CompleteAttachment,
+  ExternalStoreThreadData,
   TextMessagePart,
   ThreadAssistantMessagePart,
   ThreadMessageLike,
   ThreadUserMessagePart,
 } from "@assistant-ui/react";
+import { trans } from "i18n";
 
 import type { ChatMessage, ChatMessageContent } from "../types/chatTypes";
 
@@ -102,6 +104,38 @@ export const toAssistantMessage = (message: ThreadMessageLike): ChatMessage => {
     throw new Error("Query must return an assistant message");
   }
   return chatMessage;
+};
+
+export const toExternalThreadData = (
+  thread: { threadId: string; title: string }
+): ExternalStoreThreadData<"regular"> => ({
+  id: thread.threadId,
+  status: "regular",
+  title: thread.title,
+});
+
+// Generates a thread title from the first user message, once. Returns
+// whether the title was actually changed, so callers can decide whether
+// to fire a threadUpdated event.
+export const maybeUpdateInitialThreadTitle = async (
+  userMessage: ChatMessage,
+  threadList: Array<{ threadId: string; title: string }>,
+  currentThreadId: string,
+  currentMessageCount: number,
+  updateThread: (threadId: string, updates: { title: string }) => Promise<void>
+): Promise<boolean> => {
+  const currentThread = threadList.find((t) => t.threadId === currentThreadId);
+  const defaultTitle = trans("chat.newChatTitle");
+
+  if (!shouldGenerateThreadTitle(currentThread?.title, defaultTitle, currentMessageCount)) {
+    return false;
+  }
+
+  const title = generateThreadTitle(userMessage);
+  if (!title || title === currentThread?.title) return false;
+
+  await updateThread(currentThreadId, { title });
+  return true;
 };
 
 export const getAutomatorActionsFromMessage = (message: ChatMessage) => {
