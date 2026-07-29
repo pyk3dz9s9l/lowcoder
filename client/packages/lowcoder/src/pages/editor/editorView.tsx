@@ -52,7 +52,6 @@ import {
   DefaultPanelStatus,
   getPanelStatus,
   savePanelStatus,
-  getEditorModeStatus,
   saveEditorModeStatus,
 } from "util/localStorageUtil";
 import { isAggregationApp } from "util/appUtils";
@@ -414,6 +413,11 @@ function EditorView(props: EditorViewProps) {
   const params = useParams<AppPathParams>();
   const editorState = useContext(EditorContext);
   const showPropertyPane = useEditorStore((state) => state.showPropertyPane);
+  const editorModeStatus = useEditorStore(
+    (state) => state.editorModeStatus as EditorModeStatus
+  );
+  const deviceType = useEditorStore((state) => state.deviceType);
+  const deviceOrientation = useEditorStore((state) => state.deviceOrientation);
   const { readOnly, hideHeader } = useContext(ExternalEditorContext);
   const application = useSelector(currentApplication);
   const isPublicApp = useSelector(isPublicApplication);
@@ -463,17 +467,13 @@ function EditorView(props: EditorViewProps) {
     [panelStatus, prePanelStatus]
   );
 
-  // added by Falk Wolsky to support a Layout and Logic Mode in Lowcoder
-  const [editorModeStatus, setEditorModeStatus] = useState(() => {
-    return getEditorModeStatus();
-  });
-
   const toggleEditorModeStatus: ToggleEditorModeStatus = useCallback(
     (value) => {
-      setEditorModeStatus(value ? value : ("both" as EditorModeStatus));
-      saveEditorModeStatus(value ? value : ("both" as EditorModeStatus));
+      const nextEditorModeStatus = value ?? "both";
+      editorState.setEditorModeStatus(nextEditorModeStatus);
+      saveEditorModeStatus(nextEditorModeStatus);
     },
-    [editorModeStatus]
+    [editorState]
   );
 
   const onCompDrag = useCallback(
@@ -536,10 +536,10 @@ function EditorView(props: EditorViewProps) {
     if (isViewMode) return uiComp.getView();
 
     return (
-      editorState.deviceType === "mobile" || editorState.deviceType === "tablet" ? (
+      deviceType === "mobile" || deviceType === "tablet" ? (
         <DeviceWrapper
-            deviceType={editorState.deviceType}
-            deviceOrientation={editorState.deviceOrientation}
+            deviceType={deviceType}
+            deviceOrientation={deviceOrientation}
           >
             <div id={PreviewContainerID}>
               {uiComp.getView()}
@@ -554,21 +554,9 @@ function EditorView(props: EditorViewProps) {
   }, [
     uiComp,
     isViewMode,
-    editorState.deviceType,
-    editorState.deviceOrientation,
+    deviceType,
+    deviceOrientation,
   ]);
-
-  useEffect(() => {
-    return () => {
-      setPanelStatus(DefaultPanelStatus);
-      setEditorModeStatus("both");
-      setShowShortcutList(false);
-      setMenuKey(SiderKey.State);
-      setHeight(undefined);
-      savePanelStatus(panelStatus);
-      saveEditorModeStatus(editorModeStatus);
-    };
-  }, []);
 
   const isLowCoderDomain = window.location.hostname === 'app.lowcoder.cloud';
   const isLocalhost = window.location.hostname === 'localhost';
@@ -796,4 +784,3 @@ function EditorView(props: EditorViewProps) {
 export default React.memo(EditorView, (prevProps, newProps) => {
   return isEqual(prevProps, newProps);
 });
-

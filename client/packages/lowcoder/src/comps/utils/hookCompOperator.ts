@@ -1,7 +1,7 @@
 import { HookComp } from "comps/hooks/hookComp";
 import { EditorState } from "comps/editorState";
 import { singletonHookComp } from "comps/hooks/hookCompTypes";
-import { shouldOpenOverlayOnCreate } from "comps/hooks/hookSelection";
+import { selectCompsFromLeftPanel, shouldOpenOverlayOnCreate } from "comps/hooks/hookSelection";
 import { wrapActionExtraInfo } from "lowcoder-core";
 import {
   writeHookOnlyToClipboard,
@@ -80,7 +80,7 @@ export class HookCompOperator {
       newNames.add(newName);
     });
 
-    editorState.setSelectedCompNames(newNames, "leftPanel");
+    selectCompsFromLeftPanel(editorState, newNames);
     return true;
   }
 }

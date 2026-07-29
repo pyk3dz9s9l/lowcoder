@@ -57,7 +57,6 @@ import { HeaderStartDropdown } from "./headerStartDropdown";
 import { AppPermissionDialog } from "../../components/PermissionDialog/AppPermissionDialog";
 import { getBrandingConfig } from "../../redux/selectors/configSelectors";
 import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
-import { EditorContext } from "../../comps/editorState";
 import Tooltip from "antd/es/tooltip";
 import { LockOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import UserApi from "@lowcoder-ee/api/userApi";
@@ -372,7 +371,6 @@ type HeaderProps = {
 
 // header in editor page
 export default function Header(props: HeaderProps) {
-  const editorState = useContext(EditorContext);
   const { blockEditing, fetchApplication } = useContext(ExternalEditorContext);
   const { togglePanel } = props;
   const { toggleEditorModeStatus } = props;
@@ -432,7 +430,6 @@ export default function Header(props: HeaderProps) {
     target: { value },
   }: RadioChangeEvent) => {
     toggleEditorModeStatus(value);
-    editorState.setEditorModeStatus(value);
   };
 
   const headerStart = (

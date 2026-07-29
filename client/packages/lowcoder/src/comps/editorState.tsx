@@ -307,7 +307,7 @@ export class EditorState {
       });
   }
 
-  showResultComp(): BottomResComp | undefined {
+  showResultComp(showResultCompName = this.showResultCompName): BottomResComp | undefined {
     const bottomResComps = Object.values(BottomResTypeEnum).reduce<
       BottomResComp[]
     >((a, b) => {
@@ -315,7 +315,7 @@ export class EditorState {
       return a.concat(items);
     }, []);
 
-    return bottomResComps.find((i) => i.name() === this.showResultCompName);
+    return bottomResComps.find((i) => i.name() === showResultCompName);
   }
 
   /**
