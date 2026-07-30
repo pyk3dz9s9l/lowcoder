@@ -228,6 +228,7 @@ let SignatureTmpComp = (function () {
     });
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -236,7 +237,7 @@ let SignatureTmpComp = (function () {
 
           <FormDataPropertyView {...children} />
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -246,11 +247,11 @@ let SignatureTmpComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             children.label.getPropertyView()
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

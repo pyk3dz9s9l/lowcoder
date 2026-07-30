@@ -280,6 +280,7 @@ let JsonLottieTmpComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -293,7 +294,7 @@ let JsonLottieTmpComp = (function () {
             {children.sourceMode.getView() === 'asset-library' && children.iconScoutAsset.propertyView({})}
           </Section>
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <><Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}
                 {children.speed.propertyView({ label: trans("jsonLottie.speed")})}
@@ -306,7 +307,7 @@ let JsonLottieTmpComp = (function () {
             </>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
               {children.aspectRatio.propertyView({
@@ -317,7 +318,7 @@ let JsonLottieTmpComp = (function () {
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.container.getPropertyView()}

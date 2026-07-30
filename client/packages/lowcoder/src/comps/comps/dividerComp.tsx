@@ -125,6 +125,7 @@ const DividerTempComp = migrateOldData(
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
         {!children?.type?.getView() && 
@@ -132,13 +133,13 @@ const DividerTempComp = migrateOldData(
          {children.title.propertyView({ label: trans("divider.title") })}
          </Section>}
         
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.layout}>
                 {!_.isEmpty(children.title.getView()) &&

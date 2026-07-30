@@ -122,16 +122,18 @@ let TextAreaTmpComp = (function () {
       ...validateState,
     });
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <TextInputBasicSection {...children} />
         <FormDataPropertyView {...children} />
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           children.label.getPropertyView()
         )}
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><TextInputInteractionSection {...children} />
             <Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
@@ -149,7 +151,7 @@ let TextAreaTmpComp = (function () {
             <TextInputValidationSection {...children} /></>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
             <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>
@@ -159,7 +161,8 @@ let TextAreaTmpComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

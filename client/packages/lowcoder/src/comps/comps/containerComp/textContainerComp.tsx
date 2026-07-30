@@ -70,6 +70,7 @@ export const ContainerBaseComp = (function () {
     return <TriContainer {...props} />;
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -77,12 +78,12 @@ export const ContainerBaseComp = (function () {
             {children.text.propertyView({})}
           </Section>
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.layout}>
                 {children.container.getPropertyView()}

@@ -294,6 +294,7 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
   });
 })
   .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
     const isMobile = useIsMobile();
     return (
       <>
@@ -313,7 +314,7 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
 
         <FormDataPropertyView {...children} />
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.validation}>
             {requiredPropertyView(children)}
             {children.showValidationWhenEmpty.propertyView({
@@ -334,24 +335,24 @@ const DatePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
         )}
 
         {/*{commonAdvanceSection(children, children.dateType.value === "date")}*/}
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && children.label.getPropertyView()}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <Section name={sectionNames.layout}>
             {formatPropertyView({ children, placeholder: DATE_FORMAT })}
             {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.advanced}>
             {timeFields(children, isMobile)}
             {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
           </Section></>
         )}
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && !isMobile && commonAdvanceSection(children)}
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && !isMobile && commonAdvanceSection(children)}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.style}>
               {children.style.getPropertyView()}
@@ -511,6 +512,7 @@ let DateRangeTmpCmp = (function () {
     });
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       const isMobile = useIsMobile();
       return (
         <>
@@ -535,7 +537,7 @@ let DateRangeTmpCmp = (function () {
           
           <FormDataPropertyView {...children} />
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <><Section name={sectionNames.validation}>
               {requiredPropertyView(children)}
               {children.showValidationWhenEmpty.propertyView({
@@ -555,24 +557,24 @@ let DateRangeTmpCmp = (function () {
             </>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && children.label.getPropertyView()}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <Section name={sectionNames.layout}>
               {formatPropertyView({ children })}
               {children.placeholder.propertyView({ label: trans("date.placeholderText") })}
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <><Section name={sectionNames.advanced}>
               {timeFields(children, isMobile)}
               {children.suffixIcon.propertyView({ label: trans("button.suffixIcon") })}
             </Section></>
           )}
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && commonAdvanceSection(children)}
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && commonAdvanceSection(children)}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

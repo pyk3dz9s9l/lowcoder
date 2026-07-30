@@ -405,7 +405,9 @@ let StepControlBasicComp = (function () {
       </StyledWrapper>
     );
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.options.propertyView({})}
@@ -415,7 +417,7 @@ let StepControlBasicComp = (function () {
           })}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
@@ -438,7 +440,7 @@ let StepControlBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <Section name={sectionNames.layout}>
             {children.autoHeight.getPropertyView()}
             {children.size.propertyView({
@@ -481,7 +483,7 @@ let StepControlBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>
               {children.style.getPropertyView()}
@@ -492,7 +494,8 @@ let StepControlBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .setExposeMethodConfigs(selectDivRefMethods)
     .build();
 })();

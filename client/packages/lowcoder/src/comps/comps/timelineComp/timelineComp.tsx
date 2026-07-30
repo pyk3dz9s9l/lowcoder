@@ -192,7 +192,9 @@ let TimeLineBasicComp = (function () {
   return new UICompBuilder(childrenMap, (props, dispatch) => (
     <TimelineComp {...props} dispatch={dispatch} />
   ))
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.value.propertyView({
@@ -202,7 +204,7 @@ let TimeLineBasicComp = (function () {
           })}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -210,7 +212,7 @@ let TimeLineBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <><Section name={sectionNames.layout}>
               {children.autoHeight.getPropertyView()}
               {!children.autoHeight.getView() && 
@@ -235,7 +237,8 @@ let TimeLineBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

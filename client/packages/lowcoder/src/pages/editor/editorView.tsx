@@ -416,6 +416,7 @@ function EditorView(props: EditorViewProps) {
   const editorModeStatus = useEditorStore(
     (state) => state.editorModeStatus as EditorModeStatus
   );
+  const setEditorModeStatus = useEditorStore((state) => state.setEditorModeStatus);
   const deviceType = useEditorStore((state) => state.deviceType);
   const deviceOrientation = useEditorStore((state) => state.deviceOrientation);
   const { readOnly, hideHeader } = useContext(ExternalEditorContext);
@@ -470,10 +471,10 @@ function EditorView(props: EditorViewProps) {
   const toggleEditorModeStatus: ToggleEditorModeStatus = useCallback(
     (value) => {
       const nextEditorModeStatus = value ?? "both";
-      editorState.setEditorModeStatus(nextEditorModeStatus);
+      setEditorModeStatus(nextEditorModeStatus);
       saveEditorModeStatus(nextEditorModeStatus);
     },
-    [editorState]
+    [setEditorModeStatus]
   );
 
   const onCompDrag = useCallback(
@@ -511,7 +512,7 @@ function EditorView(props: EditorViewProps) {
     return () => {
       window.removeEventListener(eventType, updateSize);
     };
-  }, [panelStatus, editorModeStatus]);
+  }, []);
 
   const hideBodyHeader = useTemplateViewMode() || (isViewMode && (!showHeaderInPublic || !commonSettings.showHeaderInPublicApps));
 

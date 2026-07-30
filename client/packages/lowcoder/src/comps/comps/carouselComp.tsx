@@ -85,13 +85,14 @@ let CarouselBasicComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
             {children.data.propertyView({ label: trans("data") })}
           </Section>
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <><FormDataPropertyView {...children} />
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
@@ -99,7 +100,7 @@ let CarouselBasicComp = (function () {
               {children.autoPlay.propertyView({ label: trans("carousel.autoPlay") })}
             </Section></>
           )}
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <><Section name={sectionNames.layout}>
                 {children.showDots.propertyView({ label: trans("carousel.showDots") })}
                 {children.dotPosition.propertyView({

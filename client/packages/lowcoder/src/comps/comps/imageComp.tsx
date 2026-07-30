@@ -247,6 +247,7 @@ let ImageBasicComp = new UICompBuilder(childrenMap, (props) => {
   return <ContainerImg {...props} />;
 })
   .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
     return (
       <>
         <Section name={sectionNames.basic}>
@@ -260,7 +261,7 @@ let ImageBasicComp = new UICompBuilder(childrenMap, (props) => {
           {children.sourceMode.getView() === 'asset-library' && children.iconScoutAsset.propertyView({})}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -275,7 +276,7 @@ let ImageBasicComp = new UICompBuilder(childrenMap, (props) => {
           </Section>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.layout}>
 

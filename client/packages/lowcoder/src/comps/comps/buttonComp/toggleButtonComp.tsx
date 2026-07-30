@@ -104,7 +104,9 @@ const ToggleTmpComp = (function () {
       </ButtonCompWrapperStyled>
     );
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.value.propertyView({
@@ -113,7 +115,7 @@ const ToggleTmpComp = (function () {
           })}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -144,8 +146,8 @@ const ToggleTmpComp = (function () {
           </>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
-          useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" ||
+          editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.style}>
               {children.showBorder.propertyView({
@@ -161,7 +163,8 @@ const ToggleTmpComp = (function () {
         
         <Section name={trans("prop.disabledStyle")}>{children.disabledStyle.getPropertyView()}</Section>
       </>
-    ))
+    );
+    })
     .setExposeMethodConfigs(buttonRefMethods)
     .build();
 })();

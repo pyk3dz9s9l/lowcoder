@@ -209,13 +209,14 @@ const FormBaseComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
             {children.resetAfterSubmit.propertyView({ label: trans("formComp.resetAfterSubmit") })}
           </Section>
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <><Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}
                 {disabledPropertyView(children)}
@@ -226,7 +227,7 @@ const FormBaseComp = (function () {
             </>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.container.getPropertyView()}
@@ -234,14 +235,14 @@ const FormBaseComp = (function () {
             </>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.advanced}>
               {children.initialData.propertyView({ label: trans("formComp.initialData") })}
               {children.invalidFormMessage.propertyView({ label: trans("formComp.invalidFormMessage") })}
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.style}>
                 {children.container.stylePropertyView()}

@@ -516,7 +516,9 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
   
   return <Upload {...props} dispatch={dispatch} />;
 })
-  .setPropertyViewFn((children) => (
+  .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+    return (
     <>
       <Section name={sectionNames.basic}>
         {children.text.propertyView({
@@ -536,7 +538,7 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
 
       <FormDataPropertyView {...children} />
 
-      {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "logic" || editorModeStatus === "both") && (
         <><Section name={sectionNames.validation}>
           {children.uploadType.getView() !== "single" && children.maxFiles.propertyView({ label: trans("file.maxFiles") })}
           {commonValidationFields(children)}
@@ -581,14 +583,15 @@ let FileTmpComp = new UICompBuilder(childrenMap, (props, dispatch) => {
         </>
       )}
 
-      {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "layout" || editorModeStatus === "both") && (
         <>
           <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
           <Section name={sectionNames.animationStyle} hasTooltip={true}>{children.animationStyle.getPropertyView()}</Section>
         </>
       )}
     </>
-  ))
+  );
+  })
   .build();
 
   class FileImplComp extends FileTmpComp {

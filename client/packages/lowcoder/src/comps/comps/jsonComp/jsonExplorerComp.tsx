@@ -81,6 +81,7 @@ let JsonExplorerTmpComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -97,7 +98,7 @@ let JsonExplorerTmpComp = (function () {
              })}
           </Section>
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {children.expandToggle.propertyView({ label: trans("jsonExplorer.expandToggle") })}
@@ -105,7 +106,7 @@ let JsonExplorerTmpComp = (function () {
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.advanced}>
               {children.indent.propertyView({ label: trans("jsonExplorer.indent") })}
             </Section>
@@ -118,8 +119,8 @@ let JsonExplorerTmpComp = (function () {
               label: trans('prop.showVerticalScrollbar'),
             })}
           </Section>}
-          {(useEditorStore((state) => state.editorModeStatus) === 'layout' ||
-            useEditorStore((state) => state.editorModeStatus) === 'both') && (
+          {(editorModeStatus === 'layout' ||
+            editorModeStatus === 'both') && (
             <>
               <Section name={sectionNames.style}>
                 {children.theme.propertyView({

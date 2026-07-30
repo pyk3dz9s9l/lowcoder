@@ -81,7 +81,9 @@ const QRCodeView = (props: RecordConstructorToView<typeof childrenMap>) => {
 let QRCodeBasicComp = (function () {
   return new UICompBuilder(childrenMap, (props) => {
     return( <QRCodeView {...props} />)})
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.value.propertyView({
@@ -91,7 +93,7 @@ let QRCodeBasicComp = (function () {
           })}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
@@ -108,7 +110,7 @@ let QRCodeBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
@@ -120,7 +122,8 @@ let QRCodeBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

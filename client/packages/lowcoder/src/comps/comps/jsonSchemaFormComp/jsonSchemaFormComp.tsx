@@ -374,6 +374,7 @@ let FormBasicComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       const formType = children.formType.getView();
       const uiSchemaFieldDescription =
         formType === "rjsf"
@@ -381,8 +382,8 @@ let FormBasicComp = (function () {
           : "JSONForms UI schema object for configuring controls, scopes, layouts, categories, rules, and renderer options. It should match the JSON Schema fields.";
       return (
         <>
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
-            useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" ||
+            editorModeStatus === "both") && (
             <Section name={sectionNames.basic}>
               {children.formType.propertyView({
                 radioButton: true,
@@ -515,7 +516,7 @@ let FormBasicComp = (function () {
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -525,7 +526,7 @@ let FormBasicComp = (function () {
               {showDataLoadingIndicatorsPropertyView(children)}
             </Section>
           )}
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.autoHeight.getPropertyView()}

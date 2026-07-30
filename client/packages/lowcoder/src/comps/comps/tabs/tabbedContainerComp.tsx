@@ -340,6 +340,7 @@ export const TabbedContainerBaseComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -350,7 +351,7 @@ export const TabbedContainerBaseComp = (function () {
             {children.selectedTabKey.propertyView({ label: trans("prop.defaultValue") })}
           </Section>
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -378,7 +379,7 @@ export const TabbedContainerBaseComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.layout}>
                 {children.placement.propertyView({ label: trans("tabbedContainer.placement"), radioButton: true })}

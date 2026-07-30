@@ -120,14 +120,16 @@ let SegmentedControlBasicComp = (function () {
       ...validateState,
     });
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.options.propertyView({})}
           {children.defaultValue.propertyView({ label: trans("prop.defaultValue") })}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><SelectInputValidationSection {...children} />
           <FormDataPropertyView {...children} />
           <Section name={sectionNames.interaction}>
@@ -137,11 +139,11 @@ let SegmentedControlBasicComp = (function () {
           </Section></>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           children.label.getPropertyView()
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
@@ -155,7 +157,8 @@ let SegmentedControlBasicComp = (function () {
             </>
         )}
       </>
-    ))
+    );
+    })
     .setExposeMethodConfigs(selectDivRefMethods)
     .build();
 })();

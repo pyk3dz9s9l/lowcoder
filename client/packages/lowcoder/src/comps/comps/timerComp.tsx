@@ -228,9 +228,10 @@ const TimerCompView = React.memo((props: RecordConstructorToView<typeof children
 const TimerCompPropertyView = React.memo((props: {
   children: ChildrenType
 }) => {
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
   return (
     <>
-      {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+      {["logic", "both"].includes(editorModeStatus) && (
         <>
           <Section name={sectionNames.basic}>
             {props.children.timerType.propertyView({
@@ -251,7 +252,7 @@ const TimerCompPropertyView = React.memo((props: {
         </>
       )}
 
-      {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+      {["layout", "both"].includes(editorModeStatus) && (
         <>
         <Section name={sectionNames.style}>
           {props.children.style.getPropertyView()}

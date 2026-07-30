@@ -119,6 +119,7 @@ let ProgressCircleTmpComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       const progressType = children.progressType.getView();
       const stepsEnabled = children.stepsEnabled.getView();
       
@@ -185,13 +186,13 @@ let ProgressCircleTmpComp = (function () {
             </Section>
           )}
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
             </Section>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.style}>
                 {children.style.getPropertyView()}

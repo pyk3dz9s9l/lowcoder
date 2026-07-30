@@ -68,13 +68,15 @@ let IFrameCompBase = new UICompBuilder(
     );
   }
 )
-  .setPropertyViewFn((children) => (
+  .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+    return (
     <>
       <Section name={sectionNames.basic}>
         {children.url.propertyView({ label: "Source URL", placeholder: "https://example.com", tooltip: trans("iframe.URLDesc") })}
       </Section>
 
-      {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+      {["logic", "both"].includes(editorModeStatus) && (
         <Section name={sectionNames.interaction}>
           {hiddenPropertyView(children)}
           {children.allowDownload.propertyView({ label: trans("iframe.allowDownload") })}
@@ -86,7 +88,7 @@ let IFrameCompBase = new UICompBuilder(
         </Section>
       )}
 
-      {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+      {["layout", "both"].includes(editorModeStatus) && (
         <>
         <Section name={sectionNames.style}>
           {children.style.getPropertyView()}
@@ -97,7 +99,8 @@ let IFrameCompBase = new UICompBuilder(
         </>
       )}
     </>
-  ))
+  );
+  })
   .build();
 
 IFrameCompBase = class extends IFrameCompBase {

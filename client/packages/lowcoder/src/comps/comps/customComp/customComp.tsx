@@ -242,9 +242,10 @@ const CustomCompBase = new UICompBuilder(childrenMap, (props, dispatch) => {
   );
 })
   .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
     return (
       <>
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.interaction}>
               {children.model.propertyView({ label: trans("customComp.data") })}
               {children.code.propertyView({ label: trans("customComp.code"), language: "html" })}

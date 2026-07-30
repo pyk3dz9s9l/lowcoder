@@ -133,6 +133,7 @@ let VideoBasicComp = (function () {
     return <ContainerVideo {...props} />;
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -142,7 +143,7 @@ let VideoBasicComp = (function () {
             })}
           </Section>
 
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
 
             <><Section name={sectionNames.interaction}>
                 {children.onEvent.getPropertyView()}

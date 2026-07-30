@@ -222,7 +222,9 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
     ...validate(props),
   });
 })
-  .setPropertyViewFn((children) => (
+  .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+    return (
     <>
       <Section name={sectionNames.basic}>
         {children.defaultValue.propertyView({
@@ -236,7 +238,7 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
 
       <FormDataPropertyView {...children} />
 
-      {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "logic" || editorModeStatus === "both") && (
         <><Section name={sectionNames.validation}>
           {requiredPropertyView(children)}
           {children.showValidationWhenEmpty.propertyView({
@@ -255,15 +257,15 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
         </Section></>
       )}
 
-      {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
-      {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "layout" || editorModeStatus === "both") && children.label.getPropertyView()}
+      {(editorModeStatus === "layout" || editorModeStatus === "both") && (
         <Section name={sectionNames.layout}>
           {formatPropertyView({ children, placeholder: TIME_FORMAT })}
           {children.placeholder.propertyView({ label: trans("time.placeholderText") })}
         </Section>
       )}
 
-      {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "logic" || editorModeStatus === "both") && (
         <Section name={sectionNames.advanced}>
           {commonAdvanceSection(children)}
           {children.use12Hours.propertyView({ label: trans("prop.use12Hours") })}
@@ -271,7 +273,7 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
         </Section>
       )}
 
-      {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+      {(editorModeStatus === "layout" || editorModeStatus === "both") && (
         <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
@@ -291,7 +293,8 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
         </>
       )}
     </>
-  ))
+  );
+  })
   .setExposeMethodConfigs(dateRefMethods)
   .build();
 
@@ -396,7 +399,9 @@ const TimeRangeTmpCmp = (function () {
         : startResult),
     });
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.defaultStart.propertyView({
@@ -414,7 +419,7 @@ const TimeRangeTmpCmp = (function () {
         
         <FormDataPropertyView {...children} />
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.validation}>
             {requiredPropertyView(children)}
             {children.showValidationWhenEmpty.propertyView({
@@ -433,15 +438,15 @@ const TimeRangeTmpCmp = (function () {
           </Section></>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && children.label.getPropertyView()}
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && children.label.getPropertyView()}
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <Section name={sectionNames.layout}>
             {formatPropertyView({ children, placeholder: TIME_FORMAT })}
             {children.placeholder.propertyView({ label: trans("time.placeholderText") })}
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <Section name={sectionNames.advanced}>
             {commonAdvanceSection(children)}
             {children.use12Hours.propertyView({ label: trans("prop.use12Hours") })}
@@ -449,7 +454,7 @@ const TimeRangeTmpCmp = (function () {
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.style}>
               {children.style.getPropertyView()}
@@ -469,7 +474,8 @@ const TimeRangeTmpCmp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

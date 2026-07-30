@@ -108,10 +108,6 @@ export class EditorState {
     return this.editorStore.getState().disableInteract;
   }
 
-  get editorModeStatus() {
-    return this.editorStore.getState().editorModeStatus;
-  }
-
   get selectedBottomResName() {
     return this.editorStore.getState().selectedBottomResName;
   }
@@ -395,10 +391,6 @@ export class EditorState {
 
   getAppSettings() {
     return this.getAppSettingsComp().getView();
-  }
-
-  setEditorModeStatus(newEditorModeStatus: string) {
-    this.editorStore.getState().setEditorModeStatus(newEditorModeStatus);
   }
 
   setDeviceType(type: DeviceType) {

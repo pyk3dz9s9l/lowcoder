@@ -222,14 +222,16 @@ let MentionTmpComp = (function () {
       ...validateState,
     });
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.value.propertyView({ label: trans("prop.defaultValue") })}
           {children.placeholder.propertyView({
             label: trans("prop.placeholder"),
           })}
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             children.mentionList.propertyView({
               label: trans("mention.mentionList"),
             })
@@ -237,11 +239,11 @@ let MentionTmpComp = (function () {
         </Section>
         <FormDataPropertyView {...children} />
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           children.label.getPropertyView()
         )}
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {disabledPropertyView(children)}
@@ -260,7 +262,7 @@ let MentionTmpComp = (function () {
             </Section></>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
@@ -271,7 +273,8 @@ let MentionTmpComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

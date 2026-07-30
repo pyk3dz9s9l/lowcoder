@@ -336,7 +336,9 @@ export const SelectPropertyView = (
     inputFieldStyle: { getPropertyView: () => ControlNode };
     childrenInputFieldStyle: { getPropertyView: () => ControlNode };
   }
-) => (
+) => {
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+  return (
   <>
     <Section name={sectionNames.basic}>
       {children.options.propertyView({})}
@@ -346,7 +348,7 @@ export const SelectPropertyView = (
       {placeholderPropertyView(children)}
     </Section>
 
-    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+    {["logic", "both"].includes(editorModeStatus) && (
       <>
         <>
           <SelectInputValidationSection {...children} />
@@ -362,10 +364,10 @@ export const SelectPropertyView = (
       </>
     )}
 
-    {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) &&
+    {["layout", "both"].includes(editorModeStatus) &&
       children.label.getPropertyView()}
 
-    {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+    {["logic", "both"].includes(editorModeStatus) && (
       <Section name={sectionNames.advanced}>
         {allowClearPropertyView(children)}
         {showSearchPropertyView(children)}
@@ -373,7 +375,7 @@ export const SelectPropertyView = (
     )}
 
     {["layout", "both"].includes(
-      useEditorStore((state) => state.editorModeStatus)
+      editorModeStatus
     ) && (
         <>
           <Section name={sectionNames.style}>
@@ -392,6 +394,7 @@ export const SelectPropertyView = (
       )}
   </>
 );
+};
 
 export const baseSelectRefMethods = refMethods<BaseSelectRef>([
   focusMethod,

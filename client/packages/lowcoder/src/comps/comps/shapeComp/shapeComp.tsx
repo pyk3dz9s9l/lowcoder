@@ -42,6 +42,7 @@ export const ContainerBaseComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -50,8 +51,8 @@ export const ContainerBaseComp = (function () {
               IconType: "All",
             })}
           </Section>
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
-            useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" ||
+            editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
@@ -59,8 +60,8 @@ export const ContainerBaseComp = (function () {
             </Section>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
-            useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" ||
+            editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.container.getPropertyView()}

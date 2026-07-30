@@ -380,7 +380,9 @@ let CommentBasicComp = (function () {
     return (
     <CommentCompBase {...props} dispatch={dispatch} />
   )})
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.title.propertyView({
@@ -388,7 +390,7 @@ let CommentBasicComp = (function () {
           })}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <>
           <Section name={sectionNames.data}>
             {children.value.propertyView({
@@ -419,7 +421,7 @@ let CommentBasicComp = (function () {
           </>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <><Section name={sectionNames.layout}>
             {children.sendCommentAble.getView() &&
               children.buttonText.propertyView({
@@ -438,7 +440,8 @@ let CommentBasicComp = (function () {
         )}
 
       </>
-    ))
+    );
+    })
     .build();
 })();
 

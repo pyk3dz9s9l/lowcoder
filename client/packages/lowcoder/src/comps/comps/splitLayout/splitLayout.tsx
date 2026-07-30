@@ -197,19 +197,21 @@ const SplitLayout = (props: SplitLayoutProps) => {
 
 export const SplitLayoutBaseComp = (function () {
   return new UICompBuilder(childrenMap, (props, dispatch) => <SplitLayout {...props} dispatch={dispatch} />)
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.columns.propertyView({ title: trans("splitLayout.column") })}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
             </Section>
           )}
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.layout}>
               {children.orientation.propertyView({
@@ -243,7 +245,8 @@ export const SplitLayoutBaseComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

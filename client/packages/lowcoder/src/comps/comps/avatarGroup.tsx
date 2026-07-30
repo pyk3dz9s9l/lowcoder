@@ -149,9 +149,11 @@ let AvatarGroupBasicComp = (function () {
   return new UICompBuilder(childrenMap, (props, dispatch) => {
     return( <AvatarGroupView {...props} dispatch={dispatch} />
 )}) 
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.basic}>
               {children.avatars.propertyView({})}
@@ -176,7 +178,7 @@ let AvatarGroupBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
           <Section name={sectionNames.avatarStyle}>
             {children.avatar.getPropertyView()}
@@ -187,7 +189,8 @@ let AvatarGroupBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

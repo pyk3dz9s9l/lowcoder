@@ -102,16 +102,17 @@ let InputBasicComp = new UICompBuilder(childrenMap, (props) => {
   });
 })
   .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
     return (
       <>
         <TextInputBasicSection {...children} />
         <FormDataPropertyView {...children} />
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           children.label.getPropertyView()
         )}
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><TextInputInteractionSection {...children} />
             <Section name={sectionNames.layout}>{hiddenPropertyView(children)}</Section>
             <Section name={sectionNames.advanced}>
@@ -124,7 +125,7 @@ let InputBasicComp = new UICompBuilder(childrenMap, (props) => {
             <TextInputValidationSection {...children} />
           </>
         )}
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
             <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>

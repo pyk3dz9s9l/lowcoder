@@ -277,9 +277,10 @@ export const ContainerBaseComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
-          {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.basic}>
                 {children.size.propertyView({
@@ -338,7 +339,7 @@ export const ContainerBaseComp = (function () {
             </>
           )}
 
-          {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+          {(editorModeStatus === "layout" || editorModeStatus === "both") && (
             <>
               <Section name={sectionNames.layout}>
                 {children.cardType.propertyView({

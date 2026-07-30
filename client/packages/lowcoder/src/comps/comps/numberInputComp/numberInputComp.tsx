@@ -449,7 +449,9 @@ let NumberInputTmpComp = (function () {
       ...validate(props),
     });
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.defaultValue.propertyView({ label: trans("prop.defaultValue") })}
@@ -459,7 +461,7 @@ let NumberInputTmpComp = (function () {
 
         <FormDataPropertyView {...children} />
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.validation}>
             {requiredPropertyView(children)}
             {children.showValidationWhenEmpty.propertyView({label: trans("prop.showEmptyValidation")})}
@@ -476,11 +478,11 @@ let NumberInputTmpComp = (function () {
           </>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           children.label.getPropertyView()
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <Section name={sectionNames.advanced}>
             {children.step.propertyView({ label: trans("numberInput.step") })}
             {children.precision.propertyView({ label: trans("numberInput.precision") })}
@@ -495,7 +497,7 @@ let NumberInputTmpComp = (function () {
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <>
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
@@ -515,7 +517,8 @@ let NumberInputTmpComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

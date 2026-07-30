@@ -251,13 +251,15 @@ const DropdownTmpComp = (function () {
       </ButtonCompWrapper>
     );
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.options.propertyView({})}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.interaction}>
               {!children.onlyMenu.getView() && !children.onlyIcon.getView()
                 ? children.onEvent.getPropertyView()
@@ -268,7 +270,7 @@ const DropdownTmpComp = (function () {
           </>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.layout}>
               {children.text.propertyView({ label: trans("label") })}
@@ -291,7 +293,8 @@ const DropdownTmpComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

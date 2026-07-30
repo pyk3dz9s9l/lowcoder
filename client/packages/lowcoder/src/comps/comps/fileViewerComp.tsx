@@ -99,6 +99,7 @@ let FileViewerBasicComp = (function () {
     />;
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -110,7 +111,7 @@ let FileViewerBasicComp = (function () {
             })}
           </Section>
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {showDataLoadingIndicatorsPropertyView(children)}
@@ -125,7 +126,7 @@ let FileViewerBasicComp = (function () {
                 )}
           </Section>
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.style}>
               {children.style.getPropertyView()}

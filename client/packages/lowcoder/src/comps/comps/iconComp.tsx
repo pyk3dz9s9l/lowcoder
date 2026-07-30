@@ -151,7 +151,9 @@ const IconView = (props: RecordConstructorToView<typeof childrenMap>) => {
 let IconBasicComp = (function () {
   return new UICompBuilder(childrenMap, (props) => {
     return(<IconView {...props} />)})
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           { children.sourceMode.propertyView({
@@ -167,7 +169,7 @@ let IconBasicComp = (function () {
           })}
         </Section> 
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -175,7 +177,7 @@ let IconBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <><Section name={sectionNames.layout}>
             {children.autoHeight.propertyView({
             label: trans("iconComp.autoSize"),
@@ -194,7 +196,8 @@ let IconBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

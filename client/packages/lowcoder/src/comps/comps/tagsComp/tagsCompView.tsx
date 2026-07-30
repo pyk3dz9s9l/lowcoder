@@ -337,6 +337,7 @@ const multiTags = (function () {
     );
   })
     .setPropertyViewFn((children: any) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -344,7 +345,7 @@ const multiTags = (function () {
             {children.editable.propertyView({ label: "Editable" })}           
           </Section>
 
-          {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {hiddenPropertyView(children)}
@@ -352,7 +353,7 @@ const multiTags = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
           )}
         </>

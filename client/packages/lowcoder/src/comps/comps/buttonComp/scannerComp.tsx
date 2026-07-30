@@ -285,14 +285,16 @@ const ScannerTmpComp = (function () {
       </ButtonCompWrapper>
     );
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.text.propertyView({ label: trans("text") })}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" ||
-          useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" ||
+          editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
@@ -316,14 +318,15 @@ const ScannerTmpComp = (function () {
           </>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" ||
-          useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" ||
+          editorModeStatus === "both") && (
           <Section name={sectionNames.style}>
             {children.style.getPropertyView()}
           </Section>
         )}
       </>
-    ))
+    );
+    })
     .setExposeMethodConfigs(buttonRefMethods)
     .build();
 })();

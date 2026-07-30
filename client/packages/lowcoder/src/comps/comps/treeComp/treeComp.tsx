@@ -140,13 +140,15 @@ let TreeBasicComp = (function () {
   return new UICompBuilder(childrenMap, (props) => {
     return(<TreeCompView {...props} />)}
 )
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {treeDataPropertyView(children)}
         </Section>
 
-        {["logic", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["logic", "both"].includes(editorModeStatus) && (
           <><SelectInputValidationSection {...children} />
             {formSection(children)}
             <Section name={sectionNames.interaction}>
@@ -165,7 +167,7 @@ let TreeBasicComp = (function () {
           </>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <Section name={sectionNames.layout}>
             {children.autoHeight.getPropertyView()}
             {!children.autoHeight.getView() && 
@@ -179,9 +181,9 @@ let TreeBasicComp = (function () {
           </Section>
         )}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (children.label.getPropertyView())}
+        {["layout", "both"].includes(editorModeStatus) && (children.label.getPropertyView())}
 
-        {["layout", "both"].includes(useEditorStore((state) => state.editorModeStatus)) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.style}>{children.style.getPropertyView()}</Section>
             <Section name={sectionNames.labelStyle}>{children.labelStyle.getPropertyView()}</Section>
@@ -189,7 +191,8 @@ let TreeBasicComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

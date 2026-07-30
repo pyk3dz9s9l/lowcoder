@@ -13,6 +13,7 @@ type Props = {
 
 export function listPropertyView(compType: ListCompType) {
   return (props: Props) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
     const { comp } = props;
     const children = comp.children;
     return (
@@ -48,13 +49,13 @@ export function listPropertyView(compType: ListCompType) {
           })}
         </Section>
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <Section name={trans("prop.pagination")}>
             {comp.children.pagination.getPropertyView()}
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "logic" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <Section name={sectionNames.interaction}>
             {children.onEvent.getPropertyView()}
             {hiddenPropertyView(children)}
@@ -65,7 +66,7 @@ export function listPropertyView(compType: ListCompType) {
           </Section>
         )}
 
-        {(useEditorStore((state) => state.editorModeStatus) === "layout" || useEditorStore((state) => state.editorModeStatus) === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <><Section name={sectionNames.layout}>
               {children.horizontalGridCells.propertyView({
                 label: trans('prop.horizontalGridCells'),
