@@ -247,12 +247,12 @@ export const LeftLayersContent = (props: LeftLayersContentProps) => {
 
     if (dsl.ui.compType === "module") {
       explorerData.forEach(data => {
-        data['pos'] = dsl.ui.comp.container.layout[data.key].pos;
+        data['pos'] = dsl.ui.comp.container.layout[data.key]?.pos ?? 0;
       })
     }
     else {
       explorerData.forEach(data => {
-        data['pos'] = dsl.ui.layout[data.key].pos;
+        data['pos'] = dsl.ui.layout[data.key]?.pos ?? 0;
       })
     }
 
