@@ -1182,7 +1182,7 @@ const LayoutContainer = styled.div<{
   overflow: ${(props) =>
     props.$maxRows !== DEFAULT_ROW_COUNT
     ? 'hidden'
-    : props.$overflow ?? "overlay"
+    : props.$overflow ?? (props.$autoHeight ? 'hidden' : 'overlay')
   };
   ${(props) =>
     props.$autoHeight &&

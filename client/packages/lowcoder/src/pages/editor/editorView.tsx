@@ -259,7 +259,7 @@ const PreloadDiv = styled.div`
 `;
 
 export const EditorWrapper = styled.div`
-  overflow: auto;
+  overflow: hidden;
   position: relative;
   flex: 1 1 0;
 `;
