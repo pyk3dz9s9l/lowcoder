@@ -6,6 +6,7 @@ import { LabelControl } from "comps/controls/labelControl";
 import { styleControl } from "comps/controls/styleControl";
 import { SwitchStyle, SwitchStyleType, LabelStyle,  InputFieldStyle, AnimationStyle } from "comps/controls/styleControlConstants";
 import { migrateOldData } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { Section, lightenColor, sectionNames } from "lowcoder-design";
 import styled, { css } from "styled-components";
 import { UICompBuilder } from "../generators";
@@ -18,7 +19,7 @@ import { refMethods } from "comps/generators/withMethodExposing";
 import { blurMethod, clickMethod, focusWithOptions } from "comps/utils/methodUtils";
 import { fixOldInputCompData } from "./textInputComp/textInputConstants";
 
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext } from "react";
 import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
@@ -109,12 +110,7 @@ let SwitchTmpComp = (function () {
     ...formDataChildren,
   };
   return new UICompBuilder(childrenMap, (props) => {
-    const defaultValue = { ...props.defaultValue }.value;
     const value = { ...props.value }.value;
-
-    useEffect(() => {
-      props.value.onChange(defaultValue);
-    }, [defaultValue]);
 
     const handleChange = useCallback((checked: boolean) => {
       props.value.onChange(checked);
@@ -190,7 +186,10 @@ let SwitchTmpComp = (function () {
     .build();
 })();
 
-SwitchTmpComp = migrateOldData(SwitchTmpComp, fixOldInputCompData);
+SwitchTmpComp = migrateOldData(
+  withLinkedDefaultValue(SwitchTmpComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 export const SwitchComp = withExposingConfigs(SwitchTmpComp, [
   new NameConfig("value", trans("switchComp.valueDesc")),

@@ -58,6 +58,7 @@ import React, { useContext } from "react";
 import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 
 const Wrapper = styled.div<{
   $style: InputLikeStyleType;
@@ -285,7 +286,10 @@ MentionTmpComp = class extends MentionTmpComp {
   }
 };
 
-MentionTmpComp = migrateOldData(MentionTmpComp, fixOldInputCompData);
+MentionTmpComp = migrateOldData(
+  withLinkedDefaultValue(MentionTmpComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 const TextareaTmp2Comp = withMethodExposing(
   MentionTmpComp,

@@ -32,6 +32,7 @@ import { hasIcon } from "comps/utils";
 import { InputRef } from "antd/es/input";
 import { RefControl } from "comps/controls/refControl";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { numberSimpleControl } from "comps/controls/numberSimpleControl";
 import { NumberControl } from "comps/controls/codeControl";
 
@@ -147,6 +148,9 @@ let InputBasicComp = new UICompBuilder(childrenMap, (props) => {
   .build();
 
 
-const InputComp = migrateOldData(InputBasicComp, fixOldInputCompData);
+const InputComp = migrateOldData(
+  withLinkedDefaultValue(InputBasicComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 export { InputComp };

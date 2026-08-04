@@ -27,6 +27,7 @@ import { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { fixOldInputCompData } from "../textInputComp/textInputConstants";
 
 const getStyle = (style: SegmentStyleType) => {
@@ -163,7 +164,10 @@ let SegmentedControlBasicComp = (function () {
     .build();
 })();
 
-SegmentedControlBasicComp = migrateOldData(SegmentedControlBasicComp, fixOldInputCompData);
+SegmentedControlBasicComp = migrateOldData(
+  withLinkedDefaultValue(SegmentedControlBasicComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 export const SegmentedControlComp = withExposingConfigs(SegmentedControlBasicComp, [
   new NameConfig("value", trans("selectInput.valueDesc")),

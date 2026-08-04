@@ -39,6 +39,7 @@ import React, { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 
 const TextAreaStyled = styled(TextArea)<{
   $style: InputLikeStyleType;
@@ -172,7 +173,10 @@ TextAreaTmpComp = class extends TextAreaTmpComp {
   }
 };
 
-TextAreaTmpComp = migrateOldData(TextAreaTmpComp, fixOldInputCompData);
+TextAreaTmpComp = migrateOldData(
+  withLinkedDefaultValue(TextAreaTmpComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 const TextareaTmp2Comp = withMethodExposing(
   TextAreaTmpComp,

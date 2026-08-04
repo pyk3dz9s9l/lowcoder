@@ -15,7 +15,7 @@ import {
   eventHandlerControl,
   focusEvent,
 } from "../../controls/eventHandlerControl";
-import { stringExposingStateControl } from "../../controls/codeStateControl";
+import { stringExposingStateControl, withLinkedDefaultValue } from "../../controls/codeStateControl";
 import { LabelControl } from "../../controls/labelControl";
 import { UICompBuilder, withDefault } from "../../generators";
 import {
@@ -160,19 +160,14 @@ export type TimeCompViewProps = Pick<
 };
 
 const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
-  const defaultValue = { ...props.defaultValue }.value;
   const value = { ...props.value }.value;
 
   let time: dayjs.Dayjs | null = null;
   if(value !== '') {
     time = dayjs(value, TimeParser);
   }
-  
-  const [tempValue, setTempValue] = useState<dayjs.Dayjs | null>(time);
 
-  useEffect(() => {
-    props.value.onChange(defaultValue);
-  }, [defaultValue]);
+  const [tempValue, setTempValue] = useState<dayjs.Dayjs | null>(time);
 
   useEffect(() => {
     const newValue = value ? dayjs(value, TimeParser) : null;
@@ -298,7 +293,10 @@ const TimePickerTmpCmp = new UICompBuilder(childrenMap, (props) => {
   .setExposeMethodConfigs(dateRefMethods)
   .build();
 
-export const timePickerControl = migrateOldData(TimePickerTmpCmp, fixOldInputCompData);
+export const timePickerControl = migrateOldData(
+  withLinkedDefaultValue(TimePickerTmpCmp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 const TimeRangeTmpCmp = (function () {
   const childrenMap = {
@@ -312,10 +310,7 @@ const TimeRangeTmpCmp = (function () {
   };
 
   return new UICompBuilder(childrenMap, (props) => {
-    const defaultStart = { ...props.defaultStart }.value;
     const startValue = { ...props.start }.value;
-
-    const defaultEnd = { ...props.defaultEnd }.value;
     const endValue = { ...props.end }.value;
 
     let start: dayjs.Dayjs | null = null;
@@ -329,14 +324,6 @@ const TimeRangeTmpCmp = (function () {
 
     const [tempStartValue, setTempStartValue] = useState<dayjs.Dayjs | null>(start);
     const [tempEndValue, setTempEndValue] = useState<dayjs.Dayjs | null>(end);
-
-    useEffect(() => {
-      props.start.onChange(defaultStart);
-    }, [defaultStart]);
-
-    useEffect(() => {
-      props.end.onChange(defaultEnd);
-    }, [defaultEnd]);
 
     useEffect(() => {
       const value = startValue ? dayjs(startValue, TimeParser) : null;
@@ -479,7 +466,14 @@ const TimeRangeTmpCmp = (function () {
     .build();
 })();
 
-export const timeRangeControl = migrateOldData(TimeRangeTmpCmp, fixOldDateOrTimeRangeData);
+export const timeRangeControl = migrateOldData(
+  withLinkedDefaultValue(
+    withLinkedDefaultValue(TimeRangeTmpCmp, "defaultStart", "start"),
+    "defaultEnd",
+    "end"
+  ),
+  fixOldDateOrTimeRangeData
+);
 
 const getTimeZoneInfo = (timeZone: any, otherTimeZone: any) => {
   const tz = timeZone === 'UserChoice' ? otherTimeZone : timeZone;

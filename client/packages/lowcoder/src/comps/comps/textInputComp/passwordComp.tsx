@@ -43,6 +43,7 @@ import React, { useContext, useEffect } from "react";
 import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
+import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { NumberControl } from "comps/controls/codeControl";
 
 const PasswordStyle = styled(InputPassword)<{
@@ -147,7 +148,10 @@ let PasswordTmpComp = (function () {
     .build();
 })();
 
-PasswordTmpComp = migrateOldData(PasswordTmpComp, fixOldInputCompData);
+PasswordTmpComp = migrateOldData(
+  withLinkedDefaultValue(PasswordTmpComp, "defaultValue", "value"),
+  fixOldInputCompData
+);
 
 const PasswordTmp2Comp = withMethodExposing(PasswordTmpComp, inputRefMethods);
 
