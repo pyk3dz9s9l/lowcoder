@@ -35,6 +35,7 @@ import { alignOptions } from "comps/controls/dropdownControl";
 import { ColumnTypeCompMap } from "comps/comps/tableComp/column/columnTypeComp";
 import Segmented from "antd/es/segmented";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
+import { useEditorStore } from "comps/editorStore";
 
 const InsertDiv = styled.div`
   display: flex;
@@ -496,8 +497,8 @@ function columnPropertyView<T extends MultiBaseComp<TableChildrenType>>(comp: T)
   ];
 }
 
-export function compTablePropertyView<T extends MultiBaseComp<TableChildrenType> & { editorModeStatus: string }>(comp: T) {
-  const editorModeStatus = comp.editorModeStatus;
+function TablePropertyView<T extends MultiBaseComp<TableChildrenType>>({ comp }: { comp: T }) {
+  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
   const dataLabel = trans("data");
 
   return (
@@ -660,4 +661,8 @@ export function compTablePropertyView<T extends MultiBaseComp<TableChildrenType>
       )}
     </>
   );
+}
+
+export function compTablePropertyView<T extends MultiBaseComp<TableChildrenType>>(comp: T) {
+  return <TablePropertyView comp={comp} />;
 }

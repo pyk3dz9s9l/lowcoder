@@ -62,7 +62,6 @@ import { RowColorComp, RowHeightComp, SortValue, TableChildrenView, TableInitCom
 
 import { useContext, useState } from "react";
 import { EditorContext } from "comps/editorState";
-import { useEditorStore } from "comps/editorStore";
 
 export class TableImplComp extends TableInitComp implements IContainer {
   private prevUnevaledValue?: string;
@@ -565,16 +564,7 @@ let TableTmpComp = withViewFn(TableImplComp, (comp) => {
 });
 
 
-const withEditorModeStatus = (Component:any) => (props:any) => {
-  const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
-  const {ref, ...otherProps} = props;
-  return <Component {...otherProps} editorModeStatus={editorModeStatus} />;
-};
-
-// Use this HOC when defining TableTmpComp
-TableTmpComp = withPropertyViewFn(TableTmpComp, (comp) => withEditorModeStatus(compTablePropertyView)(comp));
-
-// TableTmpComp = withPropertyViewFn(TableTmpComp, compTablePropertyView);
+TableTmpComp = withPropertyViewFn(TableTmpComp, compTablePropertyView);
 
 
 
