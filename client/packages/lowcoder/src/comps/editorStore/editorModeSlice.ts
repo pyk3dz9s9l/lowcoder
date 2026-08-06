@@ -1,10 +1,11 @@
 import type { StateCreator } from "zustand/vanilla";
-import { getEditorModeStatus } from "util/localStorageUtil";
+import { getEditorModeStatus, saveEditorModeStatus } from "util/localStorageUtil";
+import type { EditorModeStatus } from "pages/common/header";
 import type { EditorStoreState } from "./types";
 
 export type EditorModeSlice = {
-  editorModeStatus: string;
-  setEditorModeStatus: (editorModeStatus: string) => void;
+  editorModeStatus: EditorModeStatus;
+  setEditorModeStatus: (editorModeStatus: EditorModeStatus) => void;
 };
 
 export const createEditorModeSlice: StateCreator<
@@ -12,10 +13,14 @@ export const createEditorModeSlice: StateCreator<
   [],
   [],
   EditorModeSlice
-> = (set) => ({
+> = (set, get) => ({
   editorModeStatus: getEditorModeStatus(),
-  setEditorModeStatus: (editorModeStatus) =>
-    set((state) =>
-      state.editorModeStatus === editorModeStatus ? state : { editorModeStatus }
-    ),
+  // persistence lives here so callers can't forget to write it through
+  setEditorModeStatus: (editorModeStatus) => {
+    if (get().editorModeStatus === editorModeStatus) {
+      return;
+    }
+    saveEditorModeStatus(editorModeStatus);
+    set({ editorModeStatus });
+  },
 });
