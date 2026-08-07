@@ -40,8 +40,6 @@ import { getSelectedRowKeys } from "./selectionControl";
 import { compTablePropertyView } from "./tablePropertyView";
 import { RowColorComp, RowHeightComp, TableChildrenView, TableInitComp } from "./tableTypes";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { tableMethodExposings } from "./methods/tableMethodExposings";
 import { buildSortedDataNode, buildFilteredDataNode, buildOriDisplayDataNode, buildColumnAggrNode } from "./nodes/dataNodes";
 

@@ -60,8 +60,7 @@ import { getSelectedRowKeys } from "./selectionControl";
 import { compTablePropertyView } from "./tablePropertyView";
 import { RowColorComp, RowHeightComp, SortValue, TableChildrenView, TableInitComp } from "./tableTypes";
 
-import { useContext, useState } from "react";
-import { EditorContext } from "comps/editorState";
+import { useState } from "react";
 
 export class TableImplComp extends TableInitComp implements IContainer {
   private prevUnevaledValue?: string;

@@ -35,8 +35,6 @@ import {
 } from "comps/utils/propertyUtils";
 import { BaseSelectRef } from "rc-select";
 import { RefControl } from "comps/controls/refControl";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 const StyledTreeSelect = styled(TreeSelect)<{ $style: TreeSelectStyleType }>`

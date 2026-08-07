@@ -21,8 +21,6 @@ import { dropdownControl } from "comps/controls/dropdownControl";
 import { withDefault } from "comps/generators/simpleGenerators";
 import { styleControl } from "comps/controls/styleControl";
 import { AnimationStyle, TextContainerStyle } from "comps/controls/styleControlConstants";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { alignWithJustifyControl } from "comps/controls/alignControl";
 

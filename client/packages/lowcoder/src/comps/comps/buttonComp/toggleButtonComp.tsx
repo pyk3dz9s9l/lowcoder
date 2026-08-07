@@ -24,8 +24,7 @@ import {
 import { styleControl } from "comps/controls/styleControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { RefControl } from "comps/controls/refControl";
-import React, { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState"; 
+import React, { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { Tooltip } from "antd";
 

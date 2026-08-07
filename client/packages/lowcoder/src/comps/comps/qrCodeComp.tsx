@@ -12,8 +12,7 @@ import { hiddenPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 import { StringControl } from "comps/controls/codeControl";
 
-import { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { withDefault } from "../generators";
 

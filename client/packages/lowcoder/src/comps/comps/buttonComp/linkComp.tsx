@@ -21,9 +21,8 @@ import { IconControl } from "comps/controls/iconControl";
 import { hasIcon } from "comps/utils";
 import { RefControl } from "comps/controls/refControl";
 
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
-import React, { useContext, useEffect } from "react";
+import React, { useEffect } from "react";
 
 const Link = styled(Button)<{
   $style: LinkStyleType;

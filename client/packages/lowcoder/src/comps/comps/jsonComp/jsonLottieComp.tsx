@@ -10,7 +10,7 @@ import { styleControl } from "comps/controls/styleControl";
 import { AnimationStyle, LottieStyle } from "comps/controls/styleControlConstants";
 import { trans } from "i18n";
 import { Section, sectionNames } from "lowcoder-design";
-import { useContext, lazy, useEffect, useState, useCallback } from "react";  
+import { lazy, useEffect, useState, useCallback } from "react";
 import { stateComp, UICompBuilder, withDefault } from "../../generators";
 import {
   NameConfig,
@@ -18,7 +18,6 @@ import {
   withExposingConfigs,
 } from "../../generators/withExposing";
 import { defaultLottie } from "./jsonConstants";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { AssetType, IconscoutControl } from "@lowcoder-ee/comps/controls/iconscoutControl";
 import { DotLottie } from "@lottiefiles/dotlottie-react";

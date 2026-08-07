@@ -23,8 +23,7 @@ import {
 import { trans } from "i18n";
 import { BoolCodeControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
-import React, { useContext, useEffect, useState } from "react";
-import { EditorContext } from "comps/editorState";
+import React, { useEffect, useState } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 export const ContainerBaseComp = (function () {

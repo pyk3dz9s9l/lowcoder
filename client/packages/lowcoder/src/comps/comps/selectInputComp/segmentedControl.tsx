@@ -23,8 +23,7 @@ import { trans } from "i18n";
 import { hasIcon } from "comps/utils";
 import { RefControl } from "comps/controls/refControl";
 
-import { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
 import { withLinkedDefaultValue } from "comps/controls/codeStateControl";

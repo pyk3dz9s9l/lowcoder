@@ -15,8 +15,6 @@ import { trans } from "i18n";
 import { AutoHeightControl } from "comps/controls/autoHeightControl";
 
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 type IProps = DividerProps & {

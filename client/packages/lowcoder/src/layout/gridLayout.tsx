@@ -1196,7 +1196,7 @@ const ResizeWrapper = (props: {
   children: JSX.Element | React.ReactNode;
   onResize: (width?: number, height?: number) => void;
 }) => {
-  const { width, height } = useResizeDetector({
+  useResizeDetector({
     targetRef: props.targetRef,
     onResize: ({ width, height }: ResizePayload) => {
       props.onResize(width ?? undefined, height ?? undefined);
@@ -1204,6 +1204,9 @@ const ResizeWrapper = (props: {
     handleHeight: true,
     refreshMode: 'debounce',
     refreshRate: 100,
+    // This wrapper only uses the callback, so the hook does not need its own
+    // render cycle to track and expose width/height.
+    disableRerender: true,
   });
 
   return <>{props.children}</>;

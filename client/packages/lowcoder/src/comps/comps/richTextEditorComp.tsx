@@ -25,8 +25,6 @@ import { default as Skeleton } from "antd/es/skeleton";
 import { styleControl } from "comps/controls/styleControl";
 import { RichTextEditorStyle, RichTextEditorStyleType } from "comps/controls/styleControlConstants";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 const localizeStyle = css`

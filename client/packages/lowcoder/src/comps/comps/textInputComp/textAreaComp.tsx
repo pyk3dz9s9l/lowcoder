@@ -35,8 +35,7 @@ import { TextAreaRef } from "antd/es/input/TextArea";
 import { blurMethod, focusWithOptions } from "comps/utils/methodUtils";
 import { NumberControl } from "comps/controls/codeControl";
 
-import React, { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import React, { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { withLinkedDefaultValue } from "comps/controls/codeStateControl";

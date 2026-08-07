@@ -22,8 +22,6 @@ import { CascaderRef } from "antd/es/cascader";
 import { MarginControl } from "../../controls/marginControl";
 import { PaddingControl } from "../../controls/paddingControl";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 export const defaultDataSource = JSON.stringify(i18nObjs.cascader, null, " ");

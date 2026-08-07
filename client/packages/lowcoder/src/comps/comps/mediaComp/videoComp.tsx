@@ -21,8 +21,6 @@ import { Video } from "lowcoder-design";
 import type ReactPlayer from "react-player";
 import { mediaCommonChildren, mediaMethods } from "./mediaUtils";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import styled, { css } from "styled-components";
 

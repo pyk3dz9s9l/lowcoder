@@ -20,8 +20,6 @@ import { hiddenPropertyView, disabledPropertyView, showDataLoadingIndicatorsProp
 import { trans } from "i18n";
 import { RefControl } from "comps/controls/refControl";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { withDefault } from "@lowcoder-ee/comps/generators";
 

@@ -12,8 +12,7 @@ import { darkenColor, fadeColor } from "lowcoder-design";
 import { disabledPropertyView, hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { IconControl } from "comps/controls/iconControl";
 import { trans } from "i18n";
-import { memo, useCallback, useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import { memo, useCallback } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 const getStyle = (style: SliderStyleType, vertical: boolean, disabledStyle?: DisabledSliderStyleType) => {

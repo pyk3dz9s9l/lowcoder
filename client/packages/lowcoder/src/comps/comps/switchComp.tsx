@@ -19,8 +19,7 @@ import { refMethods } from "comps/generators/withMethodExposing";
 import { blurMethod, clickMethod, focusWithOptions } from "comps/utils/methodUtils";
 import { fixOldInputCompData } from "./textInputComp/textInputConstants";
 
-import { useCallback, useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import { useCallback } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 const EventOptions = [

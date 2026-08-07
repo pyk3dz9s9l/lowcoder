@@ -9,8 +9,7 @@ import { disabledPropertyView, hiddenPropertyView, showDataLoadingIndicatorsProp
 import { trans } from "i18n";
 import { BoolCodeControl, StringControl } from "comps/controls/codeControl";
 import { BoolControl } from "comps/controls/boolControl";
-import { useContext, useEffect, useRef, useState } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect, useRef, useState } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { Card } from "antd";
 import styled from "styled-components";
@@ -368,4 +367,3 @@ export const ContainerBaseComp = (function () {
 })();
 
 export const CardComp = withExposingConfigs(ContainerBaseComp, [NameConfigHidden]);
-

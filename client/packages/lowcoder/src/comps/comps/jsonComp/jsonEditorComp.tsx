@@ -12,14 +12,13 @@ import { formDataChildren, FormDataPropertyView } from "../formComp/formDataCons
 import { AnimationStyle, JsonEditorStyle } from "comps/controls/styleControlConstants";
 import { styleControl } from "comps/controls/styleControl";
 import { migrateOldData, withDefault } from "comps/generators/simpleGenerators";
-import { useRef, useEffect, useContext, useCallback, useMemo } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   EditorState,
   EditorView,
   type EditorView as EditorViewType,
 } from "base/codeEditor/codeMirror";
 import { useExtensions } from "base/codeEditor/extensions";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
 import { BoolControl } from "@lowcoder-ee/comps/controls/boolControl";

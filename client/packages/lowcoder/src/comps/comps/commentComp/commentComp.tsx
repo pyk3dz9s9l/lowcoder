@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef } from "react";
 // Render the component to the editor
 import {
   changeChildAction,
@@ -27,7 +27,6 @@ import {
   mentionEvent,
   doubleClickEvent,
 } from "comps/controls/eventHandlerControl"; 
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 

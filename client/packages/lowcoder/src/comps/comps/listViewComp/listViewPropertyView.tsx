@@ -2,8 +2,6 @@ import { trans, transToNode } from "i18n";
 import { Section, sectionNames } from "lowcoder-design";
 import { ListViewImplComp } from "./listViewComp";
 import { ListCompType } from "./listViewUtils";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { disabledPropertyView, hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 

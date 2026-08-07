@@ -35,8 +35,7 @@ import { messageInstance } from "lowcoder-design/src/components/GlobalInstances"
 import { BoolControl } from "comps/controls/boolControl";
 import { BoolCodeControl, NumberControl, StringControl } from "comps/controls/codeControl";
 
-import { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";

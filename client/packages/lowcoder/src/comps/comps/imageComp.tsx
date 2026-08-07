@@ -32,8 +32,6 @@ import { BoolControl } from "comps/controls/boolControl";
 import { default as AntImage } from "antd/es/image";
 import { DEFAULT_IMG_URL } from "util/stringUtils";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { StringControl } from "../controls/codeControl";
 import { PositionControl } from "comps/controls/dropdownControl";

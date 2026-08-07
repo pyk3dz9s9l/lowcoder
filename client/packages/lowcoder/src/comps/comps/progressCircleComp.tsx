@@ -11,8 +11,6 @@ import { trans } from "i18n";
 import { BoolControl } from "../controls/boolControl";
 import { dropdownControl } from "../controls/dropdownControl";
 import { NumberControl } from "../controls/codeControl";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { 
   ProgressTypeOptions, 

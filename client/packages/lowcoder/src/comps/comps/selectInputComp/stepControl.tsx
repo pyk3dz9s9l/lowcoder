@@ -34,8 +34,6 @@ import { trans } from "i18n";
 import { hasIcon } from "comps/utils";
 import { RefControl } from "comps/controls/refControl";
 import { dropdownControl } from "comps/controls/dropdownControl";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { getBackgroundStyle } from "@lowcoder-ee/util/styleUtils";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";

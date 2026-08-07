@@ -29,8 +29,6 @@ import {
   eventHandlerControl,
   doubleClickEvent,
 } from "../controls/eventHandlerControl";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { AssetType, IconscoutControl } from "@lowcoder-ee/comps/controls/iconscoutControl";
 import { dropdownControl } from "../controls/dropdownControl";
@@ -210,4 +208,3 @@ IconBasicComp = class extends IconBasicComp {
 export const IconComp = withExposingConfigs(IconBasicComp, [
   NameConfigHidden,
 ]);
-

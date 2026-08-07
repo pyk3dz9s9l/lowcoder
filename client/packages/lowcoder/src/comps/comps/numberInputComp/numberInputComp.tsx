@@ -50,8 +50,6 @@ import {
   setSelectionRangeMethod,
 } from "comps/utils/methodUtils";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { withLinkedDefaultValue } from "comps/controls/codeStateControl";

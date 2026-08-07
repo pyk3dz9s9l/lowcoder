@@ -1,7 +1,6 @@
 import styled from "styled-components";
-import React, { useContext, useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Tag, App } from "antd";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { PresetStatusColorTypes } from "antd/es/_util/colors";
 import { hashToNum } from "util/stringUtils";

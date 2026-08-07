@@ -18,8 +18,7 @@ import { alignWithJustifyControl } from "comps/controls/alignControl";
 import { MarginControl } from "../controls/marginControl";
 import { PaddingControl } from "../controls/paddingControl";
 
-import React, { useContext, useEffect, useRef, useMemo } from "react";
-import { EditorContext } from "comps/editorState";
+import React, { useMemo } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { clickEvent, doubleClickEvent, eventHandlerControl } from "../controls/eventHandlerControl";
 import { NewChildren } from "../generators/uiCompBuilder";

@@ -15,8 +15,6 @@ import { BackgroundColorContext } from "comps/utils/backgroundColorContext";
 import { Section, sectionNames} from "lowcoder-design";
 import { trans } from "i18n";
 import { ContainerBaseProps, gridItemCompToGridItems, InnerGrid } from "../containerComp/containerView";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";

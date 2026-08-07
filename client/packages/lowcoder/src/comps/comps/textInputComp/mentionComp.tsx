@@ -54,8 +54,7 @@ import {
   changeEvent
 } from "comps/controls/eventHandlerControl";
 
-import React, { useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import React from "react";
 import { useEditorStore } from "comps/editorStore";
 import { migrateOldData } from "comps/generators/simpleGenerators";
 import { withLinkedDefaultValue } from "comps/controls/codeStateControl";

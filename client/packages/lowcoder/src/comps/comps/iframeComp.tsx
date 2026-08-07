@@ -10,8 +10,6 @@ import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps
 import { trans } from "i18n";
 import log from "loglevel";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 const Wrapper = styled.div<{$style: IframeStyleType; $animationStyle:AnimationStyleType}>`

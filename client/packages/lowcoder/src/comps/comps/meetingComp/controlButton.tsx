@@ -39,7 +39,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useResizeDetector } from "react-resize-detector";
 
-import { useContext } from "react";
 import { Tooltip } from "antd";
 import { AssetType, IconscoutControl } from "@lowcoder-ee/comps/controls/iconscoutControl";
 import { useCompClickEventHandler } from "@lowcoder-ee/comps/utils/useCompClickEventHandler";

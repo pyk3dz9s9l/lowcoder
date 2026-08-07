@@ -28,12 +28,10 @@ import React, {
   useEffect,
   useRef,
   useState,
-  useContext,
 } from "react";
 import { arrayStringExposingStateControl, stringExposingStateControl } from "comps/controls/codeStateControl";
 import { BoolControl } from "comps/controls/boolControl";
 import { RefControl } from "comps/controls/refControl";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 
 const Error = styled.div`

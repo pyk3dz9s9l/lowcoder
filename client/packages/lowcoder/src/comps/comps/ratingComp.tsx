@@ -16,8 +16,7 @@ import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { disabledPropertyView, hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 
-import { useContext, useEffect, useRef } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect, useRef } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 const EventOptions = [changeEvent] as const;

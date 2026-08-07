@@ -13,8 +13,7 @@ import { withDefault } from "../../generators/simpleGenerators";
 import { trans } from "i18n";
 import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { mediaCommonChildren, mediaMethods } from "./mediaUtils";
-import { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 const Container = styled.div<{ $style: any; $animationStyle: AnimationStyleType }>`

@@ -44,8 +44,6 @@ import { messageInstance } from "lowcoder-design/src/components/GlobalInstances"
 import { CustomModal } from "lowcoder-design";
 import { DraggerUpload } from "./draggerUpload";
 import { ImageCaptureModal } from "./ImageCaptureModal";
-import  { useContext } from "react";
-import { EditorContext } from "comps/editorState";
 import { useEditorStore } from "comps/editorStore";
 import { checkIsMobile } from "@lowcoder-ee/util/commonUtils";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";

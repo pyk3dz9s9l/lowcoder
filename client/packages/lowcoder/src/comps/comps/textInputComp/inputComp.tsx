@@ -36,8 +36,7 @@ import { withLinkedDefaultValue } from "comps/controls/codeStateControl";
 import { numberSimpleControl } from "comps/controls/numberSimpleControl";
 import { NumberControl } from "comps/controls/codeControl";
 
-import React, { useContext, useEffect } from "react";
-import { EditorContext } from "comps/editorState";
+import React, { useEffect } from "react";
 import { useEditorStore } from "comps/editorStore";
 
 /**

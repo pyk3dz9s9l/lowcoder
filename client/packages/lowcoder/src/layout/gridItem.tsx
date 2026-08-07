@@ -7,7 +7,6 @@ import React, {
   SyntheticEvent,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -133,21 +132,6 @@ export const GridItem = React.memo((props: GridItemProps) => {
 
   // record the real height of the comp content
   const itemHeightRef = useRef<number | undefined>(undefined);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Clear any pending state
-      setResizing(undefined);
-      setDragging(undefined);
-      
-      // Clear refs
-      itemHeightRef.current = undefined;
-      
-      // Clear any dragging data
-      // draggingUtils.clearData();
-    };
-  }, []);
 
   const onDragStart = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.stopPropagation();

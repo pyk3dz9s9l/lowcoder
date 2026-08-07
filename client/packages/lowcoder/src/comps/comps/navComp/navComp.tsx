@@ -33,8 +33,7 @@ import {
 import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
 
-import { useContext, useState, useCallback } from "react";
-import { EditorContext } from "comps/editorState";
+import { useState, useCallback } from "react";
 import { useEditorStore } from "comps/editorStore";
 import { createNavItemsControl } from "./components/NavItemsControl";
 import { Layers } from "constants/Layers";
@@ -479,6 +478,23 @@ function renderStyleSections(
   );
 }
 
+function NavPropertyView({ childrenMap }: { childrenMap: any }) {
+  const mode = useEditorStore((state) => state.editorModeStatus);
+  const showLogic = mode === "logic" || mode === "both";
+  const showLayout = mode === "layout" || mode === "both";
+  const [styleSegment, setStyleSegment] = useState<MenuItemStyleOptionValue>("normal");
+
+  return (
+    <>
+      {renderBasicSection(childrenMap)}
+      {showLogic && renderInteractionSection(childrenMap)}
+      {showLayout && renderLayoutSection(childrenMap)}
+      {showLogic && renderAdvancedSection(childrenMap)}
+      {showLayout && renderStyleSections(childrenMap, styleSegment, setStyleSegment)}
+    </>
+  );
+}
+
 const childrenMap = {
   logoUrl: StringControl,
   logoEvent: withDefault(eventHandlerControl(logoEventHandlers), [{ name: "click" }]),
@@ -746,7 +762,7 @@ const NavCompBase = new UICompBuilder(childrenMap, (props) => {
             width={["left", "right"].includes(props.placement as any) ? transToPxSize(props.drawerWidth || DEFAULT_SIZE) : undefined as any}
             height={["top", "bottom"].includes(props.placement as any) ? transToPxSize(props.drawerHeight || DEFAULT_SIZE) : undefined as any}
             styles={{ body: { padding: 0 } }}
-            destroyOnClose
+            destroyOnHidden
           >
             <DrawerContent 
               $background={props.drawerContainerStyle?.background || '#FFFFFF'}
@@ -774,22 +790,7 @@ const NavCompBase = new UICompBuilder(childrenMap, (props) => {
     </Wrapper>
   );
 })
-  .setPropertyViewFn((children) => {
-    const mode = useEditorStore((state) => state.editorModeStatus);
-    const showLogic = mode === "logic" || mode === "both";
-    const showLayout = mode === "layout" || mode === "both";
-    const [styleSegment, setStyleSegment] = useState<MenuItemStyleOptionValue>("normal");
-
-    return (
-      <>
-        {renderBasicSection(children)}
-        {showLogic && renderInteractionSection(children)}
-        {showLayout && renderLayoutSection(children)}
-        {showLogic && renderAdvancedSection(children)}
-        {showLayout && renderStyleSections(children, styleSegment, setStyleSegment)}
-      </>
-    );
-  })
+  .setPropertyViewFn((children) => <NavPropertyView childrenMap={children} />)
   .build();
 
 export const NavComp = withExposingConfigs(NavCompBase, [
