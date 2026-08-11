@@ -75,6 +75,11 @@ export class CodeTextControl extends valueComp<string>("") {
     );
   }
 
+  // the editor without the property view chrome, for layouts that size it themselves
+  editorView(params: Omit<CodeTextEditorProps, "onChange" | "codeText">) {
+    return <CodeTextEditor onChange={this.handleChange} codeText={this.getView()} {...params} />;
+  }
+
   getPropertyView(): ReactNode {
     throw new Error("Method not implemented.");
   }

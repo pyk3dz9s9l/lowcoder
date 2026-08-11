@@ -23,6 +23,7 @@ export type EditorLayoutState = {
 
   setBottomHeight: (h: number) => void;
   setCodeEditorSize: (size: { w: number; h: number }) => void;
+  setScriptsAndStylesSize: (size: { w: number; h: number }) => void;
 };
 
 export const useEditorLayoutStore = create<EditorLayoutState>((set, get) => ({
@@ -78,6 +79,16 @@ export const useEditorLayoutStore = create<EditorLayoutState>((set, get) => ({
       return;
     }
     const nextStyle = { ...panelStyle, codeEditor: { w, h } };
+    savePanelStyle(nextStyle);
+    set({ panelStyle: nextStyle });
+  },
+
+  setScriptsAndStylesSize: ({ w, h }) => {
+    const { panelStyle } = get();
+    if (panelStyle.scriptsAndStyles.w === w && panelStyle.scriptsAndStyles.h === h) {
+      return;
+    }
+    const nextStyle = { ...panelStyle, scriptsAndStyles: { w, h } };
     savePanelStyle(nextStyle);
     set({ panelStyle: nextStyle });
   },

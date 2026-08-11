@@ -12,6 +12,10 @@ export type PanelStyle = {
     w: number;
     h: number;
   };
+  scriptsAndStyles: {
+    w: number;
+    h: number;
+  };
 };
 
 export const DefaultPanelStatus: PanelStatus = {
@@ -27,6 +31,10 @@ const DefaultPanelStyle: PanelStyle = {
   codeEditor: {
     w: 744,
     h: 468,
+  },
+  scriptsAndStyles: {
+    w: 600,
+    h: 560,
   },
 };
 

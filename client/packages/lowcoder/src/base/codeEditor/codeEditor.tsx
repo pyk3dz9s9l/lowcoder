@@ -20,6 +20,7 @@ import { CodeEditorAIHelpButton } from "components/ai-helper";
 type StyleConfig = {
   minHeight: string;
   maxHeight: string;
+  height?: string;
   showLineNum?: boolean;
 };
 
@@ -36,6 +37,14 @@ const styles: Record<StyleName, StyleConfig> = {
   window: {
     minHeight: "320px",
     maxHeight: "320px",
+    showLineNum: true,
+  },
+  // follows the height of whatever container the editor is placed in - the height
+  // has to be set for codemirror's own % heights (scroller, gutters) to resolve
+  fill: {
+    minHeight: "100%",
+    maxHeight: "100%",
+    height: "100%",
     showLineNum: true,
   },
 };
@@ -205,7 +214,7 @@ export const CodeEditorTooltipContainer = styled.div`
   }
 `;
 
-function getStyle(styleName?: StyleName) {
+function getStyle(styleName?: StyleName): StyleConfig {
   return styleName ? styles[styleName] : { minHeight: "auto", maxHeight: "180px" };
 }
 
@@ -494,6 +503,7 @@ const Container = styled.div<{
   .cm-editor {
     overflow: hidden;
     max-height: ${(props) => getStyle(props.$styleName).maxHeight};
+    height: ${(props) => getStyle(props.$styleName).height ?? "auto"};
   }
 
   ${(props) => {
