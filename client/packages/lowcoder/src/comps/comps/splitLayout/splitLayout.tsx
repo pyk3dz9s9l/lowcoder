@@ -15,8 +15,7 @@ import { BackgroundColorContext } from "comps/utils/backgroundColorContext";
 import { Section, sectionNames} from "lowcoder-design";
 import { trans } from "i18n";
 import { ContainerBaseProps, gridItemCompToGridItems, InnerGrid } from "../containerComp/containerView";
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
@@ -196,19 +195,21 @@ const SplitLayout = (props: SplitLayoutProps) => {
 
 export const SplitLayoutBaseComp = (function () {
   return new UICompBuilder(childrenMap, (props, dispatch) => <SplitLayout {...props} dispatch={dispatch} />)
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.columns.propertyView({ title: trans("splitLayout.column") })}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {disabledPropertyView(children)}
               {hiddenPropertyView(children)}
             </Section>
           )}
-        {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+        {["layout", "both"].includes(editorModeStatus) && (
           <>
             <Section name={sectionNames.layout}>
               {children.orientation.propertyView({
@@ -242,7 +243,8 @@ export const SplitLayoutBaseComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

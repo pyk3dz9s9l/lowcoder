@@ -24,6 +24,7 @@ export * from "comps/utils/methodUtils";
 
 export { useUserViewMode } from "util/hooks";
 export * from "comps/editorState";
+export * from "comps/editorStore";
 export * from "redux/store/store";
 
 // util

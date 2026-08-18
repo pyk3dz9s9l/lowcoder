@@ -3,7 +3,7 @@ import React, { ReactNode } from "react";
 import { EditorState, EditorView } from "./codeMirror";
 
 // if new style needed, pls contact @libin
-export type StyleName = "medium" | "higher" | "window";
+export type StyleName = "medium" | "higher" | "window" | "fill";
 
 export type Language = "sql" | "javascript" | "css" | "html" | "json";
 

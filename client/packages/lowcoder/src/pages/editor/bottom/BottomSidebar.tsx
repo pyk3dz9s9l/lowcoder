@@ -14,6 +14,7 @@ import {
 } from "lowcoder-design";
 import { CSSProperties, useContext, useEffect, useState } from "react";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { useSelector } from "react-redux";
 import { showAppSnapshotSelector } from "redux/selectors/appSnapshotSelector";
 import { BottomResComp, BottomResTypeEnum } from "types/bottomRes";
@@ -440,7 +441,8 @@ function BottomSidebarItem(props: BottomSidebarItemProps) {
   const [editing, setEditing] = useState(false);
   const editorState = useContext(EditorContext);
   const readOnly = useSelector(showAppSnapshotSelector);
-  const { selectedBottomResName, selectedBottomResType } = editorState;
+  const selectedBottomResName = useEditorStore((state) => state.selectedBottomResName);
+  const selectedBottomResType = useEditorStore((state) => state.selectedBottomResType);
   const level = path.length - 1;
   const type = resComp.type();
   const name = resComp.name();
