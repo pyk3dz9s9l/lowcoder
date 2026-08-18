@@ -1,5 +1,6 @@
 import { default as Pagination } from "antd/es/pagination";
 import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { BackgroundColorContext } from "comps/utils/backgroundColorContext";
 import _ from "lodash";
 import { ConstructorToView } from "lowcoder-core";
@@ -319,7 +320,7 @@ export function ListView(props: Props) {
   const children = comp.children;
   const ref = useRef(null);
   const editorState = useContext(EditorContext);
-  const isDragging = editorState.isDragging;
+  const isDragging = useEditorStore((state) => state.isDragging);
   const [listHeight, setListHeight] = useDelayState(0, isDragging);
   const dynamicHeight = useMemo(() => children.dynamicHeight.getView(), [children.dynamicHeight]);
   const heightUnitOfRow = useMemo(
@@ -375,7 +376,7 @@ export function ListView(props: Props) {
 
   const commonLayout = comp.realSimpleContainer()!.children.layout.getView();
   const isOneItem =
-    pageInfo.currentPageSize > 0 && (_.isEmpty(commonLayout) || editorState.isDragging);
+    pageInfo.currentPageSize > 0 && (_.isEmpty(commonLayout) || isDragging);
   const noOfRows = isOneItem
     ? 1
     : Math.floor((pageInfo.currentPageSize + noOfColumns - 1) / noOfColumns);

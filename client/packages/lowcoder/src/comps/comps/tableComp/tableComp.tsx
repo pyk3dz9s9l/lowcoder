@@ -60,8 +60,7 @@ import { getSelectedRowKeys } from "./selectionControl";
 import { compTablePropertyView } from "./tablePropertyView";
 import { RowColorComp, RowHeightComp, SortValue, TableChildrenView, TableInitComp } from "./tableTypes";
 
-import { useContext, useState } from "react";
-import { EditorContext } from "comps/editorState";
+import { useState } from "react";
 
 export class TableImplComp extends TableInitComp implements IContainer {
   private prevUnevaledValue?: string;
@@ -564,16 +563,7 @@ let TableTmpComp = withViewFn(TableImplComp, (comp) => {
 });
 
 
-const withEditorModeStatus = (Component:any) => (props:any) => {
-  const editorModeStatus = useContext(EditorContext).editorModeStatus;
-  const {ref, ...otherProps} = props;
-  return <Component {...otherProps} editorModeStatus={editorModeStatus} />;
-};
-
-// Use this HOC when defining TableTmpComp
-TableTmpComp = withPropertyViewFn(TableTmpComp, (comp) => withEditorModeStatus(compTablePropertyView)(comp));
-
-// TableTmpComp = withPropertyViewFn(TableTmpComp, compTablePropertyView);
+TableTmpComp = withPropertyViewFn(TableTmpComp, compTablePropertyView);
 
 
 

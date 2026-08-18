@@ -9,8 +9,8 @@ import { dropdownControl } from "comps/controls/dropdownControl";
 import { ArrayOrJSONObjectControl, NumberControl } from "comps/controls/codeControl";
 import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps/utils/propertyUtils";
 import { trans } from "i18n";
-import { EditorContext } from "comps/editorState";
-import { useContext, useEffect } from "react";
+import { useEditorStore } from "comps/editorStore";
+import { useEffect } from "react";
 import { AnimationStyle, AnimationStyleType } from "@lowcoder-ee/comps/controls/styleControlConstants";
 import { styleControl } from "@lowcoder-ee/comps/controls/styleControl";
 import { AutoHeightControl } from "@lowcoder-ee/comps/controls/autoHeightControl";
@@ -80,6 +80,7 @@ let JsonExplorerTmpComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -96,7 +97,7 @@ let JsonExplorerTmpComp = (function () {
              })}
           </Section>
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.interaction}>
               {hiddenPropertyView(children)}
               {children.expandToggle.propertyView({ label: trans("jsonExplorer.expandToggle") })}
@@ -104,7 +105,7 @@ let JsonExplorerTmpComp = (function () {
             </Section>
           )}
 
-          {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+          {(editorModeStatus === "logic" || editorModeStatus === "both") && (
             <Section name={sectionNames.advanced}>
               {children.indent.propertyView({ label: trans("jsonExplorer.indent") })}
             </Section>
@@ -117,8 +118,8 @@ let JsonExplorerTmpComp = (function () {
               label: trans('prop.showVerticalScrollbar'),
             })}
           </Section>}
-          {(useContext(EditorContext).editorModeStatus === 'layout' ||
-            useContext(EditorContext).editorModeStatus === 'both') && (
+          {(editorModeStatus === 'layout' ||
+            editorModeStatus === 'both') && (
             <>
               <Section name={sectionNames.style}>
                 {children.theme.propertyView({

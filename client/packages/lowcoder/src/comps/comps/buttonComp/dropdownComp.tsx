@@ -9,8 +9,8 @@ import { UICompBuilder } from "comps/generators/uiCompBuilder";
 import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUtils";
 import { Section, sectionNames } from "lowcoder-design";
 import { trans } from "i18n";
-import React, { ReactElement, useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import React, { ReactElement } from "react";
+import { useEditorStore } from "comps/editorStore";
 import styled from "styled-components";
 import EllipsisOutlined from "@ant-design/icons/EllipsisOutlined";
 import { IconControl } from "comps/controls/iconControl";
@@ -250,13 +250,15 @@ const DropdownTmpComp = (function () {
       </ButtonCompWrapper>
     );
   })
-    .setPropertyViewFn((children) => (
+    .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+      return (
       <>
         <Section name={sectionNames.basic}>
           {children.options.propertyView({})}
         </Section>
 
-        {(useContext(EditorContext).editorModeStatus === "logic" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(editorModeStatus === "logic" || editorModeStatus === "both") && (
           <><Section name={sectionNames.interaction}>
               {!children.onlyMenu.getView() && !children.onlyIcon.getView()
                 ? children.onEvent.getPropertyView()
@@ -267,7 +269,7 @@ const DropdownTmpComp = (function () {
           </>
         )}
 
-        {(useContext(EditorContext).editorModeStatus === "layout" || useContext(EditorContext).editorModeStatus === "both") && (
+        {(editorModeStatus === "layout" || editorModeStatus === "both") && (
           <>
             <Section name={sectionNames.layout}>
               {children.text.propertyView({ label: trans("label") })}
@@ -290,7 +292,8 @@ const DropdownTmpComp = (function () {
           </>
         )}
       </>
-    ))
+    );
+    })
     .build();
 })();
 

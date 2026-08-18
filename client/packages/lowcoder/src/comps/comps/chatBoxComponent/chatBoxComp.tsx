@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { Section, sectionNames, controlItem } from "lowcoder-design";
 import { default as Segmented } from "antd/es/segmented";
 import { UICompBuilder, withDefault, stateComp } from "../../generators";
@@ -41,7 +41,7 @@ import {
 } from "comps/controls/styleControlConstants";
 import { RefControl } from "comps/controls/refControl";
 import { hiddenPropertyView } from "comps/utils/propertyUtils";
-import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { trans } from "i18n";
 
 import { ChatBoxView } from "./components/ChatBoxView";
@@ -187,7 +187,7 @@ const avatarStyleOptions = [
 
 const ChatBoxPropertyView = React.memo((props: { children: any }) => {
   const { children } = props;
-  const editorMode = useContext(EditorContext).editorModeStatus;
+  const editorMode = useEditorStore((state) => state.editorModeStatus);
   const [messageStyleSegment, setMessageStyleSegment] = useState<MessageStyleSegment>("own");
   const [avatarStyleSegment, setAvatarStyleSegment] = useState<MessageStyleSegment>("own");
 
