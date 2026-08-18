@@ -15,7 +15,7 @@ import { NameGenerator } from "comps/utils";
 import { ScrollBar, Section, sectionNames } from "lowcoder-design";
 import { HintPlaceHolder } from "lowcoder-design";
 import _ from "lodash";
-import React, {useContext, useMemo, useEffect } from "react";
+import React, {useMemo, useEffect } from "react";
 import styled, { css } from "styled-components";
 import { IContainer } from "../containerBase/iContainer";
 import { SimpleContainerComp } from "../containerBase/simpleContainerComp";
@@ -30,7 +30,7 @@ import { disabledPropertyView, hiddenPropertyView } from "comps/utils/propertyUt
 import { trans } from "i18n";
 import { BoolCodeControl, NumberControl } from "comps/controls/codeControl";
 import { DisabledContext } from "comps/generators/uiCompBuilder";
-import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 import { messageInstance } from "lowcoder-design/src/components/GlobalInstances";
 import { BoolControl } from "comps/controls/boolControl";
 import { PositionControl,dropdownControl } from "comps/controls/dropdownControl";
@@ -339,6 +339,7 @@ export const TabbedContainerBaseComp = (function () {
     );
   })
     .setPropertyViewFn((children) => {
+      const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
       return (
         <>
           <Section name={sectionNames.basic}>
@@ -349,7 +350,7 @@ export const TabbedContainerBaseComp = (function () {
             {children.selectedTabKey.propertyView({ label: trans("prop.defaultValue") })}
           </Section>
 
-          {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["logic", "both"].includes(editorModeStatus) && (
             <Section name={sectionNames.interaction}>
               {children.onEvent.getPropertyView()}
               {disabledPropertyView(children)}
@@ -377,7 +378,7 @@ export const TabbedContainerBaseComp = (function () {
             </Section>
           )}
 
-          {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+          {["layout", "both"].includes(editorModeStatus) && (
             <>
               <Section name={sectionNames.layout}>
                 {children.placement.propertyView({ label: trans("tabbedContainer.placement"), radioButton: true })}

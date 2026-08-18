@@ -10,8 +10,7 @@ import { hiddenPropertyView, showDataLoadingIndicatorsPropertyView } from "comps
 import { trans } from "i18n";
 import log from "loglevel";
 
-import { useContext } from "react";
-import { EditorContext } from "comps/editorState";
+import { useEditorStore } from "comps/editorStore";
 
 const Wrapper = styled.div<{$style: IframeStyleType; $animationStyle:AnimationStyleType}>`
   width: 100%;
@@ -67,13 +66,15 @@ let IFrameCompBase = new UICompBuilder(
     );
   }
 )
-  .setPropertyViewFn((children) => (
+  .setPropertyViewFn((children) => {
+    const editorModeStatus = useEditorStore((state) => state.editorModeStatus);
+    return (
     <>
       <Section name={sectionNames.basic}>
         {children.url.propertyView({ label: "Source URL", placeholder: "https://example.com", tooltip: trans("iframe.URLDesc") })}
       </Section>
 
-      {["logic", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["logic", "both"].includes(editorModeStatus) && (
         <Section name={sectionNames.interaction}>
           {hiddenPropertyView(children)}
           {children.allowDownload.propertyView({ label: trans("iframe.allowDownload") })}
@@ -85,7 +86,7 @@ let IFrameCompBase = new UICompBuilder(
         </Section>
       )}
 
-      {["layout", "both"].includes(useContext(EditorContext).editorModeStatus) && (
+      {["layout", "both"].includes(editorModeStatus) && (
         <>
         <Section name={sectionNames.style}>
           {children.style.getPropertyView()}
@@ -96,7 +97,8 @@ let IFrameCompBase = new UICompBuilder(
         </>
       )}
     </>
-  ))
+  );
+  })
   .build();
 
 IFrameCompBase = class extends IFrameCompBase {
