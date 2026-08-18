@@ -8,7 +8,6 @@ import {
 } from "@assistant-ui/react";
 import type {
   AppendMessage,
-  ExternalStoreThreadData,
   ExternalStoreThreadListAdapter,
 } from "@assistant-ui/react";
 import { Thread } from "components/assistant-ui/thread";
@@ -25,12 +24,12 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import {
   createAssistantErrorMessage,
   createUserMessage,
-  generateThreadTitle,
   getAutomatorActionsFromMessage,
   getTextFromAppendMessage,
   getTextFromThreadContent,
-  shouldGenerateThreadTitle,
+  maybeUpdateInitialThreadTitle,
   toChatMessage,
+  toExternalThreadData,
 } from "../utils/assistantMessages";
 
 import { EditorContext } from "@lowcoder-ee/comps/editorState";
@@ -222,25 +221,13 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
   const convertMessage = (message: ChatMessage): ThreadMessageLike => message;
 
   const updateInitialThreadTitle = async (userMessage: ChatMessage) => {
-    const currentThread = state.threadList.find(
-      (thread) => thread.threadId === state.currentThreadId
+    await maybeUpdateInitialThreadTitle(
+      userMessage,
+      state.threadList,
+      state.currentThreadId,
+      currentMessages.length,
+      actions.updateThread
     );
-    const defaultTitle = trans("chat.newChatTitle");
-
-    if (
-      !shouldGenerateThreadTitle(
-        currentThread?.title,
-        defaultTitle,
-        currentMessages.length
-      )
-    ) {
-      return;
-    }
-
-    const title = generateThreadTitle(userMessage);
-    if (!title || title === currentThread?.title) return;
-
-    await actions.updateThread(state.currentThreadId, { title });
   };
 
   const onNew = async (message: AppendMessage) => {
@@ -322,14 +309,6 @@ function ChatPanelView({ messageHandler, placeholder, onMessageUpdate }: Omit<Ch
       setIsRunning(false);
     }
   };
-
-  const toExternalThreadData = (
-    thread: RegularThreadData,
-  ): ExternalStoreThreadData<"regular"> => ({
-    id: thread.threadId,
-    status: "regular",
-    title: thread.title,
-  });
 
   const threadListAdapter: ExternalStoreThreadListAdapter = {
     threadId: state.currentThreadId,
