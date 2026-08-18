@@ -2571,6 +2571,7 @@ export const en = {
     "showValue": "Show Value",
     "expandable": "Expandable",
     "configExpandedView": "Configure Expanded View",
+    "singleRowExpand": "Expand Only One Row at a Time",
     "toUpdateRowsDesc": "An Array of Objects for Rows to Be Updated in Editable Tables.",
     "selectedCellDesc": "Selected Cell",
     "empty": "Empty",
