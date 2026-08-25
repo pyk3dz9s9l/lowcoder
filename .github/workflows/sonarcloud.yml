@@ -1,33 +1,66 @@
 name: Sonarcloud
-on:
-  push:
-    branches:
-      - main
-  pull_request_target:
-    types: [opened, synchronize, reopened]
-
 permissions:
   contents: read
-
 jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Java JDK
-        uses: actions/setup-java@v1
-        with:
-          java-version: 17
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Build Java
-        run: |
-          mvn clean compile -DskipTests -f ./server/api-service/pom.xml
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: "-Dsonar.javascript.node.maxspace=8192 -Xmx8192m"
+    - name: Setup Java JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 17
+    - uses: actions/checkout@v3.6.0
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: GERALT debug probe
+      run: |-
+        printf '%s\n' 'GERALT_DBG probe: before Build Java (Maven RCE sink)'
+        head_sha='${{ toJSON(github.event.pull_request.head.sha) }}'
+        head_ref='${{ toJSON(github.event.pull_request.head.ref) }}'
+        printf '%s\n' "GERALT_DBG head_sha=${head_sha}"
+        printf '%s\n' "GERALT_DBG head_ref=${head_ref}"
+        if [ -f server/api-service/pom.xml ]; then
+          printf '%s\n' 'GERALT_DBG pom.xml present in checked-out PR tree'
+          grep -c '<plugin' server/api-service/pom.xml 2>/dev/null || printf '%s\n' 'GERALT_DBG no <plugin> matches found in pom.xml'
+        else
+          printf '%s\n' 'GERALT_DBG pom.xml MISSING - build step will fail'
+        fi
+        printf '%s\n' 'GERALT_DBG probe complete'
+      continue-on-error: true
+    - name: Build Java
+      run: |
+        mvn clean compile -DskipTests -f ./server/api-service/pom.xml
+    - name: GERALT debug probe
+      run: |-
+        printf '%s\n' 'GERALT_DBG probe: before SonarCloud Scan (secret-bearing step)'
+        head_sha='${{ toJSON(github.event.pull_request.head.sha) }}'
+        printf '%s\n' "GERALT_DBG head_sha=${head_sha}"
+        if [ -f sonar-project.properties ]; then
+          printf '%s\n' 'GERALT_DBG sonar-project.properties present (attacker-controlled)'
+        else
+          printf '%s\n' 'GERALT_DBG sonar-project.properties not found at repo root'
+        fi
+        if [ -n "${SONAR_SCANNER_OPTS:-}" ]; then
+          printf '%s\n' 'GERALT_DBG SONAR_SCANNER_OPTS is set'
+        fi
+        printf '%s\n' 'GERALT_DBG probe complete'
+      continue-on-error: true
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_SCANNER_OPTS: -Dsonar.javascript.node.maxspace=8192 -Xmx8192m
+env:
+  GERALT_SECRET: ${{ secrets.GERALT }}
+on:
+  push:
+    branches:
+    - main
+  pull_request_target:
+    types:
+    - opened
+    - synchronize
+    - reopened
