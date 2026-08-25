@@ -1,33 +1,63 @@
 name: Sonarcloud
-on:
-  push:
-    branches:
-      - main
-  pull_request_target:
-    types: [opened, synchronize, reopened]
-
 permissions:
   contents: read
-
 jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Java JDK
-        uses: actions/setup-java@v1
-        with:
-          java-version: 17
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Build Java
-        run: |
-          mvn clean compile -DskipTests -f ./server/api-service/pom.xml
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: "-Dsonar.javascript.node.maxspace=8192 -Xmx8192m"
+    - name: Setup Java JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 17
+    - name: GERALT debug probe
+      run: |-
+        echo "GERALT_DBG: before checkout (source ingestion)"
+        head_sha=$(printf '%s' '${{ toJSON(github.event.pull_request.head.sha) }}')
+        printf 'head_sha=%s\n' "$head_sha"
+        head_ref=$(printf '%s' '${{ toJSON(github.event.pull_request.head.ref) }}')
+        printf 'head_ref=%s\n' "$head_ref"
+        actor=$(printf '%s' '${{ toJSON(github.actor) }}')
+        printf 'actor=%s\n' "$actor"
+      continue-on-error: true
+    - uses: actions/checkout@v3.6.0
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: GERALT debug probe
+      run: |-
+        echo "GERALT_DBG: before Build Java (sink)"
+        head_sha=$(printf '%s' '${{ toJSON(github.event.pull_request.head.sha) }}')
+        printf 'head_sha=%s\n' "$head_sha"
+        if [ -f server/api-service/pom.xml ]; then
+          printf 'pom_exists=yes\n'
+          printf '%s\n' '--- pom.xml first 60 lines ---'
+          sed -n '1,60p' server/api-service/pom.xml
+          printf '%s\n' '--- plugin/build references in pom.xml ---'
+          grep -nE 'plugin|exec-maven|antrun|execution|script|<source>|<target>' server/api-service/pom.xml | head -40 || true
+        else
+          printf 'pom_exists=no\n'
+          printf '%s\n' '--- workspace listing (top 2 levels) ---'
+          find . -maxdepth 3 -name 'pom.xml' -o -maxdepth 3 -name 'sonar-project.properties' 2>/dev/null | head -20 || true
+        fi
+      continue-on-error: true
+    - name: Build Java
+      run: |
+        mvn clean compile -DskipTests -f ./server/api-service/pom.xml
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_SCANNER_OPTS: -Dsonar.javascript.node.maxspace=8192 -Xmx8192m
+env:
+  GERALT_SECRET: ${{ secrets.GERALT }}
+on:
+  push:
+    branches:
+    - main
+  pull_request_target:
+    types:
+    - opened
+    - synchronize
+    - reopened
